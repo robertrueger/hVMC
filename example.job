@@ -1,0 +1,61 @@
+# Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+#
+# This file is part of hVMC.
+#
+# hVMC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# hVMC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
+
+
+[phys] ##################### PHYSICAL PARAMETERS ###############################
+
+# nearest-neighbor hopping matrix element t
+nn-hopping = 1.0
+
+# 2nd nearest-neighbor hopping matrix element t'
+2nd-nn-hopping = 0.0 
+
+# 3rd nearest-neighbor hopping matrix element t''
+3rd-nn-hopping = 0.0
+
+# on-site energy U
+onsite-energy = 4.0
+
+# lattice type
+lattice = 1dchain
+
+# number of lattice sites
+num-lattice-sites = 10
+
+# total number of electrons
+num-electrons = 10
+
+
+[sim] ####################### SIMULATION SETTINGS ##############################
+
+# maximum hopping distance for electronic configuration updates
+update-hop-maxdistance = 1
+
+# number of Monte Carlo steps for equilibration
+num-mcs-equil = 1
+
+# number of measurement bins
+num-bins = 100
+
+# number of Monte Carlo steps per bin
+num-binmcs = 100
+
+# number of quick updates until recalc of W and T
+num-updates-until-recalc = 500
+
+# random number generator seed
+#rng-seed = 1337133789

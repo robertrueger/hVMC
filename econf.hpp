@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+ *
+ * This file is part of hVMC.
+ *
+ * hVMC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * hVMC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef ELECTRON_CONFIGURATION_H_INCLUDED
+#define ELECTRON_CONFIGURATION_H_INCLUDED
+
+#if VERBOSE >= 1 
+# include <iostream>
+#endif
+
+#include <vector>
+#include <random>
+
+#include <eigen3/Eigen/Eigen>
+
+#include "macros.h"
+#include "lattice.hpp"
+
+enum ElectronOccupation_t {
+  ELECTRON_OCCUPATION_EMPTY = 0,
+  ELECTRON_OCCUPATION_FULL = 1
+};
+
+
+struct ElectronHop final {
+
+  // id of the hopping electron
+  const unsigned int k;
+
+  // site that it hops to
+  const unsigned int l;
+
+  // position of electron k before the hop
+  const unsigned int k_pos;
+
+  // hop possible = site l unoccupied?
+  const bool possible;
+
+  ElectronHop( unsigned int k_init, unsigned int l_init,
+               unsigned int k_pos_init, bool possible_init )
+    : k( k_init ), l( l_init ),
+      k_pos( k_pos_init ), possible( possible_init ) { }
+};
+
+
+class ElectronConfiguration final
+{
+
+  private:
+
+    Lattice* const lat;
+    const unsigned int electron_number;
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
+    std::vector<unsigned int> electron_pos;
+
+    std::mt19937* const rng;
+
+    void reconstr_electron_pos();
+
+  public:
+
+    ElectronConfiguration( Lattice* const lat_init, unsigned int N_init,
+                           std::mt19937* rng_init );
+
+    void distribute_random();
+    // void distribute_mixed();
+
+    ElectronHop propose_random_hop( unsigned int update_hop_maxdist ) const;
+    void do_hop( const ElectronHop& hop );
+
+    unsigned int get_electron_pos( unsigned int k ) const;
+    unsigned int get_site_occ( unsigned int l ) const;
+    unsigned int N() const;
+    unsigned int get_num_dblocc() const;
+
+};
+
+#endif // ELECTRON_CONFIGURATION_H_INCLUDED
