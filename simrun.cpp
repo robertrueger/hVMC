@@ -70,9 +70,8 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
     lat = new Lattice1DChain(
       opts["phys.num-lattice-sites"].as<unsigned int>() );
   } else {
-    // TODO: implement 2d square lattice (Robert Rueger, 2012-10-31 15:52)
     exit( 1 );
-    lat = new Lattice1DChain(
+    lat = new Lattice2DSquare(
       opts["phys.num-lattice-sites"].as<unsigned int>() );
   }
   // the lattice object on the heap will be destroyed by hmodvmc's destructor!

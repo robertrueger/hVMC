@@ -31,8 +31,6 @@ vector<unsigned int> Lattice1DChain::get_Xnn( unsigned int l, unsigned int X ) c
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
-  // TODO: check that the lattice size is
-  // not too small (Robert Rueger, 2012-11-17 01:28)
 
   vector<unsigned int> Xnn( 2 );
 

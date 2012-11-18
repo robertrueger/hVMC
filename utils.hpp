@@ -38,4 +38,9 @@ void ostream_setup( std::ostream& stream );
 
 boost::filesystem::path get_hVMC_dir();
 
+
+unsigned int uintsqrt( unsigned int n );
+
+bool is_perfect_square( unsigned int n );
+
 #endif // UTILS_H_INCLUDED

@@ -39,7 +39,7 @@
 
 #include "lattice.hpp"
 #include "lattice_1dchain.hpp"
-
+#include "lattice_2dsquare.hpp"
 
 BasicSimResults    simrun_basic(         const Options& opts );
 void               simrun_basic_prepare( const Options& opts,

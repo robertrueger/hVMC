@@ -31,7 +31,7 @@
 #include "macros.h"
 #include "fptype.hpp"
 #include "lattice.hpp"
-
+#include "utils.hpp"
 
 typedef boost::program_options::variables_map Options;
 
