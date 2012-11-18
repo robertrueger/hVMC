@@ -140,9 +140,9 @@ Options read_options( int argc, char const* argv[] )
     cout << "hVMC - built from git commit " << GIT_HASH << endl;
 
 #ifndef NDEBUG
-    cout << "DEBUG BUILD" << endl;
+    cout << "=========== DEBUG BUILD ============" << endl;
 #else
-    cout << "RELEASE BUILD" << endl;
+    cout << "========== RELEASE BUILD ===========" << endl;
 #endif
 
     cout << "compiled " << __DATE__ " with ";
@@ -168,6 +168,14 @@ Options read_options( int argc, char const* argv[] )
     cout << "floating point precision: single" << endl;
 #endif
     cout << endl;
+
+    cout
+    << "Copyright (C) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
+    << "License GPLv3+: GNU GPL version 3 or later"
+       " <http://gnu.org/licenses/gpl.html>" << endl
+    << "This is free software: you are free to change and redistribute it." << endl
+    << "There is NO WARRANTY, to the extent permitted by law." << endl << endl;
+
     exit( 0 );
   }
 
