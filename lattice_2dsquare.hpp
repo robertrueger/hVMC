@@ -17,12 +17,13 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LATTICE_1DCHAIN_H_INCLUDED
-#define LATTICE_1DCHAIN_H_INCLUDED
+#ifndef LATTICE_2DSQUARE_H_INCLUDED
+#define LATTICE_2DSQUARE_H_INCLUDED
 
 #include <vector>
 #include <set>
 #include <utility>
+#include <algorithm>
 
 #if VERBOSE >= 1
 # include <iostream>
@@ -30,18 +31,27 @@
 
 #include "macros.h"
 #include "lattice.hpp"
+#include "utils.hpp"
 
+class Lattice2DSquare final : public Lattice {
+    
+  private:
 
-class Lattice1DChain final : public Lattice {
+    // side length of the square lattice of L sites
+    unsigned int S;
+
+    std::vector<unsigned int> get_1nn( unsigned int l, unsigned int X ) const;
+    std::vector<unsigned int> get_2nn( unsigned int l, unsigned int X ) const;
+    std::vector<unsigned int> get_3nn( unsigned int l, unsigned int X ) const;
 
   public:
 
-    Lattice1DChain( unsigned int L_init );
+    Lattice2DSquare( unsigned int L_init );
 
     std::vector<unsigned int> get_Xnn( unsigned int l, unsigned int X ) const;
-
+    
     IrreducibleIdxRel reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<IrreducibleIdxRel> irreducible_idxrel_list() const;
 };
 
-#endif // LATTICE_1DCHAIN_H_INCLUDED
+#endif // LATTICE_2DSQUARE_H_INCLUDED

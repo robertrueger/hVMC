@@ -29,7 +29,7 @@ GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 CXX      = g++
 CXXFLAGS = -std=c++11 -Wall
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
-DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"
+DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\" -DUSE_FP_DBLPREC
 RELEASE ?= 0
 ifeq ($(RELEASE), 1)
   CXXFLAGS += -march=native -O3 -flto -fuse-linker-plugin

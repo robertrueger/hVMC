@@ -63,7 +63,7 @@ Options read_options( int argc, char const* argv[] )
 
   ( "phys.lattice,l",
     po::value<lattice_t>()->required(),
-    "lattice type" )
+    "lattice type (1dchain, 2dsquare)" )
 
   ( "phys.num-lattice-sites,L",
     po::value<unsigned int>()->required(),
@@ -234,6 +234,13 @@ Options read_options( int argc, char const* argv[] )
         "is not supported"
       );
     }
+
+    if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
+        !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
+      throw logic_error("the number of lattice sites must be a perfect square");
+    }
+
+    // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
 
   } catch ( const logic_error& e ) {
     cerr << "Logical error in physical parameters: " << e.what() << endl;

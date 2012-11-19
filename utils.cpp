@@ -49,3 +49,16 @@ fs::path get_hVMC_dir()
 #error "Platform not supported: no way to determine executable directory"
 #endif
 }
+
+
+unsigned int uintsqrt( unsigned int n ) {
+ return static_cast<unsigned int>(
+   floor( sqrt( static_cast<double>( n ) ) + 0.5 )
+ );
+}
+
+bool is_perfect_square( unsigned int n )
+{
+  unsigned int t = uintsqrt( n );
+  return t * t == n;
+}

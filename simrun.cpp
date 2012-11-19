@@ -70,9 +70,7 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
     lat = new Lattice1DChain(
       opts["phys.num-lattice-sites"].as<unsigned int>() );
   } else {
-    // TODO: implement 2d square lattice (Robert Rueger, 2012-10-31 15:52)
-    exit( 1 );
-    lat = new Lattice1DChain(
+    lat = new Lattice2DSquare(
       opts["phys.num-lattice-sites"].as<unsigned int>() );
   }
   // the lattice object on the heap will be destroyed by hmodvmc's destructor!
@@ -89,7 +87,8 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   // TODO: don't set by hand ... (Robert Rueger, 2012-11-09 18:39)
   v.set( 0, 0, -1.f);
   v.set( 0, 1, -.5f);
-  v.set( 0, 2, -.2f);
+  v.set( 0, 7, -.2f);
+  v.set( 0, 2, -.1f);
 
   // determinantal part of the wavefunction
   cout << "   -> Determinantal part of the wavefunction" << endl;
