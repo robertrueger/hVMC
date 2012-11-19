@@ -41,7 +41,7 @@ vector<unsigned int> Lattice2DSquare::get_Xnn( unsigned int l, unsigned int X ) 
     return get_1nn( l, X );
   } else if ( X == 2 ) {
     return get_2nn( l, X );
-  } else /* X == 3 */ {
+  } else { /* X == 3 */
     return get_3nn( l, X );
   }
 }
@@ -204,11 +204,48 @@ IrreducibleIdxRel Lattice2DSquare::reduce_idxrel(
   assert( j < 2 * L );
   assert( ( i < L && j < L ) || ( i >= L && j >= L ) );
 
+  // calculate the positions of i and j
+  const unsigned int x_i = i % S;
+  const unsigned int y_i = i / S;
+  const unsigned int x_j = j % S;
+  const unsigned int y_j = j / S;
 
+  // calculate the position difference
+  unsigned int dx = x_i > x_j ? x_i - x_j : x_j - x_i;
+  unsigned int dy = y_i > y_j ? y_i - y_j : y_j - y_i;
+
+  // wrap large differences around the boundaries
+  if ( dx > S / 2 ) {
+    dx = S - dx;
+  }
+  if ( dy > S / 2 ) {
+    dy = S - dy;
+  }
+
+  // dx should be larger than dy
+  if ( dy > dx ) {
+    swap( dx, dy );
+  }
+
+  return IrreducibleIdxRel( 0, dx + S * dy );
 }
 
 
 
 set<IrreducibleIdxRel> Lattice2DSquare::irreducible_idxrel_list() const
 {
+  set<IrreducibleIdxRel> irr_idxrels;
+  for ( unsigned int i = 0; i < L; ++i ) {
+    irr_idxrels.insert( reduce_idxrel( 0, i ) );
+  }
+
+#if VERBOSE >= 1
+  cout << "Lattice2DSquare::irreducible_idxrel_list() : "
+       << "list of irreducible index relations =" << endl;
+  for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
+    cout << "(" << it->first << "," << it->second << ")" << endl;
+  }
+#endif
+
+  return irr_idxrels;
 }

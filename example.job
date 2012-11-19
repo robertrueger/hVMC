@@ -22,7 +22,7 @@
 nn-hopping = 1.0
 
 # 2nd nearest-neighbor hopping matrix element t'
-2nd-nn-hopping = 0.0 
+2nd-nn-hopping = 0.5
 
 # 3rd nearest-neighbor hopping matrix element t''
 3rd-nn-hopping = 0.0
@@ -31,31 +31,31 @@ nn-hopping = 1.0
 onsite-energy = 4.0
 
 # lattice type
-lattice = 1dchain
+lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 10
+num-lattice-sites = 36
 
 # total number of electrons
-num-electrons = 10
+num-electrons = 36
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
 
 # maximum hopping distance for electronic configuration updates
-update-hop-maxdistance = 1
+update-hop-maxdistance = 2
 
 # number of Monte Carlo steps for equilibration
-num-mcs-equil = 1
+num-mcs-equil = 1000
 
 # number of measurement bins
-num-bins = 100
+num-bins = 10000
 
 # number of Monte Carlo steps per bin
 num-binmcs = 100
 
 # number of quick updates until recalc of W and T
-num-updates-until-recalc = 500
+num-updates-until-recalc = 100
 
 # random number generator seed
 #rng-seed = 1337133789

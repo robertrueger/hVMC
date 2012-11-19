@@ -23,6 +23,7 @@
 #include <vector>
 #include <set>
 #include <utility>
+#include <algorithm>
 
 #if VERBOSE >= 1
 # include <iostream>
