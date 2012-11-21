@@ -37,7 +37,7 @@ lattice = 2dsquare
 num-lattice-sites = 36
 
 # total number of electrons
-num-electrons = 36
+num-electrons = 26
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
@@ -49,7 +49,7 @@ update-hop-maxdistance = 2
 num-mcs-equil = 1000
 
 # number of measurement bins
-num-bins = 10000
+num-bins = 1000
 
 # number of Monte Carlo steps per bin
 num-binmcs = 100

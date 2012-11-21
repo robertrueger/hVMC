@@ -42,7 +42,6 @@ BasicSimResults simrun_basic( const Options& opts )
   cout << ":: Performing statistical analysis of the E_local data" << endl;
   const BinnedDataStatistics& E_l_stat = run_bindat_statanalysis( E_l );
 
-  cout << ":: Returning the results" << endl;
   BasicSimResults res;
   res.E       = E_l_stat.mean;
   res.sigma_E = E_l_stat.sigma_mean;
@@ -76,19 +75,19 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   // the lattice object on the heap will be destroyed by hmodvmc's destructor!
 
   // a vector of the hopping matrix elements
-  vector<fptype> t(3);
+  vector<fptype> t( 3 );
   t[0] = opts["phys.nn-hopping"].as<fptype>();
   t[1] = opts["phys.2nd-nn-hopping"].as<fptype>();
   t[2] = opts["phys.3rd-nn-hopping"].as<fptype>();
-  
+
   // Jastrow factor
   cout << "   -> Jastrow factor" << endl;
   Jastrow v( lat );
   // TODO: don't set by hand ... (Robert Rueger, 2012-11-09 18:39)
-  v.set( 0, 0, -1.f);
-  v.set( 0, 1, -.5f);
-  v.set( 0, 7, -.2f);
-  v.set( 0, 2, -.1f);
+  v.set( 0, 0, -1.f );
+  v.set( 0, 1, -.5f );
+  v.set( 0, 7, -.2f );
+  v.set( 0, 2, -.1f );
 
   // determinantal part of the wavefunction
   cout << "   -> Determinantal part of the wavefunction" << endl;
@@ -98,17 +97,17 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   // the Hubbard model object itself
   cout << "   -> HubbardModelVMC object" << endl;
   model =
-  new HubbardModelVMC(
-        move( rng ),
-        lat,
-        move( M ),
-        move( v ),
-        opts["phys.num-electrons"].as<unsigned int>(),
-        opts["sim.update-hop-maxdistance"].as<unsigned int>(),
-        move( t ),
-        opts["phys.onsite-energy"].as<fptype>(),
-        opts["sim.num-updates-until-recalc"].as<unsigned int>()
-      );
+    new HubbardModelVMC(
+    move( rng ),
+    lat,
+    move( M ),
+    move( v ),
+    opts["phys.num-electrons"].as<unsigned int>(),
+    opts["sim.update-hop-maxdistance"].as<unsigned int>(),
+    move( t ),
+    opts["phys.onsite-energy"].as<fptype>(),
+    opts["sim.num-updates-until-recalc"].as<unsigned int>()
+  );
 }
 
 
@@ -116,15 +115,29 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
 BinnedData<fptype> simrun_basic_mccycle(
   const Options& opts, HubbardModelVMC* const model )
 {
-  cout << "   -> creating E_local output array" << endl;
+  cout << "   -> Creating E_local output array" << endl;
   BinnedData<fptype> E_l(
     opts["sim.num-bins"].as<unsigned int>(),
     opts["sim.num-binmcs"].as<unsigned int>()
   );
 
+  cout << "   -> Running Monte Carlo cycle" << endl;
+
   for ( unsigned int bin = 0;
         bin < opts["sim.num-bins"].as<unsigned int>();
         ++bin ) {
+
+    // show progress
+    unsigned int progress_percent =
+      static_cast<unsigned int>(
+        floor( 100 * static_cast<double>( bin ) /
+               static_cast<double>( opts["sim.num-bins"].as<unsigned int>() - 1 ) )
+      );
+    cout << "\r"
+         << "      Bin " << bin + 1 << "/" << opts["sim.num-bins"].as<unsigned int>()
+         << " (" << progress_percent << "%)";
+    cout.flush();
+
     for ( unsigned int mcs = 0;
           mcs < opts["sim.num-binmcs"].as<unsigned int>();
           ++mcs ) {
@@ -135,6 +148,7 @@ BinnedData<fptype> simrun_basic_mccycle(
       E_l[bin][mcs] = model->E_l();
     }
   }
+  cout << endl;
 
   return E_l;
 }

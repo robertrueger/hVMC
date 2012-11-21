@@ -53,35 +53,6 @@ vector<unsigned int> Lattice1DChain::get_Xnn( unsigned int l, unsigned int X ) c
 
 
 
-/*
-bool Lattice1DChain::chk_1nn( unsigned int l, unsigned int m ) const
-{
-  assert( l < 2 * L );
-  assert( m < 2 * L );
-
-  if ( l > m ) {
-    swap( l, m );
-  }
-
-#ifndef NDEBUG
-  const vector<unsigned int> l_nn = get_nn( l );
-  const bool nn_chk = ( find( l_nn.begin(), l_nn.end(), m ) != l_nn.end() );
-#endif
-
-  if ( ( l == 0 || l == L ) && m == l + L - 1  ) {
-    assert( nn_chk == true );
-    return true;
-  } else if ( l != L - 1 && m != L && m - l == 1 )  {
-    assert( nn_chk == true );
-    return true;
-  } else {
-    assert( nn_chk == false );
-    return false;
-  }
-}
-*/
-
-
 IrreducibleIdxRel Lattice1DChain::reduce_idxrel(
   unsigned int i, unsigned int j ) const
 {

@@ -197,7 +197,7 @@ BinnedDataStatistics run_bindat_statanalysis( const BinnedData<T>& bd )
   for ( unsigned int bin = 0; bin < binmean.size(); ++bin ) {
     assert( bd[bin].size() == bd[0].size() );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     std::cout << "run_bindat_statanalysis() : bin[" << bin << "] data = "
               << std::endl;
     std::copy( bd[bin].begin(), bd[bin].end(),
@@ -210,7 +210,7 @@ BinnedDataStatistics run_bindat_statanalysis( const BinnedData<T>& bd )
       static_cast<fptype>( bd[bin].size() );
   }
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   std::cout << "run_bindat_statanalysis() : binmeans are " << std::endl;
   std::copy ( binmean.begin(), binmean.end(),
               std::ostream_iterator<fptype>( std::cout, " " ) );

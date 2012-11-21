@@ -162,7 +162,7 @@ Options read_options( int argc, char const* argv[] )
 #endif
     cout << endl;
 
-#ifdef USE_FP_DBLPRE
+#ifdef USE_FP_DBLPREC
     cout << "floating point precision: double" << endl;
 #else
     cout << "floating point precision: single" << endl;

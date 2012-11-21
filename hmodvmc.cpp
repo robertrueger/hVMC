@@ -358,7 +358,7 @@ fptype HubbardModelVMC::E_l() const
 
   const fptype E_l_result =
     ( E_l_kin + U * econf.get_num_dblocc() ) /
-    static_cast<fptype>( econf.N() );
+    static_cast<fptype>( lat->L );
 
 #if VERBOSE >= 1
   cout << "HubbardModelVMC::E_l() = " << E_l_result << endl;
