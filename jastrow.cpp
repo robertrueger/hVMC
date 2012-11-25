@@ -33,6 +33,15 @@ Jastrow::Jastrow( Lattice* lat_init )
 
 
 
+void Jastrow::randomize( fptype min, fptype max, mt19937* rng )
+{
+  for (auto it = idxrel_v_map.begin(); it != idxrel_v_map.end(); ++it ) {
+    (*it).second = uniform_real_distribution<fptype>(min, max)(*rng);
+  }
+}
+
+
+
 fptype Jastrow::operator()( unsigned int i, unsigned int j ) const
 {
   const auto& it = idxrel_v_map.find( lat->reduce_idxrel( i, j ) );

@@ -22,6 +22,7 @@
 
 #include <set>
 #include <map>
+#include <random>
 
 #include "macros.h"
 #include "fptype.hpp"
@@ -40,6 +41,8 @@ class Jastrow final
   public:
 
     Jastrow( Lattice* lat_init );
+
+    void randomize( fptype min, fptype max, std::mt19937* rng );
 
     fptype operator()( unsigned int i, unsigned int j ) const;
     void set( unsigned int i, unsigned int j, fptype v_new  );

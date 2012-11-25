@@ -170,7 +170,6 @@ bool HubbardModelVMC::metstep()
 }
 
 
-// TODO: write a generic function for W and T? (Robert Rueger, 2012-11-23 14:28)
 
 void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 {
@@ -180,13 +179,17 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     cout << "HubbardModelVMC::perform_W_update() : recalculating W!" << endl;
 #endif
 
+    updates_since_W_recalc = 0;
+
     const Eigen::MatrixXfp& W_approx = calc_qupdated_W( hop );
     W = calc_new_W();
+
     fptype dev = calc_deviation( W_approx, W );
+    W_devstat.add( dev );
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : recalculated with deviation = "
-         << dev << endl;
+    cout << "HubbardModelVMC::perform_W_update() : recalculated W "
+         << "with deviation = " << dev << endl;
 
     if ( dev > W_devstat.target ) {
       cout << "HubbardModelVMC::perform_W_update() : deviation goal for matrix "
@@ -198,44 +201,26 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     }
 #endif
 
-    // debug mode doesn't allow missed precision targets
     assert( dev < W_devstat.target );
-
-    updates_since_W_recalc = 0;
-    ++W_devstat.recalcs;
-    if ( dev < W_devstat.target ) {
-      ++W_devstat.hits;
-    } else {
-      ++W_devstat.misses;
-    }
-    if ( dev < .1f * W_devstat.target ) {
-      ++W_devstat.mag1_hits;
-    } else if ( dev > 10.f * W_devstat.target ) {
-      ++W_devstat.mag1_misses;
-    }
 
   } else {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : performing a quick update!"
-         << endl;
+    cout << "HubbardModelVMC::perform_W_update() : "
+         << "performing a quick update of W!" << endl;
 #endif
 
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_W_update() : original W =" << endl
-         << W << endl;
-#endif
+    ++updates_since_W_recalc;
 
     W = calc_qupdated_W( hop );
-    ++updates_since_W_recalc;
 
 #ifndef NDEBUG
     const Eigen::MatrixXfp& W_chk = calc_new_W();
     fptype dev = calc_deviation( W, W_chk );
 
-#if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : DEBUG CHECK: deviation = "
-         << dev << endl;
+# if VERBOSE >= 1
+    cout << "HubbardModelVMC::perform_W_update() : "
+         << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
     if ( dev > W_devstat.target ) {
       cout << "HubbardModelVMC::perform_W_update() : deviation goal for matrix "
@@ -245,16 +230,10 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
            << "HubbardModelVMC::perform_W_update() : exact W =" << endl
            << W_chk << endl;
     }
+# endif
 #endif
 
-    // debug mode doesn't allow missed precision targets
     assert( dev < W_devstat.target );
-#endif
-
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_W_update() : quickly updated W = " << endl
-         << W << endl;
-#endif
   }
 }
 
@@ -268,59 +247,61 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
     cout << "HubbardModelVMC::perform_T_update() : recalculating T!" << endl;
 #endif
 
+    updates_since_T_recalc = 0;
+
     const Eigen::MatrixXfp& T_approx = calc_qupdated_T( hop );
     T = calc_new_T();
+
     fptype dev = calc_deviation( T_approx, T );
+    T_devstat.add( dev );
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_T_update() : recalculated with deviation = "
-         << dev << endl;
+    cout << "HubbardModelVMC::perform_T_update() : recalculated T "
+         << "with deviation = " << dev << endl;
 
     if ( dev > T_devstat.target ) {
-      cout << "HubbardModelVMC::perform_T_update() : deviation goal for vector "
+      cout << "HubbardModelVMC::perform_T_update() : deviation goal for matrix "
            << "T not met!" << endl
            << "HubbardModelVMC::perform_T_update() : approximate T =" << endl
-           << T_approx << endl
+           << T_approx.transpose() << endl
            << "HubbardModelVMC::perform_T_update() : exact T =" << endl
-           << T << endl;
+           << T.transpose() << endl;
     }
 #endif
 
-    // debug mode doesn't allow missed precision targets
     assert( dev < T_devstat.target );
-
-    updates_since_T_recalc = 0;
-    ++T_devstat.recalcs;
-    if ( dev < T_devstat.target ) {
-      ++T_devstat.hits;
-    } else {
-      ++T_devstat.misses;
-    }
-    if ( dev < .1f * T_devstat.target ) {
-      ++T_devstat.mag1_hits;
-    } else if ( dev > 10.f * T_devstat.target ) {
-      ++T_devstat.mag1_misses;
-    }
 
   } else {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_T_update() : performing a quick update!"
-         << endl;
+    cout << "HubbardModelVMC::perform_T_update() : "
+         << "performing a quick update of T!" << endl;
 #endif
 
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_T_update() : original T =" << endl
-         << T << endl;
-#endif
-
-    T = calc_qupdated_T( hop );
     ++updates_since_T_recalc;
 
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_T_update() : quickly updated T = " << endl
-         << T << endl;
+    T = calc_qupdated_T( hop );
+
+#ifndef NDEBUG
+    const Eigen::MatrixXfp& T_chk = calc_new_T();
+    fptype dev = calc_deviation( T, T_chk );
+
+# if VERBOSE >= 1
+    cout << "HubbardModelVMC::perform_T_update() : "
+         << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
+
+    if ( dev > T_devstat.target ) {
+      cout << "HubbardModelVMC::perform_T_update() : deviation goal for matrix "
+           << "T not met!" << endl
+           << "HubbardModelVMC::perform_T_update() : quickly updated T =" << endl
+           << T.transpose() << endl
+           << "HubbardModelVMC::perform_T_update() : exact T =" << endl
+           << T_chk.transpose() << endl;
+    }
+# endif
 #endif
+
+    assert( dev < T_devstat.target );
   }
 }
 

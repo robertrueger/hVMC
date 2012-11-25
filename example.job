@@ -70,4 +70,4 @@ num-binmcs = 100
 # T-deviation-target = 0.001
 
 # number of quick updates until recalculation of the vector T
-# T-updates-until-recalc = 100000
+# T-updates-until-recalc = 50000

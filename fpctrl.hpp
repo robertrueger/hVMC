@@ -50,6 +50,8 @@ struct FPDevStat final {
     : target( target_init ),
       recalcs( 0 ), misses( 0 ), hits( 0 ),
       mag1_misses( 0 ), mag1_hits( 0 ) {}
+
+  void add( fptype dev );
 };
 
 

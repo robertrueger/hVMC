@@ -20,6 +20,22 @@
 #include "fpctrl.hpp"
 
 
+void FPDevStat::add( fptype dev )
+{
+  ++recalcs;
+  if ( dev < target ) {
+    ++hits;
+  } else {
+    ++misses;
+  }
+  if ( dev < .1f * target ) {
+    ++mag1_hits;
+  } else if ( dev > 10.f * target ) {
+    ++mag1_misses;
+  }
+}
+
+
 fptype calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact )
 {

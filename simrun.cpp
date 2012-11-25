@@ -83,7 +83,8 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   // Jastrow factor
   cout << "   -> Jastrow factor" << endl;
   Jastrow v( lat );
-  // TODO: don't set by hand ... (Robert Rueger, 2012-11-09 18:39)
+
+  v.randomize( -.075f, 0.f, &rng );
   v.set( 0, 0, -1.f );
   v.set( 0, 1, -.5f );
   v.set( 0, 7, -.2f );
