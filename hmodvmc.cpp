@@ -49,25 +49,32 @@ HubbardModelVMC::HubbardModelVMC(
     W_devstat( FPDevStat( W_deviation_target_init ) ),
     T_devstat( FPDevStat( T_deviation_target_init ) )
 {
-  // initialize the electrons so that D is invertible
-  // (there must be a non-zero overlap between the slater det and |x>)
-  Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_D() );
-  if ( lu_decomp.isInvertible() == false ) {
-    do {
+  do {
+    econf.distribute_random();
+    Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_D() );
+
+    while ( lu_decomp.isInvertible() == false ) {
+      // initialize the electrons so that D is invertible
+      // (there must be a non-zero overlap between the slater det and |x>)
+
 #if VERBOSE >= 1
       cout << "HubbardModelVMC::HubbardModelVMC() : matrix D is not invertible!"
            << endl;
 #endif
       econf.distribute_random();
       lu_decomp.compute( calc_D() );
-    } while ( lu_decomp.isInvertible() == false );
-  }
+    }
 
-  // calculate the W matrix from scratch: W = M * D^-1
-  W.noalias() = M * lu_decomp.inverse();
+    // calculate the W matrix from scratch: W = M * D^-1
+    W.noalias() = M * lu_decomp.inverse();
 
-  // calculate the vector T from scratch
-  T = calc_new_T();
+    // calculate the vector T from scratch
+    T = calc_new_T();
+
+    // repeat everything if the initial state has a very low overlap
+    // (it's bad for floating point precision before the first recalc)
+  } while ( W.array().square().sum() / static_cast<fptype>( W.size() ) > 10.f ||
+            T.array().square().sum() / static_cast<fptype>( T.size() ) > 10.f );
 
 #if VERBOSE >= 1
   cout << "HubbardModelVMC::HubbardModelVMC() : calculated initial "
