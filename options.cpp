@@ -92,25 +92,44 @@ Options read_options( int argc, char const* argv[] )
     po::value<unsigned int>()->required(),
     "number of Monte Carlo steps per bin" )
 
-  ( "sim.num-updates-until-recalc,u",
-    po::value<unsigned int>()
-#ifdef USE_FP_DBLPRE
-      ->default_value( 2000 ),
-#else
-      ->default_value( 500 ),
-#endif
-    "number of quick updates until recalculation of W and T" )
-
-  ( "sim.rng-seed,R",
+  ( "sim.rng-seed,S",
     po::value<unsigned int>(),
     "random number generator seed" );
 
+  po::options_description fpctrl( "floating point precision control" );
+  fpctrl.add_options()
+
+  ( "fpctrl.W-deviation-target,W",
+    po::value<fptype>()->default_value( 0.001f, "0.001" ),
+    "deviation target for the matrix W")
+
+  ( "fpctrl.W-updates-until-recalc,R",
+    po::value<unsigned int>()
+#ifdef USE_FP_DBLPREC
+      ->default_value( 5000 ),
+#else
+      ->default_value( 500 ),
+#endif
+    "number of quick updates until recalculation of the matrix W" )
+
+  ( "fpctrl.T-deviation-target,T",
+    po::value<fptype>()->default_value( 0.001f, "0.001" ),
+    "deviation target for the vector T" )
+
+  ( "fpctrl.T-updates-until-recalc,r",
+    po::value<unsigned int>()
+#ifdef USE_FP_DBLPREC
+      ->default_value( 500000 ),
+#else
+      ->default_value( 50000 ),
+#endif
+    "number of quick updates until recalculation of the vector T" );
 
   // define option groups for cli and jobfile
   po::options_description cmdline_options;
-  cmdline_options.add( clionly ).add( physparam ).add( simset );
+  cmdline_options.add( clionly ).add( physparam ).add( simset ).add( fpctrl );
   po::options_description jobfile_options;
-  jobfile_options.add( physparam ).add( simset );
+  jobfile_options.add( physparam ).add( simset ).add( fpctrl );
 
 
 

@@ -106,7 +106,10 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
     opts["sim.update-hop-maxdistance"].as<unsigned int>(),
     move( t ),
     opts["phys.onsite-energy"].as<fptype>(),
-    opts["sim.num-updates-until-recalc"].as<unsigned int>()
+    opts["fpctrl.W-deviation-target"].as<fptype>(),
+    opts["fpctrl.W-updates-until-recalc"].as<unsigned int>(),
+    opts["fpctrl.T-deviation-target"].as<fptype>(),
+    opts["fpctrl.T-updates-until-recalc"].as<unsigned int>()
   );
 }
 
@@ -147,6 +150,27 @@ BinnedData<fptype> simrun_basic_mccycle(
       }
       E_l[bin][mcs] = model->E_l();
     }
+  }
+  cout << endl;
+
+  vector<FPDevStat> devstat;
+  devstat.push_back( model->get_W_devstat() );
+  devstat.push_back( model->get_T_devstat() );
+
+  for ( unsigned int i = 0; i < 2; ++i ) {
+    cout << endl;
+    cout << "      Floating point precision control for ";
+    if ( i == 0 ) {
+      cout << "matrix W:";
+    } else {
+      cout << "vector T:";
+    }
+    cout << endl;
+    cout << "        " << devstat[i].recalcs << " recalculations" << endl;
+    cout << "        " << devstat[i].misses << " misses ("
+         << devstat[i].mag1_misses << " by a factor of 10)" << endl;
+    cout << "        " << devstat[i].hits << " hits ("
+         << devstat[i].mag1_hits << " better than a factor of 10)" << endl;
   }
   cout << endl;
 

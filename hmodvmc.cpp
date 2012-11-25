@@ -31,15 +31,23 @@ HubbardModelVMC::HubbardModelVMC(
   unsigned int update_hop_maxdist_init,
   const vector<fptype>& t_init,
   fptype U_init,
-  unsigned int updates_until_WT_recalc_init )
+  fptype W_deviation_target_init,
+  unsigned int updates_until_W_recalc_init,
+  fptype T_deviation_target_init,
+  unsigned int updates_until_T_recalc_init )
   : rng( rng_init ),
     lat( lat_init ), M( M_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
     econf( ElectronConfiguration( lat, N_init, &rng ) ),
+    W( Eigen::MatrixXfp( 2 * lat->L, N_init ) ),
+    T( Eigen::VectorXfp( lat->L ) ),
     completed_mcsteps( 0 ),
-    updates_until_WT_recalc( updates_until_WT_recalc_init ),
-    updates_since_WT_recalc( 0 )
+    updates_until_W_recalc( updates_until_W_recalc_init ),
+    updates_until_T_recalc( updates_until_T_recalc_init ),
+    updates_since_W_recalc( 0 ), updates_since_T_recalc( 0 ),
+    W_devstat( FPDevStat( W_deviation_target_init ) ),
+    T_devstat( FPDevStat( T_deviation_target_init ) )
 {
   // initialize the electrons so that D is invertible
   // (there must be a non-zero overlap between the slater det and |x>)
@@ -144,7 +152,9 @@ bool HubbardModelVMC::metstep()
 #endif
 
       econf.do_hop( phop );
-      perform_WT_update( phop );
+
+      perform_W_update( phop );
+      perform_T_update( phop );
 
       return true;
 
@@ -160,99 +170,157 @@ bool HubbardModelVMC::metstep()
 }
 
 
+// TODO: write a generic function for W and T? (Robert Rueger, 2012-11-23 14:28)
 
-void HubbardModelVMC::perform_WT_update( const ElectronHop& hop )
+void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 {
-  if ( updates_since_WT_recalc >= updates_until_WT_recalc ) {
+  if ( updates_since_W_recalc >= updates_until_W_recalc ) {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_WT_update() : recalculating W and T!" << endl;
+    cout << "HubbardModelVMC::perform_W_update() : recalculating W!" << endl;
 #endif
 
+    const Eigen::MatrixXfp& W_approx = calc_qupdated_W( hop );
     W = calc_new_W();
-    T = calc_new_T();
-    updates_since_WT_recalc = 0;
+    fptype dev = calc_deviation( W_approx, W );
+
+#if VERBOSE >= 1
+    cout << "HubbardModelVMC::perform_W_update() : recalculated with deviation = "
+         << dev << endl;
+
+    if ( dev > W_devstat.target ) {
+      cout << "HubbardModelVMC::perform_W_update() : deviation goal for matrix "
+           << "W not met!" << endl
+           << "HubbardModelVMC::perform_W_update() : approximate W =" << endl
+           << W_approx << endl
+           << "HubbardModelVMC::perform_W_update() : exact W =" << endl
+           << W << endl;
+    }
+#endif
+
+    // debug mode doesn't allow missed precision targets
+    assert( dev < W_devstat.target );
+
+    updates_since_W_recalc = 0;
+    ++W_devstat.recalcs;
+    if ( dev < W_devstat.target ) {
+      ++W_devstat.hits;
+    } else {
+      ++W_devstat.misses;
+    }
+    if ( dev < .1f * W_devstat.target ) {
+      ++W_devstat.mag1_hits;
+    } else if ( dev > 10.f * W_devstat.target ) {
+      ++W_devstat.mag1_misses;
+    }
 
   } else {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_WT_update() : performing a quick update!"
+    cout << "HubbardModelVMC::perform_W_update() : performing a quick update!"
          << endl;
 #endif
 
 #if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_WT_update() : original W =" << endl
+    cout << "HubbardModelVMC::perform_W_update() : original W =" << endl
          << W << endl;
 #endif
 
-    W = calc_updated_W( hop );
-
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_WT_update() : updated W = " << endl
-         << W << endl;
-#endif
+    W = calc_qupdated_W( hop );
+    ++updates_since_W_recalc;
 
 #ifndef NDEBUG
-    // calculate W from scratch and compare with updated W
     const Eigen::MatrixXfp& W_chk = calc_new_W();
+    fptype dev = calc_deviation( W, W_chk );
 
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_WT_update() : correct (recalculated) W ="
-         << endl << W_chk << endl;
-#endif
-
-    for ( unsigned int j = 0; j < econf.N(); ++j ) {
-      for ( unsigned int i = 0; i < 2 * lat->L; ++i ) {
-        bool chk = ( ( abs( W( i, j ) ) + abs( W_chk( i, j ) ) < 0.001f ) ||
-                     (
-                       ( W( i, j ) / W_chk( i, j ) < 1.01f ) &&
-                       ( W( i, j ) / W_chk( i, j ) > 0.99f )
-                     ) );
-        if ( !chk ) {
 #if VERBOSE >= 1
-          cout << "HubbardModelVMC::perform_WT_update() : updated W = " << endl
-               << W << endl;
-          cout << "HubbardModelVMC::perform_WT_update() : correct (recalculated) W ="
-               << endl << W_chk << endl;
-          cout << "HubbardModelVMC::perform_WT_update() : comparison failed!" << endl
-               << "W( i, j ) = " << W( i, j ) << " != "
-               << W_chk( i, j ) << " = W( i, j )" << endl;
-          cout << updates_until_WT_recalc - updates_since_WT_recalc
-               << " quick updates until recalc" << endl;
-#endif
-        }
-        assert( chk );
-      }
+    cout << "HubbardModelVMC::perform_W_update() : DEBUG CHECK: deviation = "
+         << dev << endl;
+
+    if ( dev > W_devstat.target ) {
+      cout << "HubbardModelVMC::perform_W_update() : deviation goal for matrix "
+           << "W not met!" << endl
+           << "HubbardModelVMC::perform_W_update() : quickly updated W =" << endl
+           << W << endl
+           << "HubbardModelVMC::perform_W_update() : exact W =" << endl
+           << W_chk << endl;
     }
 #endif
 
-
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_WT_update() : original T =" << endl
-         << T.transpose() << endl;
+    // debug mode doesn't allow missed precision targets
+    assert( dev < W_devstat.target );
 #endif
 
-    T = calc_updated_T( hop );
-
 #if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_WT_update() : updated T = " << endl
-         << T.transpose() << endl;
+    cout << "HubbardModelVMC::perform_W_update() : quickly updated W = " << endl
+         << W << endl;
+#endif
+  }
+}
+
+
+
+void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
+{
+  if ( updates_since_T_recalc >= updates_until_T_recalc ) {
+
+#if VERBOSE >= 1
+    cout << "HubbardModelVMC::perform_T_update() : recalculating T!" << endl;
 #endif
 
-#ifndef NDEBUG
-    // calculate T from scratch and compare to updated T
-    const Eigen::VectorXfp& T_chk = calc_new_T();
+    const Eigen::MatrixXfp& T_approx = calc_qupdated_T( hop );
+    T = calc_new_T();
+    fptype dev = calc_deviation( T_approx, T );
 
-    for ( unsigned int i = 0; i < lat->L; ++i ) {
-      assert( ( abs( T( i ) ) + abs( T_chk( i ) ) ) < 0.001f ||
-              (
-                ( T( i ) / T_chk( i ) < 1.001f ) &&
-                ( T( i ) / T_chk( i ) > 0.999f )
-              ) );
+#if VERBOSE >= 1
+    cout << "HubbardModelVMC::perform_T_update() : recalculated with deviation = "
+         << dev << endl;
+
+    if ( dev > T_devstat.target ) {
+      cout << "HubbardModelVMC::perform_T_update() : deviation goal for vector "
+           << "T not met!" << endl
+           << "HubbardModelVMC::perform_T_update() : approximate T =" << endl
+           << T_approx << endl
+           << "HubbardModelVMC::perform_T_update() : exact T =" << endl
+           << T << endl;
     }
 #endif
 
-    ++updates_since_WT_recalc;
+    // debug mode doesn't allow missed precision targets
+    assert( dev < T_devstat.target );
+
+    updates_since_T_recalc = 0;
+    ++T_devstat.recalcs;
+    if ( dev < T_devstat.target ) {
+      ++T_devstat.hits;
+    } else {
+      ++T_devstat.misses;
+    }
+    if ( dev < .1f * T_devstat.target ) {
+      ++T_devstat.mag1_hits;
+    } else if ( dev > 10.f * T_devstat.target ) {
+      ++T_devstat.mag1_misses;
+    }
+
+  } else {
+
+#if VERBOSE >= 1
+    cout << "HubbardModelVMC::perform_T_update() : performing a quick update!"
+         << endl;
+#endif
+
+#if VERBOSE >= 2
+    cout << "HubbardModelVMC::perform_T_update() : original T =" << endl
+         << T << endl;
+#endif
+
+    T = calc_qupdated_T( hop );
+    ++updates_since_T_recalc;
+
+#if VERBOSE >= 2
+    cout << "HubbardModelVMC::perform_T_update() : quickly updated T = " << endl
+         << T << endl;
+#endif
   }
 }
 
@@ -283,7 +351,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_new_W() const
 
 
 
-Eigen::MatrixXfp HubbardModelVMC::calc_updated_W( const ElectronHop& hop ) const
+Eigen::MatrixXfp HubbardModelVMC::calc_qupdated_W( const ElectronHop& hop ) const
 {
   return
     W -
@@ -313,7 +381,7 @@ Eigen::VectorXfp HubbardModelVMC::calc_new_T() const
 
 
 
-Eigen::VectorXfp HubbardModelVMC::calc_updated_T( const ElectronHop& hop ) const
+Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) const
 {
   Eigen::VectorXfp T_prime( lat->L );
 
@@ -372,4 +440,15 @@ fptype HubbardModelVMC::E_l() const
 unsigned long int HubbardModelVMC::mctime() const
 {
   return completed_mcsteps;
+}
+
+
+
+FPDevStat HubbardModelVMC::get_W_devstat() const
+{
+  return W_devstat;
+}
+FPDevStat HubbardModelVMC::get_T_devstat() const
+{
+  return T_devstat;
 }

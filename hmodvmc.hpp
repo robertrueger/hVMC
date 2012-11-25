@@ -32,6 +32,7 @@
 
 #include "macros.h"
 #include "fptype.hpp"
+#include "fpctrl.hpp"
 #include "lattice.hpp"
 #include "jastrow.hpp"
 #include "econf.hpp"
@@ -74,9 +75,10 @@ class HubbardModelVMC final
     Eigen::VectorXfp T;
     unsigned long int completed_mcsteps;
 
-    // number of updates until recalc of W and T
-    const unsigned int updates_until_WT_recalc;
-    unsigned int updates_since_WT_recalc;
+    // floating point precision control
+    const unsigned int updates_until_W_recalc, updates_until_T_recalc;
+    unsigned int updates_since_W_recalc, updates_since_T_recalc;
+    FPDevStat W_devstat, T_devstat; 
 
 
     // ----- internal helper functions -----
@@ -84,8 +86,16 @@ class HubbardModelVMC final
     // function that performs a single Metropolis update
     bool metstep();
 
-    // wrapper function that updates/recalculates WT after a successful hop
-    void perform_WT_update( const ElectronHop& hop );
+    // wrapper functions that updates/recalculates W/T after a successful hop
+    void perform_W_update( const ElectronHop& hop );
+    void perform_T_update( const ElectronHop& hop );
+
+    // update and recalc functions for the internal objects
+    Eigen::MatrixXfp calc_D() const;
+    Eigen::MatrixXfp calc_new_W() const;
+    Eigen::MatrixXfp calc_qupdated_W( const ElectronHop& hop ) const;
+    Eigen::VectorXfp calc_new_T() const;
+    Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
 
   public:
 
@@ -97,7 +107,10 @@ class HubbardModelVMC final
       unsigned int N_init,
       unsigned int update_hop_maxdist_init,
       const std::vector<fptype>& t_init, fptype U_init,
-      unsigned int updates_until_WT_recalc_init
+      fptype W_deviation_target_init,
+      unsigned int updates_until_W_recalc_init,
+      fptype T_deviation_target_init,
+      unsigned int updates_until_T_recalc_init
     );
 
     ~HubbardModelVMC();
@@ -106,16 +119,13 @@ class HubbardModelVMC final
     void mcs();
     void equilibrate( unsigned int N_mcs_equil );
 
-    // helper functions (can be public, because they are const)
-    Eigen::MatrixXfp calc_D() const;
-    Eigen::MatrixXfp calc_new_W() const;
-    Eigen::MatrixXfp calc_updated_W( const ElectronHop& hop ) const;
-    Eigen::VectorXfp calc_new_T() const;
-    Eigen::VectorXfp calc_updated_T( const ElectronHop& hop ) const;
-
     // observable measurements
     fptype E_l() const;
     unsigned long int mctime() const;
+
+    // floating point precision control
+    FPDevStat get_W_devstat() const;
+    FPDevStat get_T_devstat() const;
 
 };
 

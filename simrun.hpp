@@ -36,6 +36,7 @@
 #include "simresults.hpp"
 #include "options.hpp"
 #include "binstat.hpp"
+#include "fpctrl.hpp"
 
 #include "lattice.hpp"
 #include "lattice_1dchain.hpp"

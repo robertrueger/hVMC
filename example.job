@@ -49,13 +49,25 @@ update-hop-maxdistance = 2
 num-mcs-equil = 1000
 
 # number of measurement bins
-num-bins = 1000
+num-bins = 10000
 
 # number of Monte Carlo steps per bin
 num-binmcs = 100
 
-# number of quick updates until recalc of W and T
-num-updates-until-recalc = 100
-
 # random number generator seed
 #rng-seed = 1337133789
+
+
+[fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################
+
+# deviation target for the matrix W
+# W-deviation-target = 0.001
+
+# number of quick updates until recalculation of the matrix W
+# W-updates-until-recalc = 500
+
+# deviation target for the vector T
+# T-deviation-target = 0.001
+
+# number of quick updates until recalculation of the vector T
+# T-updates-until-recalc = 100000
