@@ -27,13 +27,15 @@ GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 
 # compiler options
 CXX      = g++
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -std=c++11 -Wall -Wextra
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
-DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING
-RELEASE ?= 0
-ifeq ($(RELEASE), 1)
-  CXXFLAGS += -march=native -O3 -flto -fuse-linker-plugin
+DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING -DEIGEN_DONT_PARALLELIZE
+ifeq ($(BUILD), RELEASE)
+  CXXFLAGS += -march=native -O3 -flto -fuse-linker-plugin -fomit-frame-pointer
+  DEFINES  += -DNDEBUG
+else ifeq ($(BUILD), PROFILE)
+  CXXFLAGS += -march=native -O3 -g
   DEFINES  += -DNDEBUG
 else
   CXXFLAGS += -g

@@ -38,15 +38,15 @@ vector<unsigned int> Lattice2DSquare::get_Xnn( unsigned int l, unsigned int X ) 
   // TODO: optimize by caching position bools (Robert Rueger, 2012-11-18 00:53)
 
   if ( X == 1 ) {
-    return get_1nn( l, X );
+    return get_1nn( l );
   } else if ( X == 2 ) {
-    return get_2nn( l, X );
+    return get_2nn( l );
   } else { /* X == 3 */
-    return get_3nn( l, X );
+    return get_3nn( l );
   }
 }
 
-vector<unsigned int> Lattice2DSquare::get_1nn( unsigned int l, unsigned int X ) const
+vector<unsigned int> Lattice2DSquare::get_1nn( unsigned int l ) const
 {
   vector<unsigned int> nn1( 4 );
 
@@ -81,7 +81,7 @@ vector<unsigned int> Lattice2DSquare::get_1nn( unsigned int l, unsigned int X ) 
   return nn1;
 }
 
-vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l, unsigned int X ) const
+vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l ) const
 {
   vector<unsigned int> nn2( 4 );
 
@@ -160,7 +160,7 @@ vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l, unsigned int X ) 
   return nn2;
 }
 
-vector<unsigned int> Lattice2DSquare::get_3nn( unsigned int l, unsigned int X ) const
+vector<unsigned int> Lattice2DSquare::get_3nn( unsigned int l ) const
 {
   vector<unsigned int> nn3( 4 );
 

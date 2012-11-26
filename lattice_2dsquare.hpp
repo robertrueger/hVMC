@@ -40,9 +40,9 @@ class Lattice2DSquare final : public Lattice {
     // side length of the square lattice of L sites
     unsigned int S;
 
-    std::vector<unsigned int> get_1nn( unsigned int l, unsigned int X ) const;
-    std::vector<unsigned int> get_2nn( unsigned int l, unsigned int X ) const;
-    std::vector<unsigned int> get_3nn( unsigned int l, unsigned int X ) const;
+    std::vector<unsigned int> get_1nn( unsigned int l ) const;
+    std::vector<unsigned int> get_2nn( unsigned int l ) const;
+    std::vector<unsigned int> get_3nn( unsigned int l ) const;
 
   public:
 
