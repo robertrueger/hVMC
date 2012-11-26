@@ -26,6 +26,7 @@
 
 #include <vector>
 #include <random>
+#include <algorithm>
 
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
@@ -71,8 +72,19 @@ class HubbardModelVMC final
 
     // Monte Carlo cycle
     ElectronConfiguration econf;
-    Eigen::MatrixXfp W;
+
+    Eigen::MatrixXfp  Wu_1;
+    Eigen::MatrixXfp  Wu_2;
+    Eigen::MatrixXfp* Wu_active;
+    Eigen::MatrixXfp* Wu_inactive;
+
+    Eigen::MatrixXfp  Wd_1;
+    Eigen::MatrixXfp  Wd_2;
+    Eigen::MatrixXfp* Wd_active;
+    Eigen::MatrixXfp* Wd_inactive;
+
     Eigen::VectorXfp T;
+
     unsigned long int completed_mcsteps;
 
     // floating point precision control
@@ -92,8 +104,9 @@ class HubbardModelVMC final
 
     // update and recalc functions for the internal objects
     Eigen::MatrixXfp calc_D() const;
-    Eigen::MatrixXfp calc_new_W() const;
-    Eigen::MatrixXfp calc_qupdated_W( const ElectronHop& hop ) const;
+    void calc_new_W();
+    void calc_qupdated_Wu( const ElectronHop& hop );
+    void calc_qupdated_Wd( const ElectronHop& hop );
     Eigen::VectorXfp calc_new_T() const;
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
 
