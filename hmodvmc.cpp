@@ -149,9 +149,9 @@ bool HubbardModelVMC::metstep()
 
   } else { // hop possible!
 
-    const fptype R_j = T( lat->get_spinup_site( phop.l ) ) /
-                       T( lat->get_spinup_site( phop.k_pos ) ) *
-                       exp( v( 0, 0 ) - v( phop.l, phop.k_pos ) );
+    const fptype R_j =   T( lat->get_spinup_site( phop.l ) )
+                       / T( lat->get_spinup_site( phop.k_pos ) )
+                       *  v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
 
     const fptype R_s = phop.k < econf.N() / 2 ?
                        ( *Wu_active )( phop.l, phop.k ) :
@@ -440,8 +440,8 @@ Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) cons
   Eigen::VectorXfp T_prime( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
-    T_prime( i ) = T( i ) * exp(   v( i, lat->get_spinup_site( hop.l ) )
-                                   - v( i, lat->get_spinup_site( hop.k_pos ) ) );
+    T_prime( i ) = T( i ) * v.exp( i, lat->get_spinup_site( hop.l ) )
+                          / v.exp( i, lat->get_spinup_site( hop.k_pos ) );
   }
 
   return T_prime;
@@ -468,9 +468,9 @@ fptype HubbardModelVMC::E_l() const
       const vector<unsigned int>& k_pos_Xnn = lat->get_Xnn( k_pos, X );
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const fptype R_j = T( lat->get_spinup_site( *l_it ) )
-                             / T( lat->get_spinup_site( k_pos ) ) *
-                             exp( v( 0, 0 ) - v( *l_it, k_pos ) );
+          const fptype R_j =   T( lat->get_spinup_site( *l_it ) )
+                             / T( lat->get_spinup_site( k_pos ) )
+                             * v.exp( 0, 0 ) / v.exp( *l_it, k_pos );
           if ( k < econf.N() / 2 ) {
             sum_Xnn += R_j * ( *Wu_active )( *l_it, k );
           } else {

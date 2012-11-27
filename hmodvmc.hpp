@@ -24,6 +24,7 @@
 # include <iostream>
 #endif
 
+#include <cmath>
 #include <vector>
 #include <random>
 #include <algorithm>
