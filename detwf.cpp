@@ -27,10 +27,10 @@ Eigen::MatrixXfp wf_nntb(
 {
   Eigen::MatrixXfp H_tb_nospin = Eigen::MatrixXfp::Zero( lat->L, lat->L );
 
+  vector<unsigned int> l_Xnn;
   for ( unsigned int l = 0; l < lat->L; ++l ) {
-
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
-      const vector<unsigned int>& l_Xnn = lat->get_Xnn( l, X );
+      lat->get_Xnn( l, X, &l_Xnn );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
         H_tb_nospin( l, *it ) += -1.f * t[X - 1];
       }

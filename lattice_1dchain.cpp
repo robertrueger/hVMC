@@ -27,28 +27,28 @@ Lattice1DChain::Lattice1DChain( unsigned int L_init )
 
 
 
-vector<unsigned int> Lattice1DChain::get_Xnn( unsigned int l, unsigned int X ) const
+void Lattice1DChain::get_Xnn(
+  unsigned int l, unsigned int X,
+  vector<unsigned int>* outbuf ) const
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
 
-  vector<unsigned int> Xnn( 2 );
+  outbuf->resize( 2 );
 
   // add left neighbor to the list
   if ( l < X || ( l >= L && l < L + X ) ) {
-    Xnn[0] = l + L - X;
+    ( *outbuf )[0] = l + L - X;
   } else {
-    Xnn[0] = l - X;
+    ( *outbuf )[0] = l - X;
   }
 
   // add right neighbor to the list
   if ( ( l < L && l >= L - X ) || l >= 2 * L - X ) {
-    Xnn[1] = l + X - L;
+    ( *outbuf )[1] = l + X - L;
   } else {
-    Xnn[1] = l + X;
+    ( *outbuf )[1] = l + X;
   }
-
-  return Xnn;
 }
 
 

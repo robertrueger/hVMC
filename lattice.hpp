@@ -48,8 +48,8 @@ class Lattice {
     unsigned int get_spinup_site( unsigned int l ) const;
     unsigned int get_spinlinked_site( unsigned int l ) const;
 
-    virtual std::vector<unsigned int> get_Xnn(
-      unsigned int l, unsigned int X
+    virtual void get_Xnn(
+      unsigned int l, unsigned int X, std::vector<unsigned int>* outbuf
     ) const = 0;
 
     virtual IrreducibleIdxRel reduce_idxrel(

@@ -449,7 +449,7 @@ Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) cons
 
 
 
-fptype HubbardModelVMC::E_l() const
+fptype HubbardModelVMC::E_l()
 {
   // calculate expectation value of the T part of H
   fptype E_l_kin = 0.f;
@@ -465,7 +465,7 @@ fptype HubbardModelVMC::E_l() const
       }
 
       fptype sum_Xnn = 0.f;
-      const vector<unsigned int>& k_pos_Xnn = lat->get_Xnn( k_pos, X );
+      lat->get_Xnn( k_pos, X, &k_pos_Xnn );
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
           const fptype R_j =   T( lat->get_spinup_site( *l_it ) )

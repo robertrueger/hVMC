@@ -30,77 +30,75 @@ Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
 
 
 
-vector<unsigned int> Lattice2DSquare::get_Xnn( unsigned int l, unsigned int X ) const
+void Lattice2DSquare::get_Xnn(
+  unsigned int l, unsigned int X,
+  vector<unsigned int>* outbuf ) const
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
 
-  // TODO: optimize by caching position bools (Robert Rueger, 2012-11-18 00:53)
-
   if ( X == 1 ) {
-    return get_1nn( l );
+    get_1nn( l, outbuf );
   } else if ( X == 2 ) {
-    return get_2nn( l );
+    get_2nn( l, outbuf );
   } else { /* X == 3 */
-    return get_3nn( l );
+    get_3nn( l, outbuf );
   }
 }
 
-vector<unsigned int> Lattice2DSquare::get_1nn( unsigned int l ) const
+void Lattice2DSquare::get_1nn( unsigned int l, vector<unsigned int>* outbuf ) const
 {
-  vector<unsigned int> nn1( 4 );
+  outbuf->resize( 4 );
 
   // add left neighbor
   if ( l % S == 0 ) {
-    nn1[0] = l + S - 1;
+    ( *outbuf )[0] = l + S - 1;
   } else {
-    nn1[0] = l - 1;
+    ( *outbuf )[0] = l - 1;
   }
 
   // add right neighbor
   if ( ( l + 1 ) % S == 0 ) {
-    nn1[1] = l + 1 - S;
+    ( *outbuf )[1] = l + 1 - S;
   } else {
-    nn1[1] = l + 1;
+    ( *outbuf )[1] = l + 1;
   }
 
   // add bottom neighbor
   if ( l < S || ( l >= L && l < L + S ) ) {
-    nn1[2] = l + L - S;
+    ( *outbuf )[2] = l + L - S;
   } else {
-    nn1[2] = l - S;
+    ( *outbuf )[2] = l - S;
   }
 
   // add top neighbor
   if ( l >= 2 * L - S || ( l < L && l >= L - S ) ) {
-    nn1[3] = l + S - L;
+    ( *outbuf )[3] = l + S - L;
   } else {
-    nn1[3] = l + S;
+    ( *outbuf )[3] = l + S;
   }
-
-  return nn1;
 }
 
-vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l ) const
+void Lattice2DSquare::get_2nn( unsigned int l, vector<unsigned int>* outbuf ) const
 {
-  vector<unsigned int> nn2( 4 );
+  outbuf->resize( 4 );
 
   // add bottom left neighbor
   if ( l % S == 0 ) {
     // in left column
     if ( l == 0 || l == L ) {
       // bottom left corner
-      nn2[0] = l + L - 1;
+      ( *outbuf )[0] = l + L - 1;
     } else {
-      nn2[0] = l - 1;
+      ( *outbuf )[0] = l - 1;
     }
   } else if ( l < S || ( l >= L && l < L + S ) ) {
     // in bottom row
     // (but NOT in bottom left corner!)
-    nn2[0] = l + L - S - 1;
+    ( *outbuf )[0] = l + L - S - 1;
   } else {
     // in the center
-    nn2[0] = l - S - 1;
+    ( *outbuf )[0] = l - S - 1;
   }
 
   // add bottom right neighbor
@@ -108,17 +106,17 @@ vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l ) const
     // in right column
     if ( l == S - 1 || l == L + S - 1 ) {
       // bottom right corner
-      nn2[1] = l + L + 1 - 2 * S;
+      ( *outbuf )[1] = l + L + 1 - 2 * S;
     } else {
-      nn2[1] = l + 1 - 2 * S;
+      ( *outbuf )[1] = l + 1 - 2 * S;
     }
   } else if ( l < S || ( l >= L && l < L + S ) ) {
     // in bottom row
     // (but NOT in bottom right corner!)
-    nn2[1] = l + L + 1 - S;
+    ( *outbuf )[1] = l + L + 1 - S;
   } else {
     // in the center
-    nn2[1] = l + 1 - S;
+    ( *outbuf )[1] = l + 1 - S;
   }
 
   // add top right neighbor
@@ -126,17 +124,17 @@ vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l ) const
     // in right column
     if ( l == L - 1 || l == 2 * L - 1 ) {
       // top right corner
-      nn2[2] = l + 1 - L;
+      ( *outbuf )[2] = l + 1 - L;
     } else {
-      nn2[2] = l + 1;
+      ( *outbuf )[2] = l + 1;
     }
   } else if ( l >= 2 * L - S || ( l < L && l >= L - S ) ) {
     // in top row
     // (but NOT in top right corner!)
-    nn2[2] = l + S + 1 - L;
+    ( *outbuf )[2] = l + S + 1 - L;
   } else {
     // in the center
-    nn2[2] = l + S + 1;
+    ( *outbuf )[2] = l + S + 1;
   }
 
   // add top left neighbor
@@ -144,55 +142,51 @@ vector<unsigned int> Lattice2DSquare::get_2nn( unsigned int l ) const
     // in left column
     if ( l == L - S || l == 2 * L - S ) {
       // top left corner
-      nn2[3] = l + 2 * S - 1 - L ;
+      ( *outbuf )[3] = l + 2 * S - 1 - L ;
     } else {
-      nn2[3] = l + 2 * S - 1;
+      ( *outbuf )[3] = l + 2 * S - 1;
     }
   } else if ( l >= 2 * L - S || ( l < L && l >= L - S ) ) {
     // in top row
     // (but NOT in top left corner!)
-    nn2[3] = l + S - 1 - L;
+    ( *outbuf )[3] = l + S - 1 - L;
   } else {
     // in the center
-    nn2[3] = l + S - 1;
+    ( *outbuf )[3] = l + S - 1;
   }
-
-  return nn2;
 }
 
-vector<unsigned int> Lattice2DSquare::get_3nn( unsigned int l ) const
+void Lattice2DSquare::get_3nn( unsigned int l, vector<unsigned int>* outbuf ) const
 {
-  vector<unsigned int> nn3( 4 );
+  outbuf->resize( 4 );
 
   // add left neighbor
   if ( l % S <= 1  ) {
-    nn3[0] = l + S - 2;
+    ( *outbuf )[0] = l + S - 2;
   } else {
-    nn3[0] = l - 2;
+    ( *outbuf )[0] = l - 2;
   }
 
   // add right neighbor
   if ( l % S >= S - 2 ) {
-    nn3[1] = l + 2 - S;
+    ( *outbuf )[1] = l + 2 - S;
   } else {
-    nn3[1] = l + 2;
+    ( *outbuf )[1] = l + 2;
   }
 
   // add bottom neighbor
   if ( l < 2 * S || ( l >= L && l < L + 2 * S ) ) {
-    nn3[2] = l + L - 2 * S;
+    ( *outbuf )[2] = l + L - 2 * S;
   } else {
-    nn3[2] = l - 2 * S;
+    ( *outbuf )[2] = l - 2 * S;
   }
 
   // add top neighbor
   if ( l >= 2 * ( L - S ) || ( l < L && l >= L - 2 * S ) ) {
-    nn3[3] = l + 2 * S - L;
+    ( *outbuf )[3] = l + 2 * S - L;
   } else {
-    nn3[3] = l + 2 * S;
+    ( *outbuf )[3] = l + 2 * S;
   }
-
-  return nn3;
 }
 
 

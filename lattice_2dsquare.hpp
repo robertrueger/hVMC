@@ -40,15 +40,18 @@ class Lattice2DSquare final : public Lattice {
     // side length of the square lattice of L sites
     unsigned int S;
 
-    std::vector<unsigned int> get_1nn( unsigned int l ) const;
-    std::vector<unsigned int> get_2nn( unsigned int l ) const;
-    std::vector<unsigned int> get_3nn( unsigned int l ) const;
+    void get_1nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
+    void get_2nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
+    void get_3nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
 
   public:
 
     Lattice2DSquare( unsigned int L_init );
 
-    std::vector<unsigned int> get_Xnn( unsigned int l, unsigned int X ) const;
+    void get_Xnn(
+      unsigned int l, unsigned int X,
+      std::vector<unsigned int>* outbuf
+    ) const;
     
     IrreducibleIdxRel reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<IrreducibleIdxRel> irreducible_idxrel_list() const;

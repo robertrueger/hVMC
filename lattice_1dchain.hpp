@@ -38,7 +38,10 @@ class Lattice1DChain final : public Lattice {
 
     Lattice1DChain( unsigned int L_init );
 
-    std::vector<unsigned int> get_Xnn( unsigned int l, unsigned int X ) const;
+    void get_Xnn(
+      unsigned int l, unsigned int X,
+      std::vector<unsigned int>* outbuf
+    ) const;
 
     IrreducibleIdxRel reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<IrreducibleIdxRel> irreducible_idxrel_list() const;
