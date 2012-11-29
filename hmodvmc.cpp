@@ -410,22 +410,15 @@ void HubbardModelVMC::calc_new_W()
 {
   if ( M.ssym == true ) {
 
-    Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du() );
-    assert( lu_decomp.isInvertible() );
-    Wbu_inactive->noalias() = M.orbitals * lu_decomp.inverse();
-
-    lu_decomp.compute( calc_Dd() );
-    assert( lu_decomp.isInvertible() );
-    Wd_inactive->noalias() = M.orbitals * lu_decomp.inverse();
+    Wbu_inactive->noalias() = M.orbitals * calc_Du().inverse();
+    Wd_inactive->noalias() = M.orbitals * calc_Dd().inverse();
 
     swap( Wbu_inactive, Wbu_active );
     swap( Wd_inactive, Wd_active );
 
   } else {
 
-    Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
-    assert( lu_decomp.isInvertible() );
-    Wbu_inactive->noalias() = M.orbitals * lu_decomp.inverse();
+    Wbu_inactive->noalias() = M.orbitals * calc_Db().inverse();
 
     swap( Wbu_inactive, Wbu_active );
 
