@@ -33,9 +33,24 @@
 #include "fptype.hpp"
 #include "lattice.hpp"
 
-Eigen::MatrixXfp wf_nntb(
+
+struct SingleParticleOrbitals {
+
+  // the actual orbitals
+  const Eigen::MatrixXfp orbitals;
+
+  // spin symmetric and orbitals spin eigenstates
+  const bool ssym;
+
+  SingleParticleOrbitals(
+    const Eigen::MatrixXfp& orbitals_init, bool ssym_init
+  ) : orbitals( orbitals_init ), ssym( ssym_init ) { }
+};
+
+
+SingleParticleOrbitals wf_tight_binding(
     const std::vector<fptype>& t,
-    unsigned int N, Lattice* const lat
+    unsigned int N, Lattice* lat
 );
 
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED

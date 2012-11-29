@@ -34,6 +34,7 @@
 
 #include "macros.h"
 #include "fptype.hpp"
+#include "detwf.hpp"
 #include "fpctrl.hpp"
 #include "lattice.hpp"
 #include "jastrow.hpp"
@@ -60,7 +61,7 @@ class HubbardModelVMC final
     Lattice* const lat;
 
     // wavefunction and Jastrow
-    const Eigen::MatrixXfp M;
+    const SingleParticleOrbitals M;
     const Jastrow v;
 
     // Hubbard model parameters
@@ -73,10 +74,10 @@ class HubbardModelVMC final
 
     ElectronConfiguration econf;
 
-    Eigen::MatrixXfp  Wu_1;
-    Eigen::MatrixXfp  Wu_2;
-    Eigen::MatrixXfp* Wu_active;
-    Eigen::MatrixXfp* Wu_inactive;
+    Eigen::MatrixXfp  Wbu_1;
+    Eigen::MatrixXfp  Wbu_2;
+    Eigen::MatrixXfp* Wbu_active;
+    Eigen::MatrixXfp* Wbu_inactive;
 
     Eigen::MatrixXfp  Wd_1;
     Eigen::MatrixXfp  Wd_2;
@@ -107,19 +108,24 @@ class HubbardModelVMC final
     void perform_T_update( const ElectronHop& hop );
 
     // update and recalc functions for the internal objects
-    Eigen::MatrixXfp calc_D() const;
     void calc_new_W();
-    void calc_qupdated_Wu( const ElectronHop& hop );
-    void calc_qupdated_Wd( const ElectronHop& hop );
+    void calc_qupdated_Wbu( const ElectronHop& hop );
+    void calc_qupdated_Wd(  const ElectronHop& hop );
     Eigen::VectorXfp calc_new_T() const;
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
+
+    // functions to calculate the matrix D
+    Eigen::MatrixXfp calc_Db() const;
+    Eigen::MatrixXfp calc_Du() const;
+    Eigen::MatrixXfp calc_Dd() const;
+
 
   public:
 
     HubbardModelVMC(
       std::mt19937 rng_init,
       Lattice* const lat_init,
-      const Eigen::MatrixXfp M_init,
+      const SingleParticleOrbitals& M_init,
       const Jastrow& v_init,
       unsigned int N_init,
       unsigned int update_hop_maxdist_init,
