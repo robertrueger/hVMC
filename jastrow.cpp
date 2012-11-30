@@ -105,6 +105,16 @@ fptype Jastrow::exp( unsigned int i, unsigned int j ) const
 
 
 
+fptype Jastrow::exp_onsite() const
+{
+  assert( idxrel_expv.size() > 0 );
+  assert( idxrel_expv[0].size() > 0 );
+
+  return idxrel_expv[0][0];
+}
+
+
+
 void Jastrow::set( unsigned int i, unsigned int j, fptype v_new )
 {
   const IrreducibleIdxRel& redidx = lat->reduce_idxrel( i, j );

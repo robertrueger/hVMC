@@ -576,7 +576,7 @@ fptype HubbardModelVMC::E_l()
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
           const fptype R_j =   T( lat->get_spinup_site( *l_it ) )
                                / T( lat->get_spinup_site( k_pos ) )
-                               * v.exp( 0, 0 ) / v.exp( *l_it, k_pos );
+                               * v.exp_onsite() / v.exp( *l_it, k_pos );
           if ( M.ssym == true && k >= econf.N() / 2 ) {
             sum_Xnn += R_j * ( *Wd_active )( *l_it - lat->L, k - econf.N() / 2 );
           } else {

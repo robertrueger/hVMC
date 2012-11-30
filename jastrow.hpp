@@ -52,6 +52,7 @@ class Jastrow final
 
     fptype operator()( unsigned int i, unsigned int j ) const;
     fptype exp( unsigned int i, unsigned int j ) const;
+    fptype exp_onsite() const;
     void set( unsigned int i, unsigned int j, fptype v_new  );
 
 };
