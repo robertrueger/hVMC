@@ -83,16 +83,30 @@ HubbardModelVMC::HubbardModelVMC(
 
       if ( M.ssym == true ) {
 
-        Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du() );
-        invertible = lu_decomp.isInvertible();
+        Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
+        invertible = ( lu_decomp.rank() == lu_decomp.rows() );
+        if ( invertible ) {
+          Wbu_active->noalias()
+            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+        } else {
+          continue;
+        }
 
-        lu_decomp.compute( calc_Dd() );
-        invertible &= lu_decomp.isInvertible();
+        lu_decomp.compute( calc_Dd().transpose() );
+        invertible &= ( lu_decomp.rank() == lu_decomp.rows() );
+        if ( invertible ) {
+          Wd_active ->noalias()
+            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+        }
 
       } else {
 
         Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
-        invertible = lu_decomp.isInvertible();
+        invertible = ( lu_decomp.rank() == lu_decomp.rows() );
+        if ( invertible ) {
+          Wbu_active->noalias()
+            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+        }
 
       }
 
@@ -104,10 +118,6 @@ HubbardModelVMC::HubbardModelVMC(
     } while ( !invertible );
     // initialize the electrons so that D is invertible
     // (there must be a non-zero overlap between the slater det and |x>)
-
-
-    // calculate the W matrix from scratch: W = M * D^-1
-    calc_new_W();
 
     // calculate the vector T from scratch
     T = calc_new_T();
@@ -410,15 +420,18 @@ void HubbardModelVMC::calc_new_W()
 {
   if ( M.ssym == true ) {
 
-    Wbu_inactive->noalias() = M.orbitals * calc_Du().inverse();
-    Wd_inactive->noalias() = M.orbitals * calc_Dd().inverse();
+    Wbu_inactive->noalias()
+      = calc_Du().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
+    Wd_inactive->noalias()
+      = calc_Dd().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
 
     swap( Wbu_inactive, Wbu_active );
     swap( Wd_inactive, Wd_active );
 
   } else {
 
-    Wbu_inactive->noalias() = M.orbitals * calc_Db().inverse();
+    Wbu_inactive->noalias()
+      = calc_Db().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
 
     swap( Wbu_inactive, Wbu_active );
 
