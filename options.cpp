@@ -33,6 +33,8 @@ Options read_options( int argc, char const* argv[] )
   clionly.add_options()
   ( "help,h", "print this help message and exit" )
   ( "version,V", "print hVMC's version and exit" )
+  ( "clinfo,C",
+    "print information about available OpenCL platforms and devices and exit" )
   ( "verbose,v", "makes hVMC write additional information to stdout" )
   ( "job-file,J", po::value<fs::path>(), "job file to execute" )
   ( "output-dir,o", po::value<fs::path>()->default_value("."), "output directory" );
@@ -144,7 +146,7 @@ Options read_options( int argc, char const* argv[] )
   }
 
 
-  // display help or hVMC version information
+  // display help / hVMC version information / OpenCL info
   
   if ( vm.count( "help" ) ) {
     cout << endl;
@@ -195,6 +197,11 @@ Options read_options( int argc, char const* argv[] )
     << "This is free software: you are free to change and redistribute it." << endl
     << "There is NO WARRANTY, to the extent permitted by law." << endl << endl;
 
+    exit( 0 );
+  }
+
+  if ( vm.count( "clinfo" ) ) {
+    print_clinfo();
     exit( 0 );
   }
 

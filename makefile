@@ -28,7 +28,7 @@ GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 # compiler options
 CXX      = g++
 CXXFLAGS = -std=c++11 -Wall -Wextra
-LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system -lOpenCL
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
 DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING -DEIGEN_DONT_PARALLELIZE
 ifeq ($(BUILD), RELEASE)
