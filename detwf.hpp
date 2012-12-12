@@ -26,6 +26,7 @@
 
 #include <vector>
 
+#include <CL/cl_platform.h>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Eigenvalues>
 
@@ -49,8 +50,8 @@ struct SingleParticleOrbitals {
 
 
 SingleParticleOrbitals wf_tight_binding(
-    const std::vector<fptype>& t,
-    unsigned int N, Lattice* lat
+    const std::vector<cl_fptype>& t,
+    cl_uint N, Lattice* lat
 );
 
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED

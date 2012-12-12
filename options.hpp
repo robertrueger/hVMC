@@ -28,6 +28,8 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 #include "fptype.hpp"
 #include "lattice.hpp"

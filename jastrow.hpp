@@ -30,6 +30,8 @@
 #include <cmath>
 #include <random>
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 #include "fptype.hpp"
 #include "lattice.hpp"
@@ -48,12 +50,12 @@ class Jastrow final
 
     Jastrow( Lattice* lat_init );
 
-    void randomize( fptype min, fptype max, std::mt19937* rng );
+    void randomize( cl_fptype min, cl_fptype max, std::mt19937* rng );
 
-    fptype operator()( unsigned int i, unsigned int j ) const;
-    fptype exp( unsigned int i, unsigned int j ) const;
-    fptype exp_onsite() const;
-    void set( unsigned int i, unsigned int j, fptype v_new  );
+    cl_fptype operator()( cl_uint i, cl_uint j ) const;
+    cl_fptype exp( cl_uint i, cl_uint j ) const;
+    cl_fptype exp_onsite() const;
+    void set( cl_uint i, cl_uint j, cl_fptype v_new  );
 
 };
 

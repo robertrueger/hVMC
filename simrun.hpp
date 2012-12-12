@@ -28,6 +28,8 @@
 //#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 #include "fptype.hpp"
 #include "detwf.hpp"
@@ -45,8 +47,8 @@
 BasicSimResults    simrun_basic(         const Options& opts );
 void               simrun_basic_prepare( const Options& opts,
                                          HubbardModelVMC*& model );
-BinnedData<fptype> simrun_basic_mccycle( const Options& opts,
-                                         HubbardModelVMC* const model );
+BinnedData<cl_fptype> simrun_basic_mccycle( const Options& opts,
+                                            HubbardModelVMC* const model );
 
 // TODO: simulation with more observables (Robert Rueger, 2012-11-12 15:21)
 // FullSimResults simrun_full( const Options& opts );

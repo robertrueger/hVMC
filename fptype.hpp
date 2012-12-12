@@ -20,18 +20,19 @@
 #ifndef FPTYPE_H_INCLUDED
 #define FPTYPE_H_INCLUDED
 
-#ifdef USE_FP_DBLPREC
-typedef double fptype;
-#else
-typedef float fptype;
-#endif
+#include <CL/cl_platform.h>
 
+#ifdef USE_FP_DBLPREC
+typedef cl_double cl_fptype;
+#else
+typedef cl_float  cl_fptype;
+#endif
 
 #include <eigen3/Eigen/Core>
 
 namespace Eigen {
-  typedef Matrix<fptype, Dynamic, Dynamic> MatrixXfp;
-  typedef Matrix<fptype, Dynamic, 1> VectorXfp;
+  typedef Matrix<cl_fptype, Dynamic, Dynamic> MatrixXfp;
+  typedef Matrix<cl_fptype, Dynamic, 1> VectorXfp;
 }
 
 #endif // FPTYPE_H_INCLUDED

@@ -26,7 +26,7 @@ void ostream_setup( ostream& stream )
 {
   // stream << setiosflags( ios::scientific );
   stream.setf( ios::showpos );
-  stream.precision( numeric_limits<fptype>::digits10 + 1 );
+  stream.precision( numeric_limits<cl_fptype>::digits10 + 1 );
 }
 
 
@@ -51,14 +51,14 @@ fs::path get_hVMC_dir()
 }
 
 
-unsigned int uintsqrt( unsigned int n ) {
- return static_cast<unsigned int>(
-   floor( sqrt( static_cast<double>( n ) ) + 0.5 )
+cl_uint uintsqrt( cl_uint n ) {
+ return static_cast<cl_uint>(
+   floor( sqrt( static_cast<cl_double>( n ) ) + 0.5 )
  );
 }
 
-bool is_perfect_square( unsigned int n )
+bool is_perfect_square( cl_uint n )
 {
-  unsigned int t = uintsqrt( n );
+  cl_uint t = uintsqrt( n );
   return t * t == n;
 }

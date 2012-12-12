@@ -30,6 +30,8 @@
 # include <iostream>
 #endif
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 #include "fptype.hpp"
 
@@ -173,14 +175,14 @@ class BinnedData final
 
 struct BinnedDataStatistics final {
 
-  fptype mean;
-  fptype sigma_mean;
+  cl_fptype mean;
+  cl_fptype sigma_mean;
 
-  fptype variance;
+  cl_fptype variance;
 
   // TODO: autocorrelation (Robert Rueger, 2012-11-12 14:14)
-  // fptype t_autocorr;
-  // std::vector<fptype> f_autocorr;
+  // cl_fptype t_autocorr;
+  // std::vector<cl_fptype> f_autocorr;
 
 };
 
@@ -191,10 +193,10 @@ BinnedDataStatistics run_bindat_statanalysis( const BinnedData<T>& bd )
   BinnedDataStatistics stat;
 
   // calculate the mean value of the individual bins
-  std::vector<fptype> binmean( bd.num_bins() );
+  std::vector<cl_fptype> binmean( bd.num_bins() );
 
   // TODO: avoid for loop in favor of STL (Robert Rueger, 2012-11-13 11:55)
-  for ( unsigned int bin = 0; bin < binmean.size(); ++bin ) {
+  for ( cl_uint bin = 0; bin < binmean.size(); ++bin ) {
     assert( bd[bin].size() == bd[0].size() );
 
 #if VERBOSE >= 2
@@ -206,36 +208,36 @@ BinnedDataStatistics run_bindat_statanalysis( const BinnedData<T>& bd )
 #endif
     
     binmean[bin] =
-      static_cast<fptype>( accumulate( bd[bin].begin(), bd[bin].end(), 0.f ) ) /
-      static_cast<fptype>( bd[bin].size() );
+      static_cast<cl_fptype>( accumulate( bd[bin].begin(), bd[bin].end(), 0.f ) ) /
+      static_cast<cl_fptype>( bd[bin].size() );
   }
 
 #if VERBOSE >= 2
   std::cout << "run_bindat_statanalysis() : binmeans are " << std::endl;
   std::copy ( binmean.begin(), binmean.end(),
-              std::ostream_iterator<fptype>( std::cout, " " ) );
+              std::ostream_iterator<cl_fptype>( std::cout, " " ) );
   std::cout << std::endl;
 #endif
 
   // calculate the average of the bins' mean values
   stat.mean = accumulate( binmean.begin(), binmean.end(), 0.f ) /
-              static_cast<fptype>( binmean.size() );
+              static_cast<cl_fptype>( binmean.size() );
 
   // calculate the variance of the observable
   stat.variance =
-    static_cast<fptype>( binmean.size() )
-    / static_cast<fptype>( binmean.size() - 1 )
+    static_cast<cl_fptype>( binmean.size() )
+    / static_cast<cl_fptype>( binmean.size() - 1 )
     * (
       accumulate( binmean.begin(), binmean.end(), 0.f,
-  []( fptype sum, fptype m ) {
+  []( cl_fptype sum, cl_fptype m ) {
     return sum + m * m;
   } )
-      / static_cast<fptype>( binmean.size() )
+      / static_cast<cl_fptype>( binmean.size() )
       - stat.mean * stat.mean
     );
 
   // uncertainty of the mean is sqrt(variance / bins)
-  stat.sigma_mean = sqrt( stat.variance / static_cast<fptype>( binmean.size() ) );
+  stat.sigma_mean = sqrt( stat.variance / static_cast<cl_fptype>( binmean.size() ) );
 
   // TODO: autocorrelation (Robert Rueger, 2012-11-01 16:28)
 

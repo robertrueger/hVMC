@@ -22,14 +22,14 @@ using namespace std;
 
 
 
-Lattice1DChain::Lattice1DChain( unsigned int L_init )
+Lattice1DChain::Lattice1DChain( cl_uint L_init )
   : Lattice( LATTICE_1DCHAIN, L_init ) { }
 
 
 
 void Lattice1DChain::get_Xnn(
-  unsigned int l, unsigned int X,
-  vector<unsigned int>* outbuf ) const
+  cl_uint l, cl_uint X,
+  vector<cl_uint>* outbuf ) const
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
@@ -54,13 +54,13 @@ void Lattice1DChain::get_Xnn(
 
 
 IrreducibleIdxRel Lattice1DChain::reduce_idxrel(
-  unsigned int i, unsigned int j ) const
+  cl_uint i, cl_uint j ) const
 {
   assert( i < 2 * L );
   assert( j < 2 * L );
   assert( ( i < L && j < L ) || ( i >= L && j >= L ) );
 
-  unsigned int d = j > i ? j - i : i - j;
+  cl_uint d = j > i ? j - i : i - j;
   IrreducibleIdxRel result( 0, min( d, L - d ) );
 
 #if VERBOSE >= 2
@@ -79,7 +79,7 @@ IrreducibleIdxRel Lattice1DChain::reduce_idxrel(
 set<IrreducibleIdxRel> Lattice1DChain::irreducible_idxrel_list() const
 {
   set<IrreducibleIdxRel> irr_idxrels;
-  for ( unsigned int d = 0; d <= L - d; ++d ) {
+  for ( cl_uint d = 0; d <= L - d; ++d ) {
     assert( d < L );
     irr_idxrels.insert( IrreducibleIdxRel( 0, d ) );
   }

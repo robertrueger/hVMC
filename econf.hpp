@@ -27,6 +27,7 @@
 #include <vector>
 #include <random>
 
+#include <CL/cl_platform.h>
 #include <eigen3/Eigen/Eigen>
 
 #include "macros.h"
@@ -41,19 +42,19 @@ enum ElectronOccupation_t {
 struct ElectronHop final {
 
   // id of the hopping electron
-  const unsigned int k;
+  const cl_uint k;
 
   // site that it hops to
-  const unsigned int l;
+  const cl_uint l;
 
   // position of electron k before the hop
-  const unsigned int k_pos;
+  const cl_uint k_pos;
 
   // hop possible = site l unoccupied?
   const bool possible;
 
-  ElectronHop( unsigned int k_init, unsigned int l_init,
-               unsigned int k_pos_init, bool possible_init )
+  ElectronHop( cl_uint k_init, cl_uint l_init,
+               cl_uint k_pos_init, bool possible_init )
     : k( k_init ), l( l_init ),
       k_pos( k_pos_init ), possible( possible_init ) { }
 };
@@ -65,32 +66,32 @@ class ElectronConfiguration final
   private:
 
     Lattice* const lat;
-    const unsigned int electron_number;
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
-    std::vector<unsigned int> electron_pos;
+    const cl_uint electron_number;
+    Eigen::Matrix<cl_uint, Eigen::Dynamic, 1> site_occ;
+    std::vector<cl_uint> electron_pos;
 
     std::mt19937* const rng;
 
     // buffer vectors for nearest-neighbors
     // (in order to avoid allocating new ones all the time)
-    std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
+    std::vector<cl_uint> k_1nb, k_2nb, k_3nb;
 
     void reconstr_electron_pos();
 
   public:
 
-    ElectronConfiguration( Lattice* const lat_init, unsigned int N_init,
+    ElectronConfiguration( Lattice* const lat_init, cl_uint N_init,
                            std::mt19937* rng_init );
 
     void distribute_random();
 
-    ElectronHop propose_random_hop( unsigned int update_hop_maxdist );
+    ElectronHop propose_random_hop( cl_uint update_hop_maxdist );
     void do_hop( const ElectronHop& hop );
 
-    unsigned int get_electron_pos( unsigned int k ) const;
-    unsigned int get_site_occ( unsigned int l ) const;
-    unsigned int N() const;
-    unsigned int get_num_dblocc() const;
+    cl_uint get_electron_pos( cl_uint k ) const;
+    cl_uint get_site_occ( cl_uint l ) const;
+    cl_uint N() const;
+    cl_uint get_num_dblocc() const;
 
 };
 

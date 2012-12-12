@@ -22,7 +22,7 @@ using namespace std;
 
 
 
-Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
+Lattice2DSquare::Lattice2DSquare( cl_uint L_init )
   : Lattice( LATTICE_2DSQUARE, L_init ), S( uintsqrt( L_init ) )
 {
   assert( is_perfect_square( L_init ) );
@@ -31,8 +31,8 @@ Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
 
 
 void Lattice2DSquare::get_Xnn(
-  unsigned int l, unsigned int X,
-  vector<unsigned int>* outbuf ) const
+  cl_uint l, cl_uint X,
+  vector<cl_uint>* outbuf ) const
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
@@ -46,7 +46,7 @@ void Lattice2DSquare::get_Xnn(
   }
 }
 
-void Lattice2DSquare::get_1nn( unsigned int l, vector<unsigned int>* outbuf ) const
+void Lattice2DSquare::get_1nn( cl_uint l, vector<cl_uint>* outbuf ) const
 {
   outbuf->resize( 4 );
 
@@ -79,7 +79,7 @@ void Lattice2DSquare::get_1nn( unsigned int l, vector<unsigned int>* outbuf ) co
   }
 }
 
-void Lattice2DSquare::get_2nn( unsigned int l, vector<unsigned int>* outbuf ) const
+void Lattice2DSquare::get_2nn( cl_uint l, vector<cl_uint>* outbuf ) const
 {
   outbuf->resize( 4 );
 
@@ -156,7 +156,7 @@ void Lattice2DSquare::get_2nn( unsigned int l, vector<unsigned int>* outbuf ) co
   }
 }
 
-void Lattice2DSquare::get_3nn( unsigned int l, vector<unsigned int>* outbuf ) const
+void Lattice2DSquare::get_3nn( cl_uint l, vector<cl_uint>* outbuf ) const
 {
   outbuf->resize( 4 );
 
@@ -192,21 +192,21 @@ void Lattice2DSquare::get_3nn( unsigned int l, vector<unsigned int>* outbuf ) co
 
 
 IrreducibleIdxRel Lattice2DSquare::reduce_idxrel(
-  unsigned int i, unsigned int j ) const
+  cl_uint i, cl_uint j ) const
 {
   assert( i < 2 * L );
   assert( j < 2 * L );
   assert( ( i < L && j < L ) || ( i >= L && j >= L ) );
 
   // calculate the positions of i and j
-  const unsigned int x_i = i % S;
-  const unsigned int y_i = i / S;
-  const unsigned int x_j = j % S;
-  const unsigned int y_j = j / S;
+  const cl_uint x_i = i % S;
+  const cl_uint y_i = i / S;
+  const cl_uint x_j = j % S;
+  const cl_uint y_j = j / S;
 
   // calculate the position difference
-  unsigned int dx = x_i > x_j ? x_i - x_j : x_j - x_i;
-  unsigned int dy = y_i > y_j ? y_i - y_j : y_j - y_i;
+  cl_uint dx = x_i > x_j ? x_i - x_j : x_j - x_i;
+  cl_uint dy = y_i > y_j ? y_i - y_j : y_j - y_i;
 
   // wrap large differences around the boundaries
   if ( dx > S / 2 ) {
@@ -229,7 +229,7 @@ IrreducibleIdxRel Lattice2DSquare::reduce_idxrel(
 set<IrreducibleIdxRel> Lattice2DSquare::irreducible_idxrel_list() const
 {
   set<IrreducibleIdxRel> irr_idxrels;
-  for ( unsigned int i = 0; i < L; ++i ) {
+  for ( cl_uint i = 0; i < L; ++i ) {
     irr_idxrels.insert( reduce_idxrel( 0, i ) );
   }
 

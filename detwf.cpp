@@ -22,14 +22,14 @@ using namespace std;
 
 
 SingleParticleOrbitals wf_tight_binding(
-  const vector<fptype>& t,
-  unsigned int N, Lattice* lat )
+  const vector<cl_fptype>& t,
+  cl_uint N, Lattice* lat )
 {
   Eigen::MatrixXfp H_tb_nospin = Eigen::MatrixXfp::Zero( lat->L, lat->L );
 
-  vector<unsigned int> l_Xnn;
-  for ( unsigned int l = 0; l < lat->L; ++l ) {
-    for ( unsigned int X = 1; X <= t.size(); ++X ) {
+  vector<cl_uint> l_Xnn;
+  for ( cl_uint l = 0; l < lat->L; ++l ) {
+    for ( cl_uint X = 1; X <= t.size(); ++X ) {
       lat->get_Xnn( l, X, &l_Xnn );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
         H_tb_nospin( l, *it ) += -1.f * t[X - 1];
@@ -47,13 +47,13 @@ SingleParticleOrbitals wf_tight_binding(
 
   assert( N % 2 == 0 );
 
-/*
-  Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
-  for ( unsigned int k = 0; k < N / 2; ++k ) {
-    M.col( 2 * k ).head( lat->L )     = eigensolver.eigenvectors().col( k );
-    M.col( 2 * k + 1 ).tail( lat->L ) = eigensolver.eigenvectors().col( k );
-  }
-*/
+  /*
+    Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
+    for ( cl_uint k = 0; k < N / 2; ++k ) {
+      M.col( 2 * k ).head( lat->L )     = eigensolver.eigenvectors().col( k );
+      M.col( 2 * k + 1 ).tail( lat->L ) = eigensolver.eigenvectors().col( k );
+    }
+  */
 
   const Eigen::MatrixXfp& M
     = eigensolver.eigenvectors().topLeftCorner( lat->L, N / 2 );

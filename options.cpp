@@ -46,19 +46,19 @@ Options read_options( int argc, char const* argv[] )
   physparam.add_options()
 
   ( "phys.nn-hopping,1",
-    po::value<fptype>()->required(),
+    po::value<cl_fptype>()->required(),
     "nearest neighbor hopping matrix element t" )
 
   ( "phys.2nd-nn-hopping,2",
-    po::value<fptype>()->default_value(0.f),
+    po::value<cl_fptype>()->default_value(0.f),
     "2nd nearest neighbor hopping matrix element t'" )
 
   ( "phys.3rd-nn-hopping,3",
-    po::value<fptype>()->default_value(0.f),
+    po::value<cl_fptype>()->default_value(0.f),
     "3rd nearest neighbor hopping matrix element t''" )
 
   ( "phys.onsite-energy,U",
-    po::value<fptype>()->required(),
+    po::value<cl_fptype>()->required(),
     "on-site energy U" )
 
   ( "phys.lattice,l",
@@ -66,45 +66,45 @@ Options read_options( int argc, char const* argv[] )
     "lattice type (1dchain, 2dsquare)" )
 
   ( "phys.num-lattice-sites,L",
-    po::value<unsigned int>()->required(),
+    po::value<cl_uint>()->required(),
     "number of lattice sites" )
 
   ( "phys.num-electrons,N",
-    po::value<unsigned int>()->required(),
+    po::value<cl_uint>()->required(),
     "total number of electrons" );
 
   po::options_description simset( "simulation settings" );
   simset.add_options()
 
   ( "sim.update-hop-maxdistance,H",
-    po::value<unsigned int>()->default_value(1),
+    po::value<cl_uint>()->default_value(1),
     "maximum hopping distance for electronic configuration updates" )
 
   ( "sim.num-mcs-equil,E",
-    po::value<unsigned int>()->required(),
+    po::value<cl_uint>()->required(),
     "number of Monte Carlo steps for equilibration" )
 
   ( "sim.num-bins,B",
-    po::value<unsigned int>()->required(),
+    po::value<cl_uint>()->required(),
     "number of measurement bins" )
 
   ( "sim.num-binmcs,M",
-    po::value<unsigned int>()->required(),
+    po::value<cl_uint>()->required(),
     "number of Monte Carlo steps per bin" )
 
   ( "sim.rng-seed,S",
-    po::value<unsigned int>(),
+    po::value<cl_uint>(),
     "random number generator seed" );
 
   po::options_description fpctrl( "floating point precision control" );
   fpctrl.add_options()
 
   ( "fpctrl.W-deviation-target,W",
-    po::value<fptype>()->default_value( 0.001f, "0.001" ),
+    po::value<cl_fptype>()->default_value( 0.001f, "0.001" ),
     "deviation target for the matrix W")
 
   ( "fpctrl.W-updates-until-recalc,R",
-    po::value<unsigned int>()
+    po::value<cl_uint>()
 #ifdef USE_FP_DBLPREC
       ->default_value( 5000 ),
 #else
@@ -113,11 +113,11 @@ Options read_options( int argc, char const* argv[] )
     "number of quick updates until recalculation of the matrix W" )
 
   ( "fpctrl.T-deviation-target,T",
-    po::value<fptype>()->default_value( 0.001f, "0.001" ),
+    po::value<cl_fptype>()->default_value( 0.001f, "0.001" ),
     "deviation target for the vector T" )
 
   ( "fpctrl.T-updates-until-recalc,r",
-    po::value<unsigned int>()
+    po::value<cl_uint>()
 #ifdef USE_FP_DBLPREC
       ->default_value( 500000 ),
 #else
@@ -230,24 +230,24 @@ Options read_options( int argc, char const* argv[] )
   // check for logical errors in the physical parameters
   try {
 
-    if ( vm["phys.num-electrons"].as<unsigned int>() % 2 != 0 ) {
+    if ( vm["phys.num-electrons"].as<cl_uint>() % 2 != 0 ) {
       throw logic_error( "electron number must be even" );
     }
 
-    if ( vm["phys.num-electrons"].as<unsigned int>() >
-         2 * vm["phys.num-lattice-sites"].as<unsigned int>() ) {
+    if ( vm["phys.num-electrons"].as<cl_uint>() >
+         2 * vm["phys.num-lattice-sites"].as<cl_uint>() ) {
       throw logic_error(
         "too many electrons (num-electrons > 2 * num-lattice-sites) "
       );
     }
 
-    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() == 0 ) {
+    if ( vm["sim.update-hop-maxdistance"].as<cl_uint>() == 0 ) {
       throw logic_error(
         "electronic configuration updates need at least nearest neighbor hopping"
       );
     }
 
-    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() > 3 ) {
+    if ( vm["sim.update-hop-maxdistance"].as<cl_uint>() > 3 ) {
       throw logic_error(
         "electronic configuration updates with hopping > 3rd nearest neighbors"
         "is not supported"
@@ -255,7 +255,7 @@ Options read_options( int argc, char const* argv[] )
     }
 
     if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
-        !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
+        !is_perfect_square( vm["phys.num-lattice-sites"].as<cl_uint>() ) ) {
       throw logic_error("the number of lattice sites must be a perfect square");
     }
 

@@ -29,6 +29,8 @@
 # include <iostream>
 #endif
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 #include "lattice.hpp"
 #include "utils.hpp"
@@ -38,22 +40,22 @@ class Lattice2DSquare final : public Lattice {
   private:
 
     // side length of the square lattice of L sites
-    unsigned int S;
+    cl_uint S;
 
-    void get_1nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
-    void get_2nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
-    void get_3nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
+    void get_1nn( cl_uint l, std::vector<cl_uint>* outbuf ) const;
+    void get_2nn( cl_uint l, std::vector<cl_uint>* outbuf ) const;
+    void get_3nn( cl_uint l, std::vector<cl_uint>* outbuf ) const;
 
   public:
 
-    Lattice2DSquare( unsigned int L_init );
+    Lattice2DSquare( cl_uint L_init );
 
     void get_Xnn(
-      unsigned int l, unsigned int X,
-      std::vector<unsigned int>* outbuf
+      cl_uint l, cl_uint X,
+      std::vector<cl_uint>* outbuf
     ) const;
     
-    IrreducibleIdxRel reduce_idxrel( unsigned int i, unsigned int j ) const;
+    IrreducibleIdxRel reduce_idxrel( cl_uint i, cl_uint j ) const;
     std::set<IrreducibleIdxRel> irreducible_idxrel_list() const;
 };
 

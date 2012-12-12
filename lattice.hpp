@@ -24,10 +24,12 @@
 #include <set>
 #include <utility>
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 
 
-typedef std::pair<unsigned int, unsigned int> IrreducibleIdxRel;
+typedef std::pair<cl_uint, cl_uint> IrreducibleIdxRel;
 
 enum lattice_t {
   LATTICE_1DCHAIN,
@@ -39,22 +41,20 @@ class Lattice {
   public:
 
     const lattice_t type;
-    const unsigned int L;
+    const cl_uint L;
 
-    Lattice( lattice_t type_init, unsigned int L_init )
+    Lattice( lattice_t type_init, cl_uint L_init )
       : type( type_init ), L( L_init ) { }
     virtual ~Lattice() { }
 
-    unsigned int get_spinup_site( unsigned int l ) const;
-    unsigned int get_spinlinked_site( unsigned int l ) const;
+    cl_uint get_spinup_site( cl_uint l ) const;
+    cl_uint get_spinlinked_site( cl_uint l ) const;
 
     virtual void get_Xnn(
-      unsigned int l, unsigned int X, std::vector<unsigned int>* outbuf
+      cl_uint l, cl_uint X, std::vector<cl_uint>* outbuf
     ) const = 0;
 
-    virtual IrreducibleIdxRel reduce_idxrel(
-      unsigned int i, unsigned int j
-    ) const = 0;
+    virtual IrreducibleIdxRel reduce_idxrel( cl_uint i, cl_uint j ) const = 0;
     virtual std::set<IrreducibleIdxRel> irreducible_idxrel_list() const = 0;
 
 };

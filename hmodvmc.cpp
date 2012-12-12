@@ -27,14 +27,14 @@ HubbardModelVMC::HubbardModelVMC(
   Lattice* const lat_init,
   const SingleParticleOrbitals& M_init,
   const Jastrow& v_init,
-  unsigned int N_init,
-  unsigned int update_hop_maxdist_init,
-  const vector<fptype>& t_init,
-  fptype U_init,
-  fptype W_deviation_target_init,
-  unsigned int updates_until_W_recalc_init,
-  fptype T_deviation_target_init,
-  unsigned int updates_until_T_recalc_init )
+  cl_uint N_init,
+  cl_uint update_hop_maxdist_init,
+  const vector<cl_fptype>& t_init,
+  cl_fptype U_init,
+  cl_fptype W_deviation_target_init,
+  cl_uint updates_until_W_recalc_init,
+  cl_fptype T_deviation_target_init,
+  cl_uint updates_until_T_recalc_init )
   : rng( rng_init ),
     lat( lat_init ), M( M_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
@@ -127,18 +127,18 @@ HubbardModelVMC::HubbardModelVMC(
   } while (
 
     Wbu_active->array().square().sum()
-    / static_cast<fptype>( Wbu_active->size() ) > 10.f ||
+    / static_cast<cl_fptype>( Wbu_active->size() ) > 10.f ||
 
     (
       M.ssym == true ?
 
       Wd_active->array().square().sum()
-      / static_cast<fptype>( Wd_active->size() ) > 10.f :
+      / static_cast<cl_fptype>( Wd_active->size() ) > 10.f :
 
       false
     ) ||
 
-    T.array().square().sum() / static_cast<fptype>( T.size() ) > 10.f
+    T.array().square().sum() / static_cast<cl_fptype>( T.size() ) > 10.f
 
   );
 
@@ -167,7 +167,7 @@ void HubbardModelVMC::mcs()
 #endif
 
   // perform a number of metropolis steps equal to the number of electrons
-  for ( unsigned int s = 0; s < econf.N(); ++s ) {
+  for ( cl_uint s = 0; s < econf.N(); ++s ) {
 #if VERBOSE >= 1
     cout << "HubbardModelVMC::mcs() : Monte Carlo step = " << completed_mcsteps
          << ", Metropolis step = " << s << endl;
@@ -179,9 +179,9 @@ void HubbardModelVMC::mcs()
 
 
 
-void HubbardModelVMC::equilibrate( unsigned int N_mcs_equil )
+void HubbardModelVMC::equilibrate( cl_uint N_mcs_equil )
 {
-  for ( unsigned int n = 0; n < N_mcs_equil; ++n ) {
+  for ( cl_uint n = 0; n < N_mcs_equil; ++n ) {
     mcs();
   }
   completed_mcsteps -= N_mcs_equil;
@@ -206,14 +206,14 @@ bool HubbardModelVMC::metstep()
 
   } else { // hop possible!
 
-    const fptype R_j = T( lat->get_spinup_site( phop.l ) )
+    const cl_fptype R_j = T( lat->get_spinup_site( phop.l ) )
                        / T( lat->get_spinup_site( phop.k_pos ) )
                        * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
 
-    const fptype R_s = ( M.ssym == true && phop.k >= econf.N() / 2 ) ?
+    const cl_fptype R_s = ( M.ssym == true && phop.k >= econf.N() / 2 ) ?
                        ( *Wd_active  )( phop.l - lat->L, phop.k - econf.N() / 2 ) :
                        ( *Wbu_active )( phop.l, phop.k );
-    const fptype accept_prob = R_j * R_j * R_s * R_s;
+    const cl_fptype accept_prob = R_j * R_j * R_s * R_s;
 
 #if VERBOSE >= 1
     cout << "HubbardModelVMC::metstep() : hop possible -> "
@@ -223,7 +223,7 @@ bool HubbardModelVMC::metstep()
 #endif
 
     if ( accept_prob >= 1.f ||
-         uniform_real_distribution<fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
+         uniform_real_distribution<cl_fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
 
 #if VERBOSE >= 1
       cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;
@@ -271,7 +271,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     // (pushs updated W into the inactive buffers)
     calc_new_W();
 
-    fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
+    cl_fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
     if ( M.ssym == true ) {
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }
@@ -330,7 +330,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     // updated W should now be in the active buffer
     // debug check recalc W should be in the inactive buffer
 
-    fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
+    cl_fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
     if ( M.ssym == true ) {
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }
@@ -367,7 +367,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
   assert( M.ssym == false );
 
   Eigen::MatrixXfp Db( econf.N(), econf.N() );
-  for ( unsigned int eid = 0; eid < econf.N(); ++eid ) {
+  for ( cl_uint eid = 0; eid < econf.N(); ++eid ) {
     Db.row( eid ) = M.orbitals.row( econf.get_electron_pos( eid ) );
   }
 
@@ -385,7 +385,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
   assert( M.ssym == true );
 
   Eigen::MatrixXfp Du( econf.N() / 2, econf.N() / 2 );
-  for ( unsigned int eid = 0; eid < econf.N() / 2; ++eid ) {
+  for ( cl_uint eid = 0; eid < econf.N() / 2; ++eid ) {
     Du.row( eid ) = M.orbitals.row( econf.get_electron_pos( eid ) );
   }
 
@@ -403,7 +403,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Dd() const
   assert( M.ssym == true );
 
   Eigen::MatrixXfp Dd( econf.N() / 2, econf.N() / 2 );
-  for ( unsigned int eid = econf.N() / 2; eid < econf.N(); ++eid ) {
+  for ( cl_uint eid = econf.N() / 2; eid < econf.N(); ++eid ) {
     Dd.row( eid - econf.N() / 2 )
       = M.orbitals.row( lat->get_spinup_site( econf.get_electron_pos( eid ) ) );
   }
@@ -481,7 +481,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
     const Eigen::MatrixXfp& T_approx = calc_qupdated_T( hop );
     T = calc_new_T();
 
-    fptype dev = calc_deviation( T_approx, T );
+    cl_fptype dev = calc_deviation( T_approx, T );
     T_devstat.add( dev );
 
 #if VERBOSE >= 1
@@ -513,7 +513,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
 
 #ifndef NDEBUG
     const Eigen::MatrixXfp& T_chk = calc_new_T();
-    fptype dev = calc_deviation( T, T_chk );
+    cl_fptype dev = calc_deviation( T, T_chk );
 
 # if VERBOSE >= 1
     cout << "HubbardModelVMC::perform_T_update() : "
@@ -540,10 +540,10 @@ Eigen::VectorXfp HubbardModelVMC::calc_new_T() const
 {
   Eigen::VectorXfp T_new( lat->L );
 
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
-    fptype sum = 0.f;
-    for ( unsigned int j = 0; j < lat->L; ++j ) {
-      sum += v( i, j ) * static_cast<fptype>(
+  for ( cl_uint i = 0; i < lat->L; ++i ) {
+    cl_fptype sum = 0.f;
+    for ( cl_uint j = 0; j < lat->L; ++j ) {
+      sum += v( i, j ) * static_cast<cl_fptype>(
                ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
     }
     T_new( i ) = exp( sum );
@@ -558,7 +558,7 @@ Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) cons
 {
   Eigen::VectorXfp T_prime( lat->L );
 
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
+  for ( cl_uint i = 0; i < lat->L; ++i ) {
     T_prime( i ) = T( i ) * v.exp( i, lat->get_spinup_site( hop.l ) )
                    / v.exp( i, lat->get_spinup_site( hop.k_pos ) );
   }
@@ -568,26 +568,26 @@ Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) cons
 
 
 
-fptype HubbardModelVMC::E_l()
+cl_fptype HubbardModelVMC::E_l()
 {
   // calculate expectation value of the T part of H
-  fptype E_l_kin = 0.f;
+  cl_fptype E_l_kin = 0.f;
 
-  for ( unsigned int k = 0; k < econf.N(); ++k ) {
+  for ( cl_uint k = 0; k < econf.N(); ++k ) {
 
-    const unsigned int k_pos = econf.get_electron_pos( k );
+    const cl_uint k_pos = econf.get_electron_pos( k );
     assert( econf.get_site_occ( k_pos ) == ELECTRON_OCCUPATION_FULL );
 
-    for ( unsigned int X = 1; X <= t.size(); ++X ) {
+    for ( cl_uint X = 1; X <= t.size(); ++X ) {
       if ( t[X - 1] == 0.f ) {
         continue;
       }
 
-      fptype sum_Xnn = 0.f;
+      cl_fptype sum_Xnn = 0.f;
       lat->get_Xnn( k_pos, X, &k_pos_Xnn );
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const fptype R_j =   T( lat->get_spinup_site( *l_it ) )
+          const cl_fptype R_j =   T( lat->get_spinup_site( *l_it ) )
                                / T( lat->get_spinup_site( k_pos ) )
                                * v.exp_onsite() / v.exp( *l_it, k_pos );
           if ( M.ssym == true && k >= econf.N() / 2 ) {
@@ -602,9 +602,9 @@ fptype HubbardModelVMC::E_l()
     }
   }
 
-  const fptype E_l_result =
+  const cl_fptype E_l_result =
     ( E_l_kin + U * econf.get_num_dblocc() ) /
-    static_cast<fptype>( lat->L );
+    static_cast<cl_fptype>( lat->L );
 
 #if VERBOSE >= 1
   cout << "HubbardModelVMC::E_l() = " << E_l_result << endl;
@@ -615,7 +615,7 @@ fptype HubbardModelVMC::E_l()
 
 
 
-unsigned long int HubbardModelVMC::mctime() const
+cl_ulong HubbardModelVMC::mctime() const
 {
   return completed_mcsteps;
 }

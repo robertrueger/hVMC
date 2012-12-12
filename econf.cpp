@@ -24,11 +24,11 @@ using namespace std;
 
 ElectronConfiguration::ElectronConfiguration(
   Lattice* const lat_init,
-  unsigned int electron_number_init,
+  cl_uint electron_number_init,
   mt19937* rng_init )
   : lat( lat_init ), electron_number( electron_number_init ),
     site_occ(
-      Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat_init->L )
+      Eigen::Matrix<cl_uint, Eigen::Dynamic, 1>::Zero( 2 * lat_init->L )
     ),
     electron_pos( electron_number_init ),
     rng( rng_init )
@@ -41,7 +41,7 @@ ElectronConfiguration::ElectronConfiguration(
 void ElectronConfiguration::reconstr_electron_pos()
 {
   electron_pos.clear();
-  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
+  for ( cl_uint l = 0; l < 2 * lat->L; ++l ) {
     if ( site_occ[l] == ELECTRON_OCCUPATION_FULL ) {
       electron_pos.push_back( l );
     }
@@ -67,15 +67,15 @@ void ElectronConfiguration::distribute_random()
   assert( electron_number % 2 == 0 );
 
   // clear all sites
-  site_occ = Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat->L );
+  site_occ = Eigen::Matrix<cl_uint, Eigen::Dynamic, 1>::Zero( 2 * lat->L );
 
   // randomly distribute L/2 electrons per spin direction
   while ( site_occ.head( lat->L ).sum() < electron_number / 2 ) {
-    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( *rng ) ]
+    site_occ[ uniform_int_distribution<cl_uint>( 0, lat->L - 1 )( *rng ) ]
       = ELECTRON_OCCUPATION_FULL;
   }
   while ( site_occ.tail( lat->L ).sum() < electron_number / 2 ) {
-    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( *rng )
+    site_occ[ uniform_int_distribution<cl_uint>( 0, lat->L - 1 )( *rng )
               + lat->L ] = ELECTRON_OCCUPATION_FULL;
   }
 
@@ -95,14 +95,14 @@ void ElectronConfiguration::distribute_random()
 
 
 ElectronHop ElectronConfiguration::propose_random_hop(
-  unsigned int update_hop_maxdist )
+  cl_uint update_hop_maxdist )
 {
   // hop the kth electron
-  const unsigned int k
-    = uniform_int_distribution<unsigned int>( 0, electron_number - 1 )( *rng );
+  const cl_uint k
+    = uniform_int_distribution<cl_uint>( 0, electron_number - 1 )( *rng );
 
   // find the position of the xth electron
-  const unsigned int k_pos = electron_pos[k];
+  const cl_uint k_pos = electron_pos[k];
 
 #if VERBOSE >= 1
   cout << site_occ.head( lat->L ).transpose() << endl
@@ -127,13 +127,13 @@ ElectronHop ElectronConfiguration::propose_random_hop(
     assert( k_3nb.size() == 0 );
   }
 
-  const unsigned int nb_number
-    = uniform_int_distribution<unsigned int>
+  const cl_uint nb_number
+    = uniform_int_distribution<cl_uint>
       ( 0,
         k_1nb.size() + k_2nb.size() + k_3nb.size() - 1
       )( *rng );
 
-  unsigned int l;
+  cl_uint l;
   if ( nb_number < k_1nb.size() ) {
     l = k_1nb[ nb_number ];
   } else {
@@ -209,28 +209,28 @@ void ElectronConfiguration::do_hop( const ElectronHop& hop )
 
 
 
-unsigned int ElectronConfiguration::get_electron_pos( unsigned int k ) const
+cl_uint ElectronConfiguration::get_electron_pos( cl_uint k ) const
 {
   return electron_pos[ k ];
 }
 
 
 
-unsigned int ElectronConfiguration::get_site_occ( unsigned int l ) const
+cl_uint ElectronConfiguration::get_site_occ( cl_uint l ) const
 {
   return site_occ[ l ];
 }
 
 
 
-unsigned int ElectronConfiguration::N() const
+cl_uint ElectronConfiguration::N() const
 {
   return electron_number;
 }
 
 
 
-unsigned int ElectronConfiguration::get_num_dblocc() const
+cl_uint ElectronConfiguration::get_num_dblocc() const
 {
   return ( site_occ.head( lat->L ).array() * site_occ.tail( lat->L ).array() ).sum();
 }

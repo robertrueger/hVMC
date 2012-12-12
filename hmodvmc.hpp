@@ -29,6 +29,7 @@
 #include <random>
 #include <algorithm>
 
+#include <CL/cl_platform.h>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 
@@ -65,9 +66,9 @@ class HubbardModelVMC final
     const Jastrow v;
 
     // Hubbard model parameters
-    const unsigned int update_hop_maxdist;
-    const std::vector<fptype> t;
-    const fptype U;
+    const cl_uint update_hop_maxdist;
+    const std::vector<cl_fptype> t;
+    const cl_fptype U;
 
 
     // ----- dependent and internal objects -----
@@ -88,13 +89,13 @@ class HubbardModelVMC final
 
     // buffer vector for X nearest neighbors
     // (in order to avoid allocating new ones all the time)
-    std::vector<unsigned int> k_pos_Xnn;
+    std::vector<cl_uint> k_pos_Xnn;
 
     unsigned long int completed_mcsteps;
 
     // floating point precision control
-    const unsigned int updates_until_W_recalc, updates_until_T_recalc;
-    unsigned int updates_since_W_recalc, updates_since_T_recalc;
+    const cl_uint updates_until_W_recalc, updates_until_T_recalc;
+    cl_uint updates_since_W_recalc, updates_since_T_recalc;
     FPDevStat W_devstat, T_devstat;
 
 
@@ -127,24 +128,24 @@ class HubbardModelVMC final
       Lattice* const lat_init,
       const SingleParticleOrbitals& M_init,
       const Jastrow& v_init,
-      unsigned int N_init,
-      unsigned int update_hop_maxdist_init,
-      const std::vector<fptype>& t_init, fptype U_init,
-      fptype W_deviation_target_init,
-      unsigned int updates_until_W_recalc_init,
-      fptype T_deviation_target_init,
-      unsigned int updates_until_T_recalc_init
+      cl_uint N_init,
+      cl_uint update_hop_maxdist_init,
+      const std::vector<cl_fptype>& t_init, cl_fptype U_init,
+      cl_fptype W_deviation_target_init,
+      cl_uint updates_until_W_recalc_init,
+      cl_fptype T_deviation_target_init,
+      cl_uint updates_until_T_recalc_init
     );
 
     ~HubbardModelVMC();
 
     // Monte Carlo step
     void mcs();
-    void equilibrate( unsigned int N_mcs_equil );
+    void equilibrate( cl_uint N_mcs_equil );
 
     // observable measurements
-    fptype E_l();
-    unsigned long int mctime() const;
+    cl_fptype E_l();
+    cl_ulong mctime() const;
 
     // floating point precision control
     FPDevStat get_W_devstat() const;

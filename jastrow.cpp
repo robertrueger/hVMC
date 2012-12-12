@@ -28,7 +28,7 @@ Jastrow::Jastrow( Lattice* lat_init ) : lat( lat_init )
   assert( !irr_idxrels.empty() );
 
   // find maximum i in v_ij (is zero on any Bravais lattice)
-  const unsigned int max_i =
+  const cl_uint max_i =
     max_element(
       irr_idxrels.begin(), irr_idxrels.end(),
   []( const IrreducibleIdxRel & a, const IrreducibleIdxRel & b ) {
@@ -38,9 +38,9 @@ Jastrow::Jastrow( Lattice* lat_init ) : lat( lat_init )
   idxrel_expv.resize( max_i + 1 );
 
   // find maximum j for every possible value of i
-  for ( unsigned int i = 0; i <= max_i; ++i ) {
+  for ( cl_uint i = 0; i <= max_i; ++i ) {
     bool i_exists = false;
-    unsigned int this_i_max_j = 0;
+    cl_uint this_i_max_j = 0;
     for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
       if ( it->first == i ) {
         i_exists = true;
@@ -56,9 +56,9 @@ Jastrow::Jastrow( Lattice* lat_init ) : lat( lat_init )
 
 #if VERBOSE >= 1
   cout << "Jastrow::Jastrow() : created the following vectors" << endl;
-  for ( unsigned int i = 0; i < idxrel_expv.size(); ++i ) {
+  for ( cl_uint i = 0; i < idxrel_expv.size(); ++i ) {
     cout << "v( " << i << ", [";
-    for ( unsigned int j = 0; j < idxrel_expv[i].size(); ++j ) {
+    for ( cl_uint j = 0; j < idxrel_expv[i].size(); ++j ) {
       cout << j << ",";
     }
     cout << "\b] )" << endl;
@@ -68,20 +68,20 @@ Jastrow::Jastrow( Lattice* lat_init ) : lat( lat_init )
 
 
 
-void Jastrow::randomize( fptype min, fptype max, mt19937* rng )
+void Jastrow::randomize( cl_fptype min, cl_fptype max, mt19937* rng )
 {
   const std::set<IrreducibleIdxRel>& irr_idxrels
     = lat->irreducible_idxrel_list();
 
   for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
     idxrel_expv[it->first][it->second]
-      = std::exp( uniform_real_distribution<fptype>( min, max )( *rng ) );
+      = std::exp( uniform_real_distribution<cl_fptype>( min, max )( *rng ) );
   }
 }
 
 
 
-fptype Jastrow::operator()( unsigned int i, unsigned int j ) const
+cl_fptype Jastrow::operator()( cl_uint i, cl_uint j ) const
 {
   const IrreducibleIdxRel& redidx = lat->reduce_idxrel( i, j );
 
@@ -93,7 +93,7 @@ fptype Jastrow::operator()( unsigned int i, unsigned int j ) const
 
 
 
-fptype Jastrow::exp( unsigned int i, unsigned int j ) const
+cl_fptype Jastrow::exp( cl_uint i, cl_uint j ) const
 {
   const IrreducibleIdxRel& redidx = lat->reduce_idxrel( i, j );
 
@@ -105,7 +105,7 @@ fptype Jastrow::exp( unsigned int i, unsigned int j ) const
 
 
 
-fptype Jastrow::exp_onsite() const
+cl_fptype Jastrow::exp_onsite() const
 {
   assert( idxrel_expv.size() > 0 );
   assert( idxrel_expv[0].size() > 0 );
@@ -115,7 +115,7 @@ fptype Jastrow::exp_onsite() const
 
 
 
-void Jastrow::set( unsigned int i, unsigned int j, fptype v_new )
+void Jastrow::set( cl_uint i, cl_uint j, cl_fptype v_new )
 {
   const IrreducibleIdxRel& redidx = lat->reduce_idxrel( i, j );
 

@@ -30,10 +30,10 @@ BasicSimResults simrun_basic( const Options& opts )
   simrun_basic_prepare( opts, model );
 
   cout << ":: Equilibrating the system" << endl;
-  model->equilibrate( opts["sim.num-mcs-equil"].as<unsigned int>() );
+  model->equilibrate( opts["sim.num-mcs-equil"].as<cl_uint>() );
 
   cout << ":: Performing Monte Carlo cycle" << endl;
-  const BinnedData<fptype>& E_l = simrun_basic_mccycle( opts, model );
+  const BinnedData<cl_fptype>& E_l = simrun_basic_mccycle( opts, model );
 
   // we don't need the simulation objects anymore ...
   delete model;
@@ -55,9 +55,9 @@ BasicSimResults simrun_basic( const Options& opts )
 void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
 {
   // Mersenne Twister random number generator
-  unsigned int rngseed
+  cl_uint rngseed
     = opts.count( "sim.rng-seed" ) ?
-      opts["sim.rng-seed"].as<unsigned int>() :
+      opts["sim.rng-seed"].as<cl_uint>() :
       chrono::system_clock::now().time_since_epoch().count();
   cout << "   -> MT19937 RNG ( seed = " << rngseed << " )" << endl;
   mt19937 rng( rngseed  );
@@ -67,18 +67,18 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   cout << "   -> Lattice object" << endl;
   if ( opts["phys.lattice"].as<lattice_t>() == LATTICE_1DCHAIN ) {
     lat = new Lattice1DChain(
-      opts["phys.num-lattice-sites"].as<unsigned int>() );
+      opts["phys.num-lattice-sites"].as<cl_uint>() );
   } else {
     lat = new Lattice2DSquare(
-      opts["phys.num-lattice-sites"].as<unsigned int>() );
+      opts["phys.num-lattice-sites"].as<cl_uint>() );
   }
   // the lattice object on the heap will be destroyed by hmodvmc's destructor!
 
   // a vector of the hopping matrix elements
-  vector<fptype> t( 3 );
-  t[0] = opts["phys.nn-hopping"].as<fptype>();
-  t[1] = opts["phys.2nd-nn-hopping"].as<fptype>();
-  t[2] = opts["phys.3rd-nn-hopping"].as<fptype>();
+  vector<cl_fptype> t( 3 );
+  t[0] = opts["phys.nn-hopping"].as<cl_fptype>();
+  t[1] = opts["phys.2nd-nn-hopping"].as<cl_fptype>();
+  t[2] = opts["phys.3rd-nn-hopping"].as<cl_fptype>();
 
   // Jastrow factor
   cout << "   -> Jastrow factor" << endl;
@@ -93,7 +93,7 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   // determinantal part of the wavefunction
   cout << "   -> Determinantal part of the wavefunction" << endl;
   const SingleParticleOrbitals& M
-    = wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
+    = wf_tight_binding( t, opts["phys.num-electrons"].as<cl_uint>(), lat );
 
   // the Hubbard model object itself
   cout << "   -> HubbardModelVMC object" << endl;
@@ -103,47 +103,47 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
     lat,
     move( M ),
     move( v ),
-    opts["phys.num-electrons"].as<unsigned int>(),
-    opts["sim.update-hop-maxdistance"].as<unsigned int>(),
+    opts["phys.num-electrons"].as<cl_uint>(),
+    opts["sim.update-hop-maxdistance"].as<cl_uint>(),
     move( t ),
-    opts["phys.onsite-energy"].as<fptype>(),
-    opts["fpctrl.W-deviation-target"].as<fptype>(),
-    opts["fpctrl.W-updates-until-recalc"].as<unsigned int>(),
-    opts["fpctrl.T-deviation-target"].as<fptype>(),
-    opts["fpctrl.T-updates-until-recalc"].as<unsigned int>()
+    opts["phys.onsite-energy"].as<cl_fptype>(),
+    opts["fpctrl.W-deviation-target"].as<cl_fptype>(),
+    opts["fpctrl.W-updates-until-recalc"].as<cl_uint>(),
+    opts["fpctrl.T-deviation-target"].as<cl_fptype>(),
+    opts["fpctrl.T-updates-until-recalc"].as<cl_uint>()
   );
 }
 
 
 
-BinnedData<fptype> simrun_basic_mccycle(
+BinnedData<cl_fptype> simrun_basic_mccycle(
   const Options& opts, HubbardModelVMC* const model )
 {
   cout << "   -> Creating E_local output array" << endl;
-  BinnedData<fptype> E_l(
-    opts["sim.num-bins"].as<unsigned int>(),
-    opts["sim.num-binmcs"].as<unsigned int>()
+  BinnedData<cl_fptype> E_l(
+    opts["sim.num-bins"].as<cl_uint>(),
+    opts["sim.num-binmcs"].as<cl_uint>()
   );
 
   cout << "   -> Running Monte Carlo cycle" << endl;
 
-  for ( unsigned int bin = 0;
-        bin < opts["sim.num-bins"].as<unsigned int>();
+  for ( cl_uint bin = 0;
+        bin < opts["sim.num-bins"].as<cl_uint>();
         ++bin ) {
 
     // show progress
-    unsigned int progress_percent =
-      static_cast<unsigned int>(
+    cl_uint progress_percent =
+      static_cast<cl_uint>(
         floor( 100 * static_cast<double>( bin ) /
-               static_cast<double>( opts["sim.num-bins"].as<unsigned int>() - 1 ) )
+               static_cast<double>( opts["sim.num-bins"].as<cl_uint>() - 1 ) )
       );
     cout << "\r"
-         << "      Bin " << bin + 1 << "/" << opts["sim.num-bins"].as<unsigned int>()
+         << "      Bin " << bin + 1 << "/" << opts["sim.num-bins"].as<cl_uint>()
          << " (" << progress_percent << "%)";
     cout.flush();
 
-    for ( unsigned int mcs = 0;
-          mcs < opts["sim.num-binmcs"].as<unsigned int>();
+    for ( cl_uint mcs = 0;
+          mcs < opts["sim.num-binmcs"].as<cl_uint>();
           ++mcs ) {
 
       if ( !( bin == 0 && mcs == 0 ) ) {
@@ -158,7 +158,7 @@ BinnedData<fptype> simrun_basic_mccycle(
   devstat.push_back( model->get_W_devstat() );
   devstat.push_back( model->get_T_devstat() );
 
-  for ( unsigned int i = 0; i < 2; ++i ) {
+  for ( cl_uint i = 0; i < 2; ++i ) {
     cout << endl;
     cout << "      Floating point precision control for ";
     if ( i == 0 ) {

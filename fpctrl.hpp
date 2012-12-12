@@ -29,33 +29,33 @@
 struct FPDevStat final {
 
   // the desired deviation
-  fptype target;
+  cl_fptype target;
 
   // the number of recalculations
-  unsigned int recalcs;
+  cl_uint recalcs;
 
   // the number of misses
-  unsigned int misses;
+  cl_uint misses;
 
   // the number of target hits
-  unsigned int hits;
+  cl_uint hits;
 
   // the number of misses by more than an order of magnitude
-  unsigned int mag1_misses;
+  cl_uint mag1_misses;
 
   // the number of hits better than an order of magnitude
-  unsigned int mag1_hits;
+  cl_uint mag1_hits;
 
-  FPDevStat( fptype target_init )
+  FPDevStat( cl_fptype target_init )
     : target( target_init ),
       recalcs( 0 ), misses( 0 ), hits( 0 ),
       mag1_misses( 0 ), mag1_hits( 0 ) {}
 
-  void add( fptype dev );
+  void add( cl_fptype dev );
 };
 
 
-fptype calc_deviation(
+cl_fptype calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact
 );
 

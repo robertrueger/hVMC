@@ -21,14 +21,14 @@
 using namespace std;
 
 
-unsigned int Lattice::get_spinup_site( unsigned int l ) const
+cl_uint Lattice::get_spinup_site( cl_uint l ) const
 {
   assert( l < 2 * L );
   return l >= L ? l - L : l;
 }
 
 
-unsigned int Lattice::get_spinlinked_site( unsigned int l ) const
+cl_uint Lattice::get_spinlinked_site( cl_uint l ) const
 {
   assert( l < 2 * L );
 

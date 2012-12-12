@@ -28,10 +28,10 @@ struct BasicSimResults final {
 
   bool success;
 
-  fptype E;
-  fptype sigma_E;
+  cl_fptype E;
+  cl_fptype sigma_E;
 
-  fptype var_E_l;
+  cl_fptype var_E_l;
 
   BasicSimResults() : success( false ) { }
 

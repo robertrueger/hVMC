@@ -28,6 +28,8 @@
 # include <iostream>
 #endif
 
+#include <CL/cl_platform.h>
+
 #include "macros.h"
 #include "lattice.hpp"
 
@@ -36,14 +38,14 @@ class Lattice1DChain final : public Lattice {
 
   public:
 
-    Lattice1DChain( unsigned int L_init );
+    Lattice1DChain( cl_uint L_init );
 
     void get_Xnn(
-      unsigned int l, unsigned int X,
-      std::vector<unsigned int>* outbuf
+      cl_uint l, cl_uint X,
+      std::vector<cl_uint>* outbuf
     ) const;
 
-    IrreducibleIdxRel reduce_idxrel( unsigned int i, unsigned int j ) const;
+    IrreducibleIdxRel reduce_idxrel( cl_uint i, cl_uint j ) const;
     std::set<IrreducibleIdxRel> irreducible_idxrel_list() const;
 };
 
