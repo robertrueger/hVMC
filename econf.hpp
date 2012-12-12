@@ -71,6 +71,10 @@ class ElectronConfiguration final
 
     std::mt19937* const rng;
 
+    // buffer vectors for nearest-neighbors
+    // (in order to avoid allocating new ones all the time)
+    std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
+
     void reconstr_electron_pos();
 
   public:
@@ -79,9 +83,8 @@ class ElectronConfiguration final
                            std::mt19937* rng_init );
 
     void distribute_random();
-    // void distribute_mixed();
 
-    ElectronHop propose_random_hop( unsigned int update_hop_maxdist ) const;
+    ElectronHop propose_random_hop( unsigned int update_hop_maxdist );
     void do_hop( const ElectronHop& hop );
 
     unsigned int get_electron_pos( unsigned int k ) const;

@@ -24,14 +24,17 @@
 # include <iostream>
 #endif
 
+#include <cmath>
 #include <vector>
 #include <random>
+#include <algorithm>
 
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 
 #include "macros.h"
 #include "fptype.hpp"
+#include "detwf.hpp"
 #include "fpctrl.hpp"
 #include "lattice.hpp"
 #include "jastrow.hpp"
@@ -58,7 +61,7 @@ class HubbardModelVMC final
     Lattice* const lat;
 
     // wavefunction and Jastrow
-    const Eigen::MatrixXfp M;
+    const SingleParticleOrbitals M;
     const Jastrow v;
 
     // Hubbard model parameters
@@ -69,16 +72,30 @@ class HubbardModelVMC final
 
     // ----- dependent and internal objects -----
 
-    // Monte Carlo cycle
     ElectronConfiguration econf;
-    Eigen::MatrixXfp W;
+
+    Eigen::MatrixXfp  Wbu_1;
+    Eigen::MatrixXfp  Wbu_2;
+    Eigen::MatrixXfp* Wbu_active;
+    Eigen::MatrixXfp* Wbu_inactive;
+
+    Eigen::MatrixXfp  Wd_1;
+    Eigen::MatrixXfp  Wd_2;
+    Eigen::MatrixXfp* Wd_active;
+    Eigen::MatrixXfp* Wd_inactive;
+
     Eigen::VectorXfp T;
+
+    // buffer vector for X nearest neighbors
+    // (in order to avoid allocating new ones all the time)
+    std::vector<unsigned int> k_pos_Xnn;
+
     unsigned long int completed_mcsteps;
 
     // floating point precision control
     const unsigned int updates_until_W_recalc, updates_until_T_recalc;
     unsigned int updates_since_W_recalc, updates_since_T_recalc;
-    FPDevStat W_devstat, T_devstat; 
+    FPDevStat W_devstat, T_devstat;
 
 
     // ----- internal helper functions -----
@@ -91,18 +108,24 @@ class HubbardModelVMC final
     void perform_T_update( const ElectronHop& hop );
 
     // update and recalc functions for the internal objects
-    Eigen::MatrixXfp calc_D() const;
-    Eigen::MatrixXfp calc_new_W() const;
-    Eigen::MatrixXfp calc_qupdated_W( const ElectronHop& hop ) const;
+    void calc_new_W();
+    void calc_qupdated_Wbu( const ElectronHop& hop );
+    void calc_qupdated_Wd(  const ElectronHop& hop );
     Eigen::VectorXfp calc_new_T() const;
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
+
+    // functions to calculate the matrix D
+    Eigen::MatrixXfp calc_Db() const;
+    Eigen::MatrixXfp calc_Du() const;
+    Eigen::MatrixXfp calc_Dd() const;
+
 
   public:
 
     HubbardModelVMC(
       std::mt19937 rng_init,
       Lattice* const lat_init,
-      const Eigen::MatrixXfp M_init,
+      const SingleParticleOrbitals& M_init,
       const Jastrow& v_init,
       unsigned int N_init,
       unsigned int update_hop_maxdist_init,
@@ -120,7 +143,7 @@ class HubbardModelVMC final
     void equilibrate( unsigned int N_mcs_equil );
 
     // observable measurements
-    fptype E_l() const;
+    fptype E_l();
     unsigned long int mctime() const;
 
     // floating point precision control

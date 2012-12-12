@@ -34,10 +34,10 @@ onsite-energy = 4.0
 lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 36
+num-lattice-sites = 144
 
 # total number of electrons
-num-electrons = 26
+num-electrons = 144
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
@@ -46,16 +46,16 @@ num-electrons = 26
 update-hop-maxdistance = 2
 
 # number of Monte Carlo steps for equilibration
-num-mcs-equil = 1000
+num-mcs-equil = 100
 
 # number of measurement bins
-num-bins = 10000
+num-bins = 100
 
 # number of Monte Carlo steps per bin
 num-binmcs = 100
 
 # random number generator seed
-#rng-seed = 1337133789
+rng-seed = 1337133789
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################

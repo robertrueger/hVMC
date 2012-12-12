@@ -93,41 +93,9 @@ void ElectronConfiguration::distribute_random()
 }
 
 
-/*
-void ElectronConfiguration::distribute_mixed()
-{
-  // TODO: assert -> exception (Robert Rueger, 2012-10-23 13:50)
-  assert( electron_number % 2 == 0 );
-
-  // clear all sites
-  site_occ = Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat->L );
-
-  // randomly distribute L/2 electrons per spin direction
-  for ( unsigned int l = 0; l < lat->L - 1; l += 2 ) {
-    site_occ[l] = ELECTRON_OCCUPATION_FULL;
-    site_occ[l + 1 + lat->L] = ELECTRON_OCCUPATION_FULL;
-  }
-
-  // TODO: generalize to != 1/2 filling (Robert Rueger, 2012-10-25 17:08)
-  assert( electron_number == lat->L );
-
-#if VERBOSE >= 2
-  cout << "ElectronConfiguration::distribute_random() : new config is" << endl;
-  cout << site_occ.head( lat->L ).transpose() << endl
-       << site_occ.tail( lat->L ).transpose() << endl;
-#endif
-
-  assert( site_occ.head( lat->L ).sum() == electron_number / 2 );
-  assert( site_occ.tail( lat->L ).sum() == electron_number / 2 );
-  assert( site_occ.sum() == electron_number );
-
-  reconstr_electron_pos();
-}
-*/
-
 
 ElectronHop ElectronConfiguration::propose_random_hop(
-  unsigned int update_hop_maxdist ) const
+  unsigned int update_hop_maxdist )
 {
   // hop the kth electron
   const unsigned int k
@@ -145,22 +113,53 @@ ElectronHop ElectronConfiguration::propose_random_hop(
 
   assert( site_occ[ k_pos ] == ELECTRON_OCCUPATION_FULL );
 
-  vector<unsigned int> k_nb = lat->get_Xnn( k_pos, 1 );
-  // append further away neighbors
-  for ( unsigned int X = 2; X <= update_hop_maxdist; ++X ) {
-    const vector<unsigned int>& k_Xnn = lat->get_Xnn( k_pos, X );
-    k_nb.insert( k_nb.end(), k_Xnn.begin(), k_Xnn.end() );
+  // get nearest neighbors of site k_pos
+  lat->get_Xnn( k_pos, 1, &k_1nb );
+  if ( update_hop_maxdist >= 2 ) {
+    lat->get_Xnn( k_pos, 2, &k_2nb );
+    if ( update_hop_maxdist == 3 ) {
+      lat->get_Xnn( k_pos, 3, &k_3nb );
+    } else {
+      assert( k_3nb.size() == 0 );
+    }
+  } else {
+    assert( k_2nb.size() == 0 );
+    assert( k_3nb.size() == 0 );
   }
 
-  const unsigned int l
-    = k_nb[ uniform_int_distribution<unsigned int>( 0, k_nb.size() - 1 )( *rng ) ];
+  const unsigned int nb_number
+    = uniform_int_distribution<unsigned int>
+      ( 0,
+        k_1nb.size() + k_2nb.size() + k_3nb.size() - 1
+      )( *rng );
+
+  unsigned int l;
+  if ( nb_number < k_1nb.size() ) {
+    l = k_1nb[ nb_number ];
+  } else {
+    if ( nb_number < k_1nb.size() + k_2nb.size() ) {
+      assert( nb_number >= k_1nb.size() );
+      assert( k_2nb.size() != 0 );
+      l = k_2nb[ nb_number - k_1nb.size() ];
+    } else {
+      assert( nb_number >= k_1nb.size() + k_2nb.size() );
+      assert( k_3nb.size() != 0 );
+      l = k_3nb[ nb_number - k_1nb.size() - k_2nb.size() ];
+    }
+  }
 
 #if VERBOSE >= 1
   cout << "[?: ";
-  for ( auto it = k_nb.begin(); it != k_nb.end() - 1; ++it ) {
+  for ( auto it = k_1nb.begin(); it != k_1nb.end(); ++it ) {
     cout << *it << " ";
   }
-  cout << *( k_nb.end() - 1 )  << "] ";
+  for ( auto it = k_2nb.begin(); it != k_2nb.end(); ++it ) {
+    cout << *it << " ";
+  }
+  for ( auto it = k_3nb.begin(); it != k_3nb.end(); ++it ) {
+    cout << *it << " ";
+  }
+  cout << "\b] ";
   cout << l << " (" << ( site_occ[ l ] == ELECTRON_OCCUPATION_FULL ? "im" : "" )
        << "possible" << ")" << endl;
 #endif
@@ -184,7 +183,6 @@ void ElectronConfiguration::do_hop( const ElectronHop& hop )
   assert( ( hop.k_pos < lat->L && hop.l < lat->L ) ||
           ( hop.k_pos >= lat->L && hop.k_pos < 2 * lat->L &&
             hop.l >= lat->L && hop.l < 2 * lat->L ) );
-  // assert( lat->chk_nn( hop.l, hop.k_pos ) );
 
   site_occ[ hop.k_pos ] = ELECTRON_OCCUPATION_EMPTY;
   site_occ[ hop.l ] = ELECTRON_OCCUPATION_FULL;

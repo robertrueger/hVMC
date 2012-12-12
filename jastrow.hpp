@@ -20,8 +20,14 @@
 #ifndef JASTROW_H_INCLUDED
 #define JASTROW_H_INCLUDED
 
+#if VERBOSE >= 1
+# include <iostream>
+#endif
+
 #include <set>
-#include <map>
+#include <vector>
+#include <algorithm>
+#include <cmath>
 #include <random>
 
 #include "macros.h"
@@ -36,7 +42,7 @@ class Jastrow final
 
     Lattice* const lat;
 
-    std::map<IrreducibleIdxRel, fptype> idxrel_v_map;
+    std::vector< std::vector<float> > idxrel_expv;
 
   public:
 
@@ -45,6 +51,8 @@ class Jastrow final
     void randomize( fptype min, fptype max, std::mt19937* rng );
 
     fptype operator()( unsigned int i, unsigned int j ) const;
+    fptype exp( unsigned int i, unsigned int j ) const;
+    fptype exp_onsite() const;
     void set( unsigned int i, unsigned int j, fptype v_new  );
 
 };

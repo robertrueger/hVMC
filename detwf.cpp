@@ -21,16 +21,16 @@
 using namespace std;
 
 
-Eigen::MatrixXfp wf_nntb(
-    const vector<fptype>& t,
-    unsigned int N, Lattice* const lat )
+SingleParticleOrbitals wf_tight_binding(
+  const vector<fptype>& t,
+  unsigned int N, Lattice* lat )
 {
   Eigen::MatrixXfp H_tb_nospin = Eigen::MatrixXfp::Zero( lat->L, lat->L );
 
+  vector<unsigned int> l_Xnn;
   for ( unsigned int l = 0; l < lat->L; ++l ) {
-
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
-      const vector<unsigned int>& l_Xnn = lat->get_Xnn( l, X );
+      lat->get_Xnn( l, X, &l_Xnn );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
         H_tb_nospin( l, *it ) += -1.f * t[X - 1];
       }
@@ -38,27 +38,30 @@ Eigen::MatrixXfp wf_nntb(
   }
 
 #if VERBOSE >= 1
-  cout << "wf_nntb() : spinless Hamiltonian in single particle basis =" << endl;
-  cout << H_tb_nospin << endl;
+  cout << "wf_tight_binding() : spinless Hamiltonian in single particle basis ="
+       << endl << H_tb_nospin << endl;
 #endif
 
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> eigensolver( H_tb_nospin );
   assert( eigensolver.info() == Eigen::Success );
 
-  Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
-
   assert( N % 2 == 0 );
+
+/*
+  Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
   for ( unsigned int k = 0; k < N / 2; ++k ) {
     M.col( 2 * k ).head( lat->L )     = eigensolver.eigenvectors().col( k );
     M.col( 2 * k + 1 ).tail( lat->L ) = eigensolver.eigenvectors().col( k );
   }
+*/
 
+  const Eigen::MatrixXfp& M
+    = eigensolver.eigenvectors().topLeftCorner( lat->L, N / 2 );
 #if VERBOSE >= 1
-  cout << "wf_nntb() : M = " << endl << M << endl;
-  cout << "wf_nntb() : slater determinant ground state energy = "
-       << 2.f * eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
+  cout << "wf_tight_binding() : M = " << endl << M << endl
+       << "wf_tight_binding() : slater determinant ground state energy = "
+       << 2.f* eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
 #endif
 
-  return M;
+  return SingleParticleOrbitals( M, true );
 }
-

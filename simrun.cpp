@@ -92,8 +92,8 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
 
   // determinantal part of the wavefunction
   cout << "   -> Determinantal part of the wavefunction" << endl;
-  const Eigen::MatrixXfp& M
-    = wf_nntb( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
+  const SingleParticleOrbitals& M
+    = wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
 
   // the Hubbard model object itself
   cout << "   -> HubbardModelVMC object" << endl;
