@@ -98,7 +98,7 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   // the Hubbard model object itself
   cout << "   -> HubbardModelVMC object" << endl;
   model =
-    new HubbardModelVMC(
+    new HubbardModelVMC_CPU(
     move( rng ),
     lat,
     move( M ),

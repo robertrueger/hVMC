@@ -17,12 +17,12 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hmodvmc.hpp"
+#include "hmodvmc_cpu.hpp"
 using namespace std;
 
 
 
-HubbardModelVMC::HubbardModelVMC(
+HubbardModelVMC_CPU::HubbardModelVMC_CPU(
   mt19937 rng_init,
   Lattice* const lat_init,
   const SingleParticleOrbitals& M_init,
@@ -111,7 +111,7 @@ HubbardModelVMC::HubbardModelVMC(
       }
 
 #if VERBOSE >= 1
-      cout << "HubbardModelVMC::HubbardModelVMC() : matrix D is not invertible!"
+      cout << "HubbardModelVMC_CPU::HubbardModelVMC_CPU() : matrix D is not invertible!"
            << endl;
 #endif
 
@@ -143,7 +143,7 @@ HubbardModelVMC::HubbardModelVMC(
   );
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::HubbardModelVMC() : calculated initial matrix W ="
+  cout << "HubbardModelVMC_CPU::HubbardModelVMC_CPU() : calculated initial matrix W ="
        << endl << *Wbu_active << endl;
   if ( M.ssym == true ) {
     cout << "----->" << endl << *Wd_active << endl;
@@ -153,23 +153,23 @@ HubbardModelVMC::HubbardModelVMC(
 
 
 
-HubbardModelVMC::~HubbardModelVMC()
+HubbardModelVMC_CPU::~HubbardModelVMC_CPU()
 {
   delete lat;
 }
 
 
 
-void HubbardModelVMC::mcs()
+void HubbardModelVMC_CPU::mcs()
 {
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::mcs() : starting new Monte Carlo step!" << endl;
+  cout << "HubbardModelVMC_CPU::mcs() : starting new Monte Carlo step!" << endl;
 #endif
 
   // perform a number of metropolis steps equal to the number of electrons
   for ( cl_uint s = 0; s < econf.N(); ++s ) {
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::mcs() : Monte Carlo step = " << completed_mcsteps
+    cout << "HubbardModelVMC_CPU::mcs() : Monte Carlo step = " << completed_mcsteps
          << ", Metropolis step = " << s << endl;
 #endif
     metstep();
@@ -179,7 +179,7 @@ void HubbardModelVMC::mcs()
 
 
 
-void HubbardModelVMC::equilibrate( cl_uint N_mcs_equil )
+void HubbardModelVMC_CPU::equilibrate( cl_uint N_mcs_equil )
 {
   for ( cl_uint n = 0; n < N_mcs_equil; ++n ) {
     mcs();
@@ -189,7 +189,7 @@ void HubbardModelVMC::equilibrate( cl_uint N_mcs_equil )
 
 
 
-bool HubbardModelVMC::metstep()
+bool HubbardModelVMC_CPU::metstep()
 {
   // let the electron configuration propose a random hop
   const ElectronHop& phop = econf.propose_random_hop( update_hop_maxdist );
@@ -200,23 +200,23 @@ bool HubbardModelVMC::metstep()
 
     // hop is not possible, rejected!
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::metstep() : hop impossible!" << endl;
+    cout << "HubbardModelVMC_CPU::metstep() : hop impossible!" << endl;
 #endif
     return false;
 
   } else { // hop possible!
 
     const cl_fptype R_j = T( lat->get_spinup_site( phop.l ) )
-                       / T( lat->get_spinup_site( phop.k_pos ) )
-                       * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
+                          / T( lat->get_spinup_site( phop.k_pos ) )
+                          * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
 
     const cl_fptype R_s = ( M.ssym == true && phop.k >= econf.N() / 2 ) ?
-                       ( *Wd_active  )( phop.l - lat->L, phop.k - econf.N() / 2 ) :
-                       ( *Wbu_active )( phop.l, phop.k );
+                          ( *Wd_active  )( phop.l - lat->L, phop.k - econf.N() / 2 ) :
+                          ( *Wbu_active )( phop.l, phop.k );
     const cl_fptype accept_prob = R_j * R_j * R_s * R_s;
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::metstep() : hop possible -> "
+    cout << "HubbardModelVMC_CPU::metstep() : hop possible -> "
          << "R_j = " << R_j
          << ", sdwf_ratio = " << R_s
          << ", accept_prob = " << accept_prob << endl;
@@ -226,7 +226,7 @@ bool HubbardModelVMC::metstep()
          uniform_real_distribution<cl_fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
 
 #if VERBOSE >= 1
-      cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;
+      cout << "HubbardModelVMC_CPU::metstep() : hop accepted!" << endl;
 #endif
 
       econf.do_hop( phop );
@@ -239,7 +239,7 @@ bool HubbardModelVMC::metstep()
     } else { // hop possible but rejected!
 
 #if VERBOSE >= 1
-      cout << "HubbardModelVMC::metstep() : hop rejected!" << endl;
+      cout << "HubbardModelVMC_CPU::metstep() : hop rejected!" << endl;
 #endif
 
       return false;
@@ -249,12 +249,12 @@ bool HubbardModelVMC::metstep()
 
 
 
-void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
+void HubbardModelVMC_CPU::perform_W_update( const ElectronHop& hop )
 {
   if ( updates_since_W_recalc >= updates_until_W_recalc ) {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : recalculating W!" << endl;
+    cout << "HubbardModelVMC_CPU::perform_W_update() : recalculating W!" << endl;
 #endif
 
     updates_since_W_recalc = 0;
@@ -278,18 +278,18 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     W_devstat.add( dev );
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : recalculated W "
+    cout << "HubbardModelVMC_CPU::perform_W_update() : recalculated W "
          << "with deviation = " << dev << endl;
 
     if ( dev > W_devstat.target ) {
-      cout << "HubbardModelVMC::perform_W_update() : deviation goal for matrix "
+      cout << "HubbardModelVMC_CPU::perform_W_update() : deviation goal for matrix "
            << "W not met!" << endl
-           << "HubbardModelVMC::perform_W_update() : approximate W =" << endl
+           << "HubbardModelVMC_CPU::perform_W_update() : approximate W =" << endl
            << *Wbu_inactive << endl;
       if ( M.ssym == true ) {
         cout << "----->" << endl << *Wd_inactive << endl;
       }
-      cout << "HubbardModelVMC::perform_W_update() : exact W =" << endl
+      cout << "HubbardModelVMC_CPU::perform_W_update() : exact W =" << endl
            << *Wbu_active << endl;
       if ( M.ssym == true ) {
         cout << "----->" << endl << *Wd_active << endl;
@@ -302,7 +302,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
   } else {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : "
+    cout << "HubbardModelVMC_CPU::perform_W_update() : "
          << "performing a quick update of W!" << endl;
 #endif
 
@@ -336,18 +336,18 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     }
 
 # if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_W_update() : "
+    cout << "HubbardModelVMC_CPU::perform_W_update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
     if ( dev > W_devstat.target ) {
-      cout << "HubbardModelVMC::perform_W_update() : deviation goal for matrix "
+      cout << "HubbardModelVMC_CPU::perform_W_update() : deviation goal for matrix "
            << "W not met!" << endl
-           << "HubbardModelVMC::perform_W_update() : quickly updated W =" << endl
+           << "HubbardModelVMC_CPU::perform_W_update() : quickly updated W =" << endl
            << *Wbu_active << endl;
       if ( M.ssym == true ) {
         cout << "----->" << endl << *Wd_active << endl;
       }
-      cout << "HubbardModelVMC::perform_W_update() : exact W =" << endl
+      cout << "HubbardModelVMC_CPU::perform_W_update() : exact W =" << endl
            << *Wbu_inactive << endl;
       if ( M.ssym == true ) {
         cout << "----->" << endl << *Wd_inactive << endl;
@@ -362,7 +362,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 
 
 
-Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
+Eigen::MatrixXfp HubbardModelVMC_CPU::calc_Db() const
 {
   assert( M.ssym == false );
 
@@ -372,7 +372,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
   }
 
 #if VERBOSE >= 2
-  cout << "HubbardModelVMC::calc_Db() : Db = " << endl << Db << endl;
+  cout << "HubbardModelVMC_CPU::calc_Db() : Db = " << endl << Db << endl;
 #endif
 
   return Db;
@@ -380,7 +380,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
 
 
 
-Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
+Eigen::MatrixXfp HubbardModelVMC_CPU::calc_Du() const
 {
   assert( M.ssym == true );
 
@@ -390,7 +390,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
   }
 
 #if VERBOSE >= 2
-  cout << "HubbardModelVMC::calc_Du() : Du = " << endl << Du << endl;
+  cout << "HubbardModelVMC_CPU::calc_Du() : Du = " << endl << Du << endl;
 #endif
 
   return Du;
@@ -398,7 +398,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
 
 
 
-Eigen::MatrixXfp HubbardModelVMC::calc_Dd() const
+Eigen::MatrixXfp HubbardModelVMC_CPU::calc_Dd() const
 {
   assert( M.ssym == true );
 
@@ -409,14 +409,14 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Dd() const
   }
 
 #if VERBOSE >= 2
-  cout << "HubbardModelVMC::calc_Dd() : Dd = " << endl << Dd << endl;
+  cout << "HubbardModelVMC_CPU::calc_Dd() : Dd = " << endl << Dd << endl;
 #endif
 
   return Dd;
 }
 
 
-void HubbardModelVMC::calc_new_W()
+void HubbardModelVMC_CPU::calc_new_W()
 {
   if ( M.ssym == true ) {
 
@@ -440,7 +440,7 @@ void HubbardModelVMC::calc_new_W()
 
 
 
-void HubbardModelVMC::calc_qupdated_Wbu( const ElectronHop& hop )
+void HubbardModelVMC_CPU::calc_qupdated_Wbu( const ElectronHop& hop )
 {
   *Wbu_inactive = *Wbu_active;
 
@@ -453,7 +453,7 @@ void HubbardModelVMC::calc_qupdated_Wbu( const ElectronHop& hop )
 
 
 
-void HubbardModelVMC::calc_qupdated_Wd( const ElectronHop& hop )
+void HubbardModelVMC_CPU::calc_qupdated_Wd( const ElectronHop& hop )
 {
   *Wd_inactive = *Wd_active;
 
@@ -468,12 +468,12 @@ void HubbardModelVMC::calc_qupdated_Wd( const ElectronHop& hop )
 
 
 
-void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
+void HubbardModelVMC_CPU::perform_T_update( const ElectronHop& hop )
 {
   if ( updates_since_T_recalc >= updates_until_T_recalc ) {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_T_update() : recalculating T!" << endl;
+    cout << "HubbardModelVMC_CPU::perform_T_update() : recalculating T!" << endl;
 #endif
 
     updates_since_T_recalc = 0;
@@ -485,15 +485,15 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
     T_devstat.add( dev );
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_T_update() : recalculated T "
+    cout << "HubbardModelVMC_CPU::perform_T_update() : recalculated T "
          << "with deviation = " << dev << endl;
 
     if ( dev > T_devstat.target ) {
-      cout << "HubbardModelVMC::perform_T_update() : deviation goal for matrix "
+      cout << "HubbardModelVMC_CPU::perform_T_update() : deviation goal for matrix "
            << "T not met!" << endl
-           << "HubbardModelVMC::perform_T_update() : approximate T =" << endl
+           << "HubbardModelVMC_CPU::perform_T_update() : approximate T =" << endl
            << T_approx.transpose() << endl
-           << "HubbardModelVMC::perform_T_update() : exact T =" << endl
+           << "HubbardModelVMC_CPU::perform_T_update() : exact T =" << endl
            << T.transpose() << endl;
     }
 #endif
@@ -503,7 +503,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
   } else {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_T_update() : "
+    cout << "HubbardModelVMC_CPU::perform_T_update() : "
          << "performing a quick update of T!" << endl;
 #endif
 
@@ -516,15 +516,15 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
     cl_fptype dev = calc_deviation( T, T_chk );
 
 # if VERBOSE >= 1
-    cout << "HubbardModelVMC::perform_T_update() : "
+    cout << "HubbardModelVMC_CPU::perform_T_update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
     if ( dev > T_devstat.target ) {
-      cout << "HubbardModelVMC::perform_T_update() : deviation goal for matrix "
+      cout << "HubbardModelVMC_CPU::perform_T_update() : deviation goal for matrix "
            << "T not met!" << endl
-           << "HubbardModelVMC::perform_T_update() : quickly updated T =" << endl
+           << "HubbardModelVMC_CPU::perform_T_update() : quickly updated T =" << endl
            << T.transpose() << endl
-           << "HubbardModelVMC::perform_T_update() : exact T =" << endl
+           << "HubbardModelVMC_CPU::perform_T_update() : exact T =" << endl
            << T_chk.transpose() << endl;
     }
 # endif
@@ -536,7 +536,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
 
 
 
-Eigen::VectorXfp HubbardModelVMC::calc_new_T() const
+Eigen::VectorXfp HubbardModelVMC_CPU::calc_new_T() const
 {
   Eigen::VectorXfp T_new( lat->L );
 
@@ -554,7 +554,7 @@ Eigen::VectorXfp HubbardModelVMC::calc_new_T() const
 
 
 
-Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) const
+Eigen::VectorXfp HubbardModelVMC_CPU::calc_qupdated_T( const ElectronHop& hop ) const
 {
   Eigen::VectorXfp T_prime( lat->L );
 
@@ -568,8 +568,12 @@ Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) cons
 
 
 
-cl_fptype HubbardModelVMC::E_l()
+cl_fptype HubbardModelVMC_CPU::E_l() const
 {
+  // buffer vector for X nearest neighbors
+  // (in order to avoid allocating new ones all the time)
+  std::vector<cl_uint> k_pos_Xnn;
+
   // calculate expectation value of the T part of H
   cl_fptype E_l_kin = 0.f;
 
@@ -587,9 +591,9 @@ cl_fptype HubbardModelVMC::E_l()
       lat->get_Xnn( k_pos, X, &k_pos_Xnn );
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const cl_fptype R_j =   T( lat->get_spinup_site( *l_it ) )
-                               / T( lat->get_spinup_site( k_pos ) )
-                               * v.exp_onsite() / v.exp( *l_it, k_pos );
+          const cl_fptype R_j = T( lat->get_spinup_site( *l_it ) )
+                                / T( lat->get_spinup_site( k_pos ) )
+                                * v.exp_onsite() / v.exp( *l_it, k_pos );
           if ( M.ssym == true && k >= econf.N() / 2 ) {
             sum_Xnn += R_j * ( *Wd_active )( *l_it - lat->L, k - econf.N() / 2 );
           } else {
@@ -607,7 +611,7 @@ cl_fptype HubbardModelVMC::E_l()
     static_cast<cl_fptype>( lat->L );
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::E_l() = " << E_l_result << endl;
+  cout << "HubbardModelVMC_CPU::E_l() = " << E_l_result << endl;
 #endif
 
   return E_l_result;
@@ -615,18 +619,18 @@ cl_fptype HubbardModelVMC::E_l()
 
 
 
-cl_ulong HubbardModelVMC::mctime() const
+cl_ulong HubbardModelVMC_CPU::mctime() const
 {
   return completed_mcsteps;
 }
 
 
 
-FPDevStat HubbardModelVMC::get_W_devstat() const
+FPDevStat HubbardModelVMC_CPU::get_W_devstat() const
 {
   return W_devstat;
 }
-FPDevStat HubbardModelVMC::get_T_devstat() const
+FPDevStat HubbardModelVMC_CPU::get_T_devstat() const
 {
   return T_devstat;
 }
