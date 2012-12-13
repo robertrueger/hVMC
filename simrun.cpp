@@ -96,22 +96,45 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
     = wf_tight_binding( t, opts["phys.num-electrons"].as<cl_uint>(), lat );
 
   // the Hubbard model object itself
-  cout << "   -> HubbardModelVMC object" << endl;
-  model =
-    new HubbardModelVMC_CPU(
-    move( rng ),
-    lat,
-    move( M ),
-    move( v ),
-    opts["phys.num-electrons"].as<cl_uint>(),
-    opts["sim.update-hop-maxdistance"].as<cl_uint>(),
-    move( t ),
-    opts["phys.onsite-energy"].as<cl_fptype>(),
-    opts["fpctrl.W-deviation-target"].as<cl_fptype>(),
-    opts["fpctrl.W-updates-until-recalc"].as<cl_uint>(),
-    opts["fpctrl.T-deviation-target"].as<cl_fptype>(),
-    opts["fpctrl.T-updates-until-recalc"].as<cl_uint>()
-  );
+  if ( opts.count( "cl.enabled" ) ) {
+    cout << "   -> HubbardModelVMC_CL object" << endl;
+
+    // TODO: get a cl::Context etc. ...
+
+    model =
+      new HubbardModelVMC_CL(
+      move( rng ),
+      lat,
+      move( M ),
+      move( v ),
+      opts["phys.num-electrons"].as<cl_uint>(),
+      opts["sim.update-hop-maxdistance"].as<cl_uint>(),
+      move( t ),
+      opts["phys.onsite-energy"].as<cl_fptype>(),
+      opts["fpctrl.W-deviation-target"].as<cl_fptype>(),
+      opts["fpctrl.W-updates-until-recalc"].as<cl_uint>(),
+      opts["fpctrl.T-deviation-target"].as<cl_fptype>(),
+      opts["fpctrl.T-updates-until-recalc"].as<cl_uint>()
+    );
+  } else {
+    cout << "   -> HubbardModelVMC_CPU object" << endl;
+
+    model =
+      new HubbardModelVMC_CPU(
+      move( rng ),
+      lat,
+      move( M ),
+      move( v ),
+      opts["phys.num-electrons"].as<cl_uint>(),
+      opts["sim.update-hop-maxdistance"].as<cl_uint>(),
+      move( t ),
+      opts["phys.onsite-energy"].as<cl_fptype>(),
+      opts["fpctrl.W-deviation-target"].as<cl_fptype>(),
+      opts["fpctrl.W-updates-until-recalc"].as<cl_uint>(),
+      opts["fpctrl.T-deviation-target"].as<cl_fptype>(),
+      opts["fpctrl.T-updates-until-recalc"].as<cl_uint>()
+    );
+  }
 }
 
 

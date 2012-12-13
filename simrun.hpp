@@ -36,6 +36,7 @@
 #include "jastrow.hpp"
 #include "hmodvmc.hpp"
 #include "hmodvmc_cpu.hpp"
+#include "hmodvmc_cl.hpp"
 #include "simresults.hpp"
 #include "options.hpp"
 #include "binstat.hpp"

@@ -71,3 +71,15 @@ rng-seed = 1337133789
 
 # number of quick updates until recalculation of the vector T
 # T-updates-until-recalc = 50000
+
+
+[cl] ########################## OPENCL OPTIONS #################################
+
+# use OpenCL
+enabled = 1
+
+# OpenCL platform # to use
+platform = 0
+
+# OpenCL device # in selected platform
+device = 0

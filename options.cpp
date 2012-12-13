@@ -33,7 +33,7 @@ Options read_options( int argc, char const* argv[] )
   clionly.add_options()
   ( "help,h", "print this help message and exit" )
   ( "version,V", "print hVMC's version and exit" )
-  ( "clinfo,C",
+  ( "clinfo,i",
     "print information about available OpenCL platforms and devices and exit" )
   ( "verbose,v", "makes hVMC write additional information to stdout" )
   ( "job-file,J", po::value<fs::path>(), "job file to execute" )
@@ -127,11 +127,23 @@ Options read_options( int argc, char const* argv[] )
 #endif
     "number of quick updates until recalculation of the vector T" );
 
+  po::options_description clopts( "OpenCL options" );
+  clopts.add_options()
+
+  ( "cl.enabled,c", po::value<cl_uint>()->default_value( 0 ), "use OpenCL" )
+  ( "cl.platform,p",
+    po::value<cl_uint>()->default_value( 0 ),
+    "OpenCL platform # to use" )
+  ( "cl.device,d",
+    po::value<cl_uint>()->default_value( 0 ),
+    "OpenCL device # in selected platform" );
+
   // define option groups for cli and jobfile
   po::options_description cmdline_options;
-  cmdline_options.add( clionly ).add( physparam ).add( simset ).add( fpctrl );
+  cmdline_options.add( clionly ).add( physparam ).add( simset ).add( fpctrl )
+                 .add( clopts );
   po::options_description jobfile_options;
-  jobfile_options.add( physparam ).add( simset ).add( fpctrl );
+  jobfile_options.add( physparam ).add( simset ).add( fpctrl ).add( clopts );
 
 
 
