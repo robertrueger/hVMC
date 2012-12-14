@@ -24,11 +24,14 @@
 #include <vector>
 #include <string>
 #include <iterator>
+#include <stdexcept>
 
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 
 
 void print_clinfo();
+
+cl::Context clcontext_setup( cl_uint pl_id, cl_uint dev_id );
 
 #endif // UTILS_CL_H_INCLUDED

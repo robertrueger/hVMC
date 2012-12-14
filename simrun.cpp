@@ -99,10 +99,14 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   if ( opts.count( "cl.enabled" ) ) {
     cout << "   -> HubbardModelVMC_CL object" << endl;
 
-    // TODO: get a cl::Context etc. ...
+    cl::Context ctx = clcontext_setup(
+                        opts["cl.platform"].as<cl_uint>(),
+                        opts["cl.device"].as<cl_uint>()
+                      );
 
     model =
       new HubbardModelVMC_CL(
+      ctx,
       move( rng ),
       lat,
       move( M ),

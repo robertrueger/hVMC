@@ -28,7 +28,7 @@
 //#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
-#include <CL/cl_platform.h>
+#include <CL/cl.hpp>
 
 #include "macros.h"
 #include "fptype.hpp"

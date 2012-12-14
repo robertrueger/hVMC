@@ -29,7 +29,7 @@
 #include <random>
 #include <algorithm>
 
-#include <CL/cl_platform.h>
+#include <CL/cl.hpp>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 
@@ -53,6 +53,13 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
     // (both are not implemented)
 
   protected:
+
+    // ----- OpenCL objects -----
+
+    cl::Context clCtx;
+    cl::Program clPrg;
+    cl::CommandQueue clQ;
+
 
     // ----- independent objects -----
 
@@ -121,6 +128,7 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
   public:
 
     HubbardModelVMC_CL(
+      const cl::Context& clCtx_init,
       std::mt19937 rng_init,
       Lattice* const lat_init,
       const SingleParticleOrbitals& M_init,

@@ -115,7 +115,7 @@ void print_clinfo()
         cout << "none";
       } else if ( dev_gmemct == CL_READ_ONLY_CACHE ) {
         cout << "read only";
-      } else /* ( dev_gmemct == CL_READ_WRITE_CACHE ) */ {
+      } else { /* ( dev_gmemct == CL_READ_WRITE_CACHE ) */
         cout << "read/write";
       }
       cout << endl;
@@ -176,4 +176,44 @@ void print_clinfo()
     ++pl_count;
     cout << endl;
   }
+}
+
+
+
+cl::Context clcontext_setup( cl_uint pl_id, cl_uint dev_id )
+{
+  vector<cl::Device> selected_device;
+
+  try {
+
+    vector<cl::Platform> platform_list;
+    cl::Platform::get( &platform_list );
+
+    if ( pl_id > platform_list.size() - 1 ) {
+      throw runtime_error( "specified platform not found" );
+    }
+
+    vector<cl::Device> device_list;
+    platform_list.at( pl_id ).getDevices( CL_DEVICE_TYPE_ALL, &device_list );
+
+    if ( dev_id > device_list.size() - 1 ) {
+      throw runtime_error( "specified device not found" );
+    }
+
+    selected_device.push_back( device_list.at( dev_id ) );
+
+#ifdef USE_FP_DBLPREC
+    string dev_extensions;
+    selected_devices.at( 0 ).getInfo( CL_DEVICE_EXTENSIONS, &dev_extensions );
+    if ( dev_extensions.find( "cl_khr_fp64" ) == string::npos ) {
+      throw runtime_error( "selected device does not support double precision" );
+    }
+#endif
+
+  } catch ( const runtime_error& e ) {
+    cerr << "Error while creating OpenCL context: " << e.what() << endl;
+    exit( 1 );
+  }
+
+  return cl::Context( selected_device );
 }

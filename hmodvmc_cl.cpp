@@ -23,6 +23,7 @@ using namespace std;
 
 
 HubbardModelVMC_CL::HubbardModelVMC_CL(
+  const cl::Context& clCtx_init,
   mt19937 rng_init,
   Lattice* const lat_init,
   const SingleParticleOrbitals& M_init,
@@ -35,7 +36,8 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
   cl_uint updates_until_W_recalc_init,
   cl_fptype T_deviation_target_init,
   cl_uint updates_until_T_recalc_init )
-  : rng( rng_init ),
+  : clCtx( clCtx_init ),
+    rng( rng_init ),
     lat( lat_init ), M( M_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
