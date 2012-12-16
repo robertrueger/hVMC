@@ -32,8 +32,8 @@ kernel void update_W(
   // Note: storage order is column major
   // -> W_ij = W[ i + j * W_rows ]
 
-  const uint i = get_global_id( 0 ) / W_rows;
-  const uint j = get_global_id( 0 ) % W_rows;
+  const uint i = get_global_id( 0 ) % W_rows;
+  const uint j = get_global_id( 0 ) / W_rows;
 
   W_outbuf[ i + j * W_rows ] =
     fma(
