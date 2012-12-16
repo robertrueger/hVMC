@@ -37,7 +37,7 @@ class HubbardModelVMC
     virtual void equilibrate( cl_uint N_mcs_equil ) = 0;
 
     // observable measurements
-    virtual cl_fptype E_l() const = 0;
+    virtual cl_fptype E_l() = 0;
     virtual cl_ulong mctime() const = 0;
 
     // floating point precision control

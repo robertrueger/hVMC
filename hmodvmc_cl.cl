@@ -17,35 +17,28 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef UTILS_H_INCLUDED
-#define UTILS_H_INCLUDED
-
-#include <iostream>
-#include <iomanip>
-#include <limits>
-#include <fstream>
-#include <string>
-#include <stdexcept>
-
-#ifdef OS_WINDOWS
-# include <windows.h>
+#ifdef USE_FP_DBLPREC_OPENCL
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+typedef double fptype;
+#else
+typedef float  fptype;
 #endif
 
-#include <boost/filesystem.hpp>
 
-#include "macros.h"
-#include "fptype.hpp"
+kernel void update_W(
+  global fptype* W_inbuf, global fptype* W_outbuf, uint W_rows,
+  uint k, uint l, uint k_pos )
+{
+  // Note: storage order is column major
+  // -> W_ij = W[ i + j * W_rows ]
 
+  const uint i = get_global_id( 0 ) / W_rows;
+  const uint j = get_global_id( 0 ) % W_rows;
 
-void ostream_setup( std::ostream& stream );
-
-boost::filesystem::path get_hVMC_dir();
-
-std::string get_file_contents( const boost::filesystem::path& file );
-
-
-cl_uint uintsqrt( cl_uint n );
-
-bool is_perfect_square( cl_uint n );
-
-#endif // UTILS_H_INCLUDED
+  W_outbuf[ i + j * W_rows ] =
+    fma(
+      W_inbuf[     i + k * W_rows ] / W_inbuf[ l + k * W_rows ],
+      W_inbuf[ k_pos + j * W_rows ] - W_inbuf[ l + j * W_rows ],
+      W_inbuf[     i + j * W_rows ]
+    );
+}

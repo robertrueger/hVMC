@@ -96,7 +96,7 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
     = wf_tight_binding( t, opts["phys.num-electrons"].as<cl_uint>(), lat );
 
   // the Hubbard model object itself
-  if ( opts.count( "cl.enabled" ) ) {
+  if ( opts["cl.enabled"].as<cl_uint>() == 1 ) {
     cout << "   -> HubbardModelVMC_CL object" << endl;
 
     cl::Context ctx = clcontext_setup(

@@ -141,7 +141,7 @@ class HubbardModelVMC_CPU final : public HubbardModelVMC
     void equilibrate( cl_uint N_mcs_equil );
 
     // observable measurements
-    cl_fptype E_l() const;
+    cl_fptype E_l();
     cl_ulong mctime() const;
 
     // floating point precision control

@@ -568,7 +568,7 @@ Eigen::VectorXfp HubbardModelVMC_CPU::calc_qupdated_T( const ElectronHop& hop ) 
 
 
 
-cl_fptype HubbardModelVMC_CPU::E_l() const
+cl_fptype HubbardModelVMC_CPU::E_l()
 {
   // buffer vector for X nearest neighbors
   // (in order to avoid allocating new ones all the time)

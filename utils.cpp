@@ -51,10 +51,28 @@ fs::path get_hVMC_dir()
 }
 
 
-cl_uint uintsqrt( cl_uint n ) {
- return static_cast<cl_uint>(
-   floor( sqrt( static_cast<cl_double>( n ) ) + 0.5 )
- );
+string get_file_contents( const fs::path& file )
+{
+  ifstream in( file.string(), ios::in | ios::binary );
+  if ( in ) {
+    string contents;
+    in.seekg( 0, ios::end );
+    contents.resize( in.tellg() );
+    in.seekg( 0, ios::beg );
+    in.read( &contents[0], contents.size() );
+    in.close();
+    return contents;
+  } else {
+    throw runtime_error( "error while opening the input file" );
+  }
+}
+
+
+cl_uint uintsqrt( cl_uint n )
+{
+  return static_cast<cl_uint>(
+           floor( sqrt( static_cast<cl_double>( n ) ) + 0.5 )
+         );
 }
 
 bool is_perfect_square( cl_uint n )

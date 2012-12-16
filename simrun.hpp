@@ -28,6 +28,7 @@
 //#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
+#define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 
 #include "macros.h"

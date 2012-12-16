@@ -42,30 +42,18 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
     econf( ElectronConfiguration( lat, N_init, &rng ) ),
-    Wbu_1(
+    Wbu(
       M_init.ssym ?
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 2 * lat->L, N_init )
     ),
-    Wbu_2(
-      M_init.ssym ?
-      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
-      Eigen::MatrixXfp( 2 * lat->L, N_init )
-    ),
-    Wbu_active(   &Wbu_1 ),
-    Wbu_inactive( &Wbu_2 ),
-    Wd_1(
+    Wd(
       M_init.ssym ?
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 0 , 0 )
     ),
-    Wd_2(
-      M_init.ssym ?
-      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
-      Eigen::MatrixXfp( 0 , 0 )
-    ),
-    Wd_active(   M_init.ssym ? &Wd_1 : nullptr ),
-    Wd_inactive( M_init.ssym ? &Wd_2 : nullptr ),
+    devWbu_active( nullptr ), devWbu_inactive( nullptr ),
+    devWd_active( nullptr ), devWd_inactive( nullptr ),
     T( Eigen::VectorXfp( lat->L ) ),
     completed_mcsteps( 0 ),
     updates_until_W_recalc( updates_until_W_recalc_init ),
@@ -74,6 +62,8 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
     W_devstat( FPDevStat( W_deviation_target_init ) ),
     T_devstat( FPDevStat( T_deviation_target_init ) )
 {
+  // setup up everything OpenCL related (queue, program, buffers, etc ...)
+  ocl_setup();
 
   do { // loop to get a large overlap
 
@@ -88,8 +78,7 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
         Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
         invertible = ( lu_decomp.rank() == lu_decomp.rows() );
         if ( invertible ) {
-          Wbu_active->noalias()
-            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+          Wbu.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
         } else {
           continue;
         }
@@ -97,8 +86,7 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
         lu_decomp.compute( calc_Dd().transpose() );
         invertible &= ( lu_decomp.rank() == lu_decomp.rows() );
         if ( invertible ) {
-          Wd_active ->noalias()
-            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+          Wd.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
         }
 
       } else {
@@ -106,15 +94,14 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
         Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
         invertible = ( lu_decomp.rank() == lu_decomp.rows() );
         if ( invertible ) {
-          Wbu_active->noalias()
-            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+          Wbu.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
         }
 
       }
 
 #if VERBOSE >= 1
-      cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : matrix D is not invertible!"
-           << endl;
+      cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : "
+           << "matrix D is not invertible!" << endl;
 #endif
 
     } while ( !invertible );
@@ -128,14 +115,14 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
     // (it's bad for floating point precision before the first recalc)
   } while (
 
-    Wbu_active->array().square().sum()
-    / static_cast<cl_fptype>( Wbu_active->size() ) > 10.f ||
+    Wbu.array().square().sum()
+    / static_cast<cl_fptype>( Wbu.size() ) > 10.f ||
 
     (
       M.ssym == true ?
 
-      Wd_active->array().square().sum()
-      / static_cast<cl_fptype>( Wd_active->size() ) > 10.f :
+      Wd.array().square().sum()
+      / static_cast<cl_fptype>( Wd.size() ) > 10.f :
 
       false
     ) ||
@@ -145,12 +132,26 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
   );
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : calculated initial matrix W ="
-       << endl << *Wbu_active << endl;
+  cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : "
+       << "calculated initial matrix W =" << endl << Wbu << endl;
   if ( M.ssym == true ) {
-    cout << "----->" << endl << *Wd_active << endl;
+    cout << "----->" << endl << Wd << endl;
   }
 #endif
+
+  // enqueue transfer of Wbu and Wd to the device
+  clQ.enqueueWriteBuffer(
+    *devWbu_active, CL_FALSE,
+    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data(),
+    nullptr, &( clE_devWbu[0] )
+  );
+  if ( M.ssym == true ) {
+    clQ.enqueueWriteBuffer(
+      *devWd_active, CL_FALSE,
+      0, Wd.size() * sizeof( cl_fptype ), Wd.data(),
+      nullptr, &( clE_devWd[0] )
+    );
+  }
 }
 
 
@@ -158,6 +159,82 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
 HubbardModelVMC_CL::~HubbardModelVMC_CL()
 {
   delete lat;
+}
+
+
+
+void HubbardModelVMC_CL::ocl_setup()
+{
+  // read the programs source code from hmodvmc_cl.cl
+  string hmodvmc_sourcecode =
+    get_file_contents( get_hVMC_dir() / "hmodvmc_cl.cl" );
+  cl::Program::Sources hmodvmc_clsources;
+  hmodvmc_clsources.push_back(
+    make_pair( hmodvmc_sourcecode.c_str(), hmodvmc_sourcecode.length() + 1 )
+  );
+
+  // construct the program
+  clPrg = cl::Program( clCtx, hmodvmc_clsources );
+
+  // extract the devices from the context and make sure there is only one
+  vector<cl::Device> used_devices = clCtx.getInfo<CL_CONTEXT_DEVICES>();
+  assert( used_devices.size() == 1 );
+
+  // build the program
+  try {
+    string compileropts = "";
+#ifdef USE_FP_DBLPREC
+    compileropts += "-DUSE_FP_DBLPREC_OPENCL";
+#endif
+    clPrg.build( used_devices, compileropts.c_str() );
+  } catch ( cl::Error& e ) {
+    cerr << "Build failed! " << e.what() << " (" << e.err() << ")" << endl;
+    cerr << "Build log:" << endl;
+    cerr << clPrg.getBuildInfo<CL_PROGRAM_BUILD_LOG>( used_devices[0] ) << endl;
+    throw e;
+  }
+
+  // setup the command queue
+  clQ = cl::CommandQueue(
+          clCtx, used_devices[0],
+          CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
+        );
+
+  // set up W buffers on the device
+  devWbu_1 = cl::Buffer(
+               clCtx, CL_MEM_READ_WRITE,
+               Wbu.size() * sizeof( cl_fptype )
+             );
+  devWbu_2 = cl::Buffer(
+               clCtx, CL_MEM_READ_WRITE,
+               Wbu.size() * sizeof( cl_fptype )
+             );
+  devWbu_active   = &devWbu_1;
+  devWbu_inactive = &devWbu_2;
+
+  if ( M.ssym == true ) {
+    devWd_1 = cl::Buffer(
+                clCtx, CL_MEM_READ_WRITE,
+                Wd.size() * sizeof( cl_fptype )
+              );
+    devWd_2 = cl::Buffer(
+                clCtx, CL_MEM_READ_WRITE,
+                Wd.size() * sizeof( cl_fptype )
+              );
+    devWd_active   = &devWd_1;
+    devWd_inactive = &devWd_2;
+  }
+
+  // set up Kernel objects
+  clK_update_devW = cl::Kernel( clPrg, "update_W" );
+
+  // set up the event pseudo "vectors"
+  // apparently you can't wait on a single event using the ocl c++ bindings ...
+  clE_devWbu.resize( 1 );
+  clE_devWd.resize( 1 );
+  clE_Wbu.resize( 1 );
+  clE_Wd.resize( 1 );
+  // (note: this is really ugly)
 }
 
 
@@ -171,7 +248,8 @@ void HubbardModelVMC_CL::mcs()
   // perform a number of metropolis steps equal to the number of electrons
   for ( cl_uint s = 0; s < econf.N(); ++s ) {
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC_CL::mcs() : Monte Carlo step = " << completed_mcsteps
+    cout << "HubbardModelVMC_CL::mcs() : "
+         << "Monte Carlo step = " << completed_mcsteps
          << ", Metropolis step = " << s << endl;
 #endif
     metstep();
@@ -208,19 +286,41 @@ bool HubbardModelVMC_CL::metstep()
 
   } else { // hop possible!
 
-    const cl_fptype R_j = T( lat->get_spinup_site( phop.l ) )
-                          / T( lat->get_spinup_site( phop.k_pos ) )
-                          * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
+    // enqueue transfer of W_lk from the device to the host
+    cl_fptype W_lk;
+    if ( M.ssym == true && phop.k >= econf.N() / 2 ) {
+      // the W_lk element is part of devWd_active
+      clQ.enqueueReadBuffer(
+        *devWd_active, CL_FALSE,
+        ( ( phop.l - lat->L ) + ( phop.k - econf.N() / 2 )  * Wd.rows() )
+        * sizeof( cl_fptype ),
+        sizeof( cl_fptype ), &W_lk,
+        &clE_devWd, &clE_get_devW_lk
+      );
+    } else {
+      // the W_lk element is part of devWbu_active
+      clQ.enqueueReadBuffer(
+        *devWbu_active, CL_FALSE,
+        ( phop.l + phop.k * Wbu.rows() ) * sizeof( cl_fptype ),
+        sizeof( cl_fptype ), &W_lk,
+        &clE_devWbu, &clE_get_devW_lk
+      );
+    }
 
-    const cl_fptype R_s = ( M.ssym == true && phop.k >= econf.N() / 2 ) ?
-                          ( *Wd_active  )( phop.l - lat->L, phop.k - econf.N() / 2 ) :
-                          ( *Wbu_active )( phop.l, phop.k );
-    const cl_fptype accept_prob = R_j * R_j * R_s * R_s;
+    const cl_fptype R_j =
+      T( lat->get_spinup_site( phop.l ) )
+      / T( lat->get_spinup_site( phop.k_pos ) )
+      * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
+
+    // wait for the W_lk transfer to finish
+    clE_get_devW_lk.wait();
+
+    const cl_fptype accept_prob = R_j * R_j * W_lk * W_lk;
 
 #if VERBOSE >= 1
     cout << "HubbardModelVMC_CL::metstep() : hop possible -> "
          << "R_j = " << R_j
-         << ", sdwf_ratio = " << R_s
+         << ", sdwf_ratio = " << W_lk
          << ", accept_prob = " << accept_prob << endl;
 #endif
 
@@ -259,25 +359,66 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
     cout << "HubbardModelVMC_CL::perform_W_update() : recalculating W!" << endl;
 #endif
 
-    updates_since_W_recalc = 0;
+    // enqueue update of W on the device
+    // (we want to update it to the point of the recalculated W)
+    calc_qupdated_W( hop );
 
-    // puts updated W into the active buffer
-    // (only buffer of the hopping spin direction is changed)
-    if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
-      calc_qupdated_Wd( hop );
-    } else {
-      calc_qupdated_Wbu( hop );
+    // create buffers to store the W which will be copied device -> host
+    Eigen::MatrixXfp Wbu_updated(
+      M.ssym ?
+      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
+      Eigen::MatrixXfp( 2 * lat->L, econf.N() )
+    );
+    Eigen::MatrixXfp Wd_updated(
+      M.ssym ?
+      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
+      Eigen::MatrixXfp( 0 , 0 )
+    );
+
+    // enqueue transfer of the updated W from the device to the host
+    // (waits for the update to finish first)
+    clQ.enqueueReadBuffer(
+      *devWbu_active, CL_FALSE,
+      0, Wbu_updated.size() * sizeof( cl_fptype ), Wbu_updated.data(),
+      &clE_devWbu, &( clE_Wbu[0] )
+    );
+    if ( M.ssym == true ) {
+      clQ.enqueueReadBuffer(
+        *devWd_active, CL_FALSE,
+        0, Wd_updated.size() * sizeof( cl_fptype ), Wd_updated.data(),
+        &clE_devWd, &( clE_Wd[0] )
+      );
     }
 
-    // puts recalculated W in the active buffers
-    // (pushs updated W into the inactive buffers)
+    // recalculate W on the host
     calc_new_W();
 
-    cl_fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
+    // wait for transfers from the device to finish
+    clE_Wbu[0].wait();
     if ( M.ssym == true ) {
-      dev += calc_deviation( *Wd_inactive, *Wd_active );
+      clE_Wd[0].wait();
+    }
+
+    // compare the recalculated W and the updated W on the host
+    cl_fptype dev = calc_deviation( Wbu, Wbu_updated );
+    if ( M.ssym == true ) {
+      dev += calc_deviation( Wd, Wd_updated );
     }
     W_devstat.add( dev );
+
+    // enqueue upload of the recalculated W to the device
+    clQ.enqueueWriteBuffer(
+      *devWbu_active, CL_FALSE,
+      0, Wbu.size() * sizeof( cl_fptype ), Wbu.data(),
+      nullptr, &( clE_devWbu[0] )
+    );
+    if ( M.ssym == true ) {
+      clQ.enqueueWriteBuffer(
+        *devWd_active, CL_FALSE,
+        0, Wd.size() * sizeof( cl_fptype ), Wd.data(),
+        nullptr, &( clE_devWd[0] )
+      );
+    }
 
 #if VERBOSE >= 1
     cout << "HubbardModelVMC_CL::perform_W_update() : recalculated W "
@@ -287,19 +428,21 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
       cout << "HubbardModelVMC_CL::perform_W_update() : deviation goal for matrix "
            << "W not met!" << endl
            << "HubbardModelVMC_CL::perform_W_update() : approximate W =" << endl
-           << *Wbu_inactive << endl;
+           << Wbu_updated << endl;
       if ( M.ssym == true ) {
-        cout << "----->" << endl << *Wd_inactive << endl;
+        cout << "----->" << endl << Wd_updated << endl;
       }
       cout << "HubbardModelVMC_CL::perform_W_update() : exact W =" << endl
-           << *Wbu_active << endl;
+           << Wbu << endl;
       if ( M.ssym == true ) {
-        cout << "----->" << endl << *Wd_active << endl;
+        cout << "----->" << endl << Wd_updated << endl;
       }
     }
 #endif
 
     assert( dev < W_devstat.target );
+
+    updates_since_W_recalc = 0;
 
   } else {
 
@@ -308,57 +451,8 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
          << "performing a quick update of W!" << endl;
 #endif
 
+    calc_qupdated_W( hop );
     ++updates_since_W_recalc;
-
-    // puts updated W into the active buffer
-    // (only buffer of the hopping spin direction is changed)
-    if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
-      calc_qupdated_Wd( hop );
-    } else {
-      calc_qupdated_Wbu( hop );
-    }
-
-#ifndef NDEBUG
-    // puts recalculated W in the active buffers
-    // (pushs updated W into the inactive buffers)
-    calc_new_W();
-
-    // swap the buffers (since we want the updated buffer to be the active one)
-    swap( Wbu_inactive, Wbu_active );
-    if ( M.ssym == true ) {
-      swap( Wd_inactive, Wd_active );
-    }
-
-    // updated W should now be in the active buffer
-    // debug check recalc W should be in the inactive buffer
-
-    cl_fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
-    if ( M.ssym == true ) {
-      dev += calc_deviation( *Wd_inactive, *Wd_active );
-    }
-
-# if VERBOSE >= 1
-    cout << "HubbardModelVMC_CL::perform_W_update() : "
-         << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
-
-    if ( dev > W_devstat.target ) {
-      cout << "HubbardModelVMC_CL::perform_W_update() : deviation goal for matrix "
-           << "W not met!" << endl
-           << "HubbardModelVMC_CL::perform_W_update() : quickly updated W =" << endl
-           << *Wbu_active << endl;
-      if ( M.ssym == true ) {
-        cout << "----->" << endl << *Wd_active << endl;
-      }
-      cout << "HubbardModelVMC_CL::perform_W_update() : exact W =" << endl
-           << *Wbu_inactive << endl;
-      if ( M.ssym == true ) {
-        cout << "----->" << endl << *Wd_inactive << endl;
-      }
-    }
-# endif
-#endif
-
-    assert( dev < W_devstat.target );
   }
 }
 
@@ -421,51 +515,58 @@ Eigen::MatrixXfp HubbardModelVMC_CL::calc_Dd() const
 void HubbardModelVMC_CL::calc_new_W()
 {
   if ( M.ssym == true ) {
-
-    Wbu_inactive->noalias()
-      = calc_Du().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
-    Wd_inactive->noalias()
-      = calc_Dd().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
-
-    swap( Wbu_inactive, Wbu_active );
-    swap( Wd_inactive, Wd_active );
-
+    Wbu.noalias() =
+      calc_Du().transpose()
+      .partialPivLu().solve( M.orbitals.transpose() )
+      .transpose();
+    Wd.noalias() =
+      calc_Dd().transpose()
+      .partialPivLu().solve( M.orbitals.transpose() )
+      .transpose();
   } else {
-
-    Wbu_inactive->noalias()
-      = calc_Db().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
-
-    swap( Wbu_inactive, Wbu_active );
-
+    Wbu.noalias() =
+      calc_Db().transpose()
+      .partialPivLu().solve( M.orbitals.transpose() )
+      .transpose();
   }
 }
 
 
 
-void HubbardModelVMC_CL::calc_qupdated_Wbu( const ElectronHop& hop )
+void HubbardModelVMC_CL::calc_qupdated_W( const ElectronHop& hop )
 {
-  *Wbu_inactive = *Wbu_active;
-
-  Wbu_inactive->noalias() -=
-    ( Wbu_active->col( hop.k ) / ( *Wbu_active )( hop.l, hop.k ) )
-    * ( Wbu_active->row( hop.l ) - Wbu_active->row( hop.k_pos ) );
-
-  swap( Wbu_inactive, Wbu_active );
-}
-
-
-
-void HubbardModelVMC_CL::calc_qupdated_Wd( const ElectronHop& hop )
-{
-  *Wd_inactive = *Wd_active;
-
-  Wd_inactive->noalias() -=
-    ( Wd_active->col( hop.k - econf.N() / 2 )
-      / ( *Wd_active )( hop.l - lat->L, hop.k - econf.N() / 2 ) )
-    * ( Wd_active->row( hop.l - lat->L )
-        - Wd_active->row( hop.k_pos - lat->L ) );
-
-  swap( Wd_inactive, Wd_active );
+  // enqueue the kernel that updates W on the device
+  if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
+    // devWd must be updated
+    clK_update_devW.setArg( 0, *devWd_active );
+    clK_update_devW.setArg( 1, *devWd_inactive );
+    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wd.rows() ) );
+    clK_update_devW.setArg( 3, hop.k - econf.N() / 2 );
+    clK_update_devW.setArg( 4, hop.l - lat->L );
+    clK_update_devW.setArg( 5, hop.k_pos - lat->L );
+    cl::NDRange global( Wd.size() );
+    clQ.enqueueNDRangeKernel(
+      clK_update_devW,
+      cl::NullRange, global, cl::NullRange,
+      nullptr, &( clE_devWd[0] )
+    );
+    swap( devWd_active, devWd_inactive );
+  } else {
+    // devWbu must be updated
+    clK_update_devW.setArg( 0, *devWbu_active );
+    clK_update_devW.setArg( 1, *devWbu_inactive );
+    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wbu.rows() ) );
+    clK_update_devW.setArg( 3, hop.k );
+    clK_update_devW.setArg( 4, hop.l );
+    clK_update_devW.setArg( 5, hop.k_pos );
+    cl::NDRange global( Wbu.size() );
+    clQ.enqueueNDRangeKernel(
+      clK_update_devW,
+      cl::NullRange, global, cl::NullRange,
+      nullptr, &( clE_devWbu[0] )
+    );
+    swap( devWbu_active, devWbu_inactive );
+  }
 }
 
 
@@ -570,14 +671,34 @@ Eigen::VectorXfp HubbardModelVMC_CL::calc_qupdated_T( const ElectronHop& hop ) c
 
 
 
-cl_fptype HubbardModelVMC_CL::E_l() const
+cl_fptype HubbardModelVMC_CL::E_l()
 {
+  // enqueue transfer of W from the device to the host
+  clQ.enqueueReadBuffer(
+    *devWbu_active, CL_FALSE,
+    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data(),
+    &clE_devWbu, &( clE_Wbu[0] )
+  );
+  if ( M.ssym == true ) {
+    clQ.enqueueReadBuffer(
+      *devWd_active, CL_FALSE,
+      0, Wd.size() * sizeof( cl_fptype ), Wd.data(),
+      &clE_devWd, &( clE_Wd[0] )
+    );
+  }
+
   // buffer vector for X nearest neighbors
   // (in order to avoid allocating new ones all the time)
   std::vector<cl_uint> k_pos_Xnn;
 
   // calculate expectation value of the T part of H
   cl_fptype E_l_kin = 0.f;
+
+  // wait for the transfer of W from the device to finish
+  clE_Wbu[0].wait();
+  if ( M.ssym == true ) {
+    clE_Wd[0].wait();
+  }
 
   for ( cl_uint k = 0; k < econf.N(); ++k ) {
 
@@ -597,9 +718,9 @@ cl_fptype HubbardModelVMC_CL::E_l() const
                                 / T( lat->get_spinup_site( k_pos ) )
                                 * v.exp_onsite() / v.exp( *l_it, k_pos );
           if ( M.ssym == true && k >= econf.N() / 2 ) {
-            sum_Xnn += R_j * ( *Wd_active )( *l_it - lat->L, k - econf.N() / 2 );
+            sum_Xnn += R_j * Wd( *l_it - lat->L, k - econf.N() / 2 );
           } else {
-            sum_Xnn += R_j * ( *Wbu_active )( *l_it, k );
+            sum_Xnn += R_j * Wbu( *l_it, k );
           }
         }
       }

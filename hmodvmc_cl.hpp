@@ -29,7 +29,9 @@
 #include <random>
 #include <algorithm>
 
+#define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
+
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 
@@ -41,6 +43,7 @@
 #include "jastrow.hpp"
 #include "econf.hpp"
 #include "hmodvmc.hpp"
+#include "utils.hpp"
 
 
 class HubbardModelVMC_CL final : public HubbardModelVMC
@@ -59,6 +62,17 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
     cl::Context clCtx;
     cl::Program clPrg;
     cl::CommandQueue clQ;
+
+    // events for changes to the device buffers
+    std::vector<cl::Event> clE_devWbu;
+    std::vector<cl::Event> clE_devWd;
+
+    // events for changes to the host buffers
+    std::vector<cl::Event> clE_Wbu;
+    std::vector<cl::Event> clE_Wd;
+
+    // event for fetching the W_lk element from the device
+    cl::Event clE_get_devW_lk;
 
 
     // ----- independent objects -----
@@ -83,15 +97,20 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
 
     ElectronConfiguration econf;
 
-    Eigen::MatrixXfp  Wbu_1;
-    Eigen::MatrixXfp  Wbu_2;
-    Eigen::MatrixXfp* Wbu_active;
-    Eigen::MatrixXfp* Wbu_inactive;
+    // host buffers for the matrix W
+    Eigen::MatrixXfp Wbu;
+    Eigen::MatrixXfp Wd;
 
-    Eigen::MatrixXfp  Wd_1;
-    Eigen::MatrixXfp  Wd_2;
-    Eigen::MatrixXfp* Wd_active;
-    Eigen::MatrixXfp* Wd_inactive;
+    // device buffers for matrix W
+    cl::Buffer  devWbu_1;
+    cl::Buffer  devWbu_2;
+    cl::Buffer* devWbu_active;
+    cl::Buffer* devWbu_inactive;
+
+    cl::Buffer  devWd_1;
+    cl::Buffer  devWd_2;
+    cl::Buffer* devWd_active;
+    cl::Buffer* devWd_inactive;
 
     Eigen::VectorXfp T;
 
@@ -108,14 +127,15 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
     // function that performs a single Metropolis update
     bool metstep();
 
-    // wrapper functions that updates/recalculates W/T after a successful hop
+    // wrapper functions that update/recalculate W/T after a successful hop
     void perform_W_update( const ElectronHop& hop );
     void perform_T_update( const ElectronHop& hop );
 
     // update and recalc functions for the internal objects
     void calc_new_W();
-    void calc_qupdated_Wbu( const ElectronHop& hop );
-    void calc_qupdated_Wd(  const ElectronHop& hop );
+    void calc_qupdated_W( const ElectronHop& hop );
+    cl::Kernel clK_update_devW;
+
     Eigen::VectorXfp calc_new_T() const;
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
 
@@ -123,6 +143,9 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
     Eigen::MatrixXfp calc_Db() const;
     Eigen::MatrixXfp calc_Du() const;
     Eigen::MatrixXfp calc_Dd() const;
+
+    // setup OpenCL queue, program and kernels
+    void ocl_setup();
 
 
   public:
@@ -149,7 +172,7 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
     void equilibrate( cl_uint N_mcs_equil );
 
     // observable measurements
-    cl_fptype E_l() const;
+    cl_fptype E_l();
     cl_ulong mctime() const;
 
     // floating point precision control
