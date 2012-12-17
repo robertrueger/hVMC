@@ -52,7 +52,16 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 0 , 0 )
     ),
-    devWbu_active( nullptr ), devWbu_inactive( nullptr ),
+   Wbu_fromdev(
+      M_init.ssym ?
+      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
+      Eigen::MatrixXfp( 2 * lat->L, N_init )
+    ),
+    Wd_fromdev(
+      M_init.ssym ?
+      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
+      Eigen::MatrixXfp( 0 , 0 )
+    ),   devWbu_active( nullptr ), devWbu_inactive( nullptr ),
     devWd_active( nullptr ), devWd_inactive( nullptr ),
     T( Eigen::VectorXfp( lat->L ) ),
     completed_mcsteps( 0 ),
@@ -140,16 +149,14 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
 #endif
 
   // enqueue transfer of Wbu and Wd to the device
-  clQ.enqueueWriteBuffer(
+  clQ_Wbu.enqueueWriteBuffer(
     *devWbu_active, CL_FALSE,
-    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data(),
-    nullptr, &( clE_devWbu[0] )
+    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
   );
   if ( M.ssym == true ) {
-    clQ.enqueueWriteBuffer(
+    clQ_Wd.enqueueWriteBuffer(
       *devWd_active, CL_FALSE,
-      0, Wd.size() * sizeof( cl_fptype ), Wd.data(),
-      nullptr, &( clE_devWd[0] )
+      0, Wd.size() * sizeof( cl_fptype ), Wd.data()
     );
   }
 }
@@ -195,10 +202,12 @@ void HubbardModelVMC_CL::ocl_setup()
   }
 
   // setup the command queue
-  clQ = cl::CommandQueue(
-          clCtx, used_devices[0],
-          CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE
-        );
+  clQ_Wbu = cl::CommandQueue(
+              clCtx, used_devices[0]
+            );
+  clQ_Wd = cl::CommandQueue(
+             clCtx, used_devices[0]
+           );
 
   // set up W buffers on the device
   devWbu_1 = cl::Buffer(
@@ -227,14 +236,6 @@ void HubbardModelVMC_CL::ocl_setup()
 
   // set up Kernel objects
   clK_update_devW = cl::Kernel( clPrg, "update_W" );
-
-  // set up the event pseudo "vectors"
-  // apparently you can't wait on a single event using the ocl c++ bindings ...
-  clE_devWbu.resize( 1 );
-  clE_devWd.resize( 1 );
-  clE_Wbu.resize( 1 );
-  clE_Wd.resize( 1 );
-  // (note: this is really ugly)
 }
 
 
@@ -290,20 +291,18 @@ bool HubbardModelVMC_CL::metstep()
     cl_fptype W_lk;
     if ( M.ssym == true && phop.k >= econf.N() / 2 ) {
       // the W_lk element is part of devWd_active
-      clQ.enqueueReadBuffer(
+      clQ_Wd.enqueueReadBuffer(
         *devWd_active, CL_FALSE,
         ( ( phop.l - lat->L ) + ( phop.k - econf.N() / 2 )  * Wd.rows() )
         * sizeof( cl_fptype ),
-        sizeof( cl_fptype ), &W_lk,
-        &clE_devWd, &clE_get_devW_lk
+        sizeof( cl_fptype ), &W_lk
       );
     } else {
       // the W_lk element is part of devWbu_active
-      clQ.enqueueReadBuffer(
+      clQ_Wbu.enqueueReadBuffer(
         *devWbu_active, CL_FALSE,
         ( phop.l + phop.k * Wbu.rows() ) * sizeof( cl_fptype ),
-        sizeof( cl_fptype ), &W_lk,
-        &clE_devWbu, &clE_get_devW_lk
+        sizeof( cl_fptype ), &W_lk
       );
     }
 
@@ -313,7 +312,11 @@ bool HubbardModelVMC_CL::metstep()
       * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
 
     // wait for the W_lk transfer to finish
-    clE_get_devW_lk.wait();
+    if ( M.ssym == true && phop.k >= econf.N() / 2 ) {
+      clQ_Wd.finish();
+    } else {
+      clQ_Wbu.finish();
+    }
 
     const cl_fptype accept_prob = R_j * R_j * W_lk * W_lk;
 
@@ -363,30 +366,16 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
     // (we want to update it to the point of the recalculated W)
     calc_qupdated_W( hop );
 
-    // create buffers to store the W which will be copied device -> host
-    Eigen::MatrixXfp Wbu_updated(
-      M.ssym ?
-      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
-      Eigen::MatrixXfp( 2 * lat->L, econf.N() )
-    );
-    Eigen::MatrixXfp Wd_updated(
-      M.ssym ?
-      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
-      Eigen::MatrixXfp( 0 , 0 )
-    );
-
     // enqueue transfer of the updated W from the device to the host
     // (waits for the update to finish first)
-    clQ.enqueueReadBuffer(
+    clQ_Wbu.enqueueReadBuffer(
       *devWbu_active, CL_FALSE,
-      0, Wbu_updated.size() * sizeof( cl_fptype ), Wbu_updated.data(),
-      &clE_devWbu, &( clE_Wbu[0] )
+      0, Wbu_fromdev.size() * sizeof( cl_fptype ), Wbu_fromdev.data()
     );
     if ( M.ssym == true ) {
-      clQ.enqueueReadBuffer(
+      clQ_Wd.enqueueReadBuffer(
         *devWd_active, CL_FALSE,
-        0, Wd_updated.size() * sizeof( cl_fptype ), Wd_updated.data(),
-        &clE_devWd, &( clE_Wd[0] )
+        0, Wd_fromdev.size() * sizeof( cl_fptype ), Wd_fromdev.data()
       );
     }
 
@@ -394,31 +383,27 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
     calc_new_W();
 
     // wait for transfers from the device to finish
-    clE_Wbu[0].wait();
+    clQ_Wbu.finish();
+    clQ_Wd.finish();
+
+    // enqueue upload of the recalculated W to the device
+    clQ_Wbu.enqueueWriteBuffer(
+      *devWbu_active, CL_FALSE,
+      0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
+    );
     if ( M.ssym == true ) {
-      clE_Wd[0].wait();
+      clQ_Wd.enqueueWriteBuffer(
+        *devWd_active, CL_FALSE,
+        0, Wd.size() * sizeof( cl_fptype ), Wd.data()
+      );
     }
 
     // compare the recalculated W and the updated W on the host
-    cl_fptype dev = calc_deviation( Wbu, Wbu_updated );
+    cl_fptype dev = calc_deviation( Wbu, Wbu_fromdev );
     if ( M.ssym == true ) {
-      dev += calc_deviation( Wd, Wd_updated );
+      dev += calc_deviation( Wd, Wd_fromdev );
     }
     W_devstat.add( dev );
-
-    // enqueue upload of the recalculated W to the device
-    clQ.enqueueWriteBuffer(
-      *devWbu_active, CL_FALSE,
-      0, Wbu.size() * sizeof( cl_fptype ), Wbu.data(),
-      nullptr, &( clE_devWbu[0] )
-    );
-    if ( M.ssym == true ) {
-      clQ.enqueueWriteBuffer(
-        *devWd_active, CL_FALSE,
-        0, Wd.size() * sizeof( cl_fptype ), Wd.data(),
-        nullptr, &( clE_devWd[0] )
-      );
-    }
 
 #if VERBOSE >= 1
     cout << "HubbardModelVMC_CL::perform_W_update() : recalculated W "
@@ -428,14 +413,14 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
       cout << "HubbardModelVMC_CL::perform_W_update() : deviation goal for matrix "
            << "W not met!" << endl
            << "HubbardModelVMC_CL::perform_W_update() : approximate W =" << endl
-           << Wbu_updated << endl;
+           << Wbu_fromdev << endl;
       if ( M.ssym == true ) {
-        cout << "----->" << endl << Wd_updated << endl;
+        cout << "----->" << endl << Wd_fromdev << endl;
       }
       cout << "HubbardModelVMC_CL::perform_W_update() : exact W =" << endl
            << Wbu << endl;
       if ( M.ssym == true ) {
-        cout << "----->" << endl << Wd_updated << endl;
+        cout << "----->" << endl << Wd << endl;
       }
     }
 #endif
@@ -545,10 +530,9 @@ void HubbardModelVMC_CL::calc_qupdated_W( const ElectronHop& hop )
     clK_update_devW.setArg( 4, hop.l - lat->L );
     clK_update_devW.setArg( 5, hop.k_pos - lat->L );
     cl::NDRange global( Wd.size() );
-    clQ.enqueueNDRangeKernel(
+    clQ_Wd.enqueueNDRangeKernel(
       clK_update_devW,
-      cl::NullRange, global, cl::NullRange,
-      nullptr, &( clE_devWd[0] )
+      cl::NullRange, global, cl::NullRange
     );
     swap( devWd_active, devWd_inactive );
   } else {
@@ -560,10 +544,9 @@ void HubbardModelVMC_CL::calc_qupdated_W( const ElectronHop& hop )
     clK_update_devW.setArg( 4, hop.l );
     clK_update_devW.setArg( 5, hop.k_pos );
     cl::NDRange global( Wbu.size() );
-    clQ.enqueueNDRangeKernel(
+    clQ_Wbu.enqueueNDRangeKernel(
       clK_update_devW,
-      cl::NullRange, global, cl::NullRange,
-      nullptr, &( clE_devWbu[0] )
+      cl::NullRange, global, cl::NullRange
     );
     swap( devWbu_active, devWbu_inactive );
   }
@@ -674,16 +657,14 @@ Eigen::VectorXfp HubbardModelVMC_CL::calc_qupdated_T( const ElectronHop& hop ) c
 cl_fptype HubbardModelVMC_CL::E_l()
 {
   // enqueue transfer of W from the device to the host
-  clQ.enqueueReadBuffer(
+  clQ_Wbu.enqueueReadBuffer(
     *devWbu_active, CL_FALSE,
-    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data(),
-    &clE_devWbu, &( clE_Wbu[0] )
+    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
   );
   if ( M.ssym == true ) {
-    clQ.enqueueReadBuffer(
+    clQ_Wd.enqueueReadBuffer(
       *devWd_active, CL_FALSE,
-      0, Wd.size() * sizeof( cl_fptype ), Wd.data(),
-      &clE_devWd, &( clE_Wd[0] )
+      0, Wd.size() * sizeof( cl_fptype ), Wd.data()
     );
   }
 
@@ -694,13 +675,15 @@ cl_fptype HubbardModelVMC_CL::E_l()
   // calculate expectation value of the T part of H
   cl_fptype E_l_kin = 0.f;
 
-  // wait for the transfer of W from the device to finish
-  clE_Wbu[0].wait();
-  if ( M.ssym == true ) {
-    clE_Wd[0].wait();
-  }
+  // wait for the transfer of W_bu from the device to finish
+  clQ_Wbu.finish();
 
   for ( cl_uint k = 0; k < econf.N(); ++k ) {
+
+    if ( M.ssym == true && k == econf.N() / 2 ) {
+      // wait for W_d transfer to finish
+      clQ_Wd.finish();
+    }
 
     const cl_uint k_pos = econf.get_electron_pos( k );
     assert( econf.get_site_occ( k_pos ) == ELECTRON_OCCUPATION_FULL );

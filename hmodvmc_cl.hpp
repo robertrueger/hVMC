@@ -61,18 +61,8 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
 
     cl::Context clCtx;
     cl::Program clPrg;
-    cl::CommandQueue clQ;
-
-    // events for changes to the device buffers
-    std::vector<cl::Event> clE_devWbu;
-    std::vector<cl::Event> clE_devWd;
-
-    // events for changes to the host buffers
-    std::vector<cl::Event> clE_Wbu;
-    std::vector<cl::Event> clE_Wd;
-
-    // event for fetching the W_lk element from the device
-    cl::Event clE_get_devW_lk;
+    cl::CommandQueue clQ_Wbu;
+    cl::CommandQueue clQ_Wd;
 
 
     // ----- independent objects -----
@@ -100,6 +90,8 @@ class HubbardModelVMC_CL final : public HubbardModelVMC
     // host buffers for the matrix W
     Eigen::MatrixXfp Wbu;
     Eigen::MatrixXfp Wd;
+    Eigen::MatrixXfp Wbu_fromdev;
+    Eigen::MatrixXfp Wd_fromdev;
 
     // device buffers for matrix W
     cl::Buffer  devWbu_1;
