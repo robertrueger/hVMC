@@ -40,7 +40,7 @@ fptype calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact )
 {
   assert( approx.size() == exact.size() );
-  fptype exact_square_sum = exact.array().square().sum();
-  fptype  diff_square_sum = ( approx - exact ).array().square().sum();
+  fptype exact_square_sum = exact.squaredNorm();
+  fptype  diff_square_sum = ( approx - exact ).squaredNorm();
   return sqrt( diff_square_sum / exact_square_sum );
 }
