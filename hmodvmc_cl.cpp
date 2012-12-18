@@ -293,7 +293,7 @@ bool HubbardModelVMC_CL::metstep()
       // the W_lk element is part of devWd_active
       clQ_Wd.enqueueReadBuffer(
         *devWd_active, CL_FALSE,
-        ( ( phop.l - lat->L ) + ( phop.k - econf.N() / 2 )  * Wd.rows() )
+        ( ( phop.l - lat->L ) * Wd.cols() + ( phop.k - econf.N() / 2 ) )
         * sizeof( cl_fptype ),
         sizeof( cl_fptype ), &W_lk
       );
@@ -301,7 +301,7 @@ bool HubbardModelVMC_CL::metstep()
       // the W_lk element is part of devWbu_active
       clQ_Wbu.enqueueReadBuffer(
         *devWbu_active, CL_FALSE,
-        ( phop.l + phop.k * Wbu.rows() ) * sizeof( cl_fptype ),
+        ( phop.l * Wbu.cols() + phop.k ) * sizeof( cl_fptype ),
         sizeof( cl_fptype ), &W_lk
       );
     }
@@ -309,7 +309,7 @@ bool HubbardModelVMC_CL::metstep()
     const cl_fptype R_j =
       T( lat->get_spinup_site( phop.l ) )
       / T( lat->get_spinup_site( phop.k_pos ) )
-      * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
+      * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
 
     // wait for the W_lk transfer to finish
     if ( M.ssym == true && phop.k >= econf.N() / 2 ) {
@@ -525,7 +525,7 @@ void HubbardModelVMC_CL::calc_qupdated_W( const ElectronHop& hop )
     // devWd must be updated
     clK_update_devW.setArg( 0, *devWd_active );
     clK_update_devW.setArg( 1, *devWd_inactive );
-    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wd.rows() ) );
+    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wd.cols() ) );
     clK_update_devW.setArg( 3, hop.k - econf.N() / 2 );
     clK_update_devW.setArg( 4, hop.l - lat->L );
     clK_update_devW.setArg( 5, hop.k_pos - lat->L );
@@ -539,7 +539,7 @@ void HubbardModelVMC_CL::calc_qupdated_W( const ElectronHop& hop )
     // devWbu must be updated
     clK_update_devW.setArg( 0, *devWbu_active );
     clK_update_devW.setArg( 1, *devWbu_inactive );
-    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wbu.rows() ) );
+    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wbu.cols() ) );
     clK_update_devW.setArg( 3, hop.k );
     clK_update_devW.setArg( 4, hop.l );
     clK_update_devW.setArg( 5, hop.k_pos );

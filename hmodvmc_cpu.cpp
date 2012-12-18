@@ -208,7 +208,7 @@ bool HubbardModelVMC_CPU::metstep()
 
     const cl_fptype R_j = T( lat->get_spinup_site( phop.l ) )
                           / T( lat->get_spinup_site( phop.k_pos ) )
-                          * v.exp( 0, 0 ) / v.exp( phop.l, phop.k_pos );
+                          * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
 
     const cl_fptype R_s = ( M.ssym == true && phop.k >= econf.N() / 2 ) ?
                           ( *Wd_active  )( phop.l - lat->L, phop.k - econf.N() / 2 ) :

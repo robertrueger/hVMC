@@ -26,19 +26,19 @@ typedef float  fptype;
 
 
 kernel void update_W(
-  global fptype* W_inbuf, global fptype* W_outbuf, uint W_rows,
+  global fptype* W_inbuf, global fptype* W_outbuf, uint W_cols,
   uint k, uint l, uint k_pos )
 {
-  // Note: storage order is column major
-  // -> W_ij = W[ i + j * W_rows ]
+  // Note: storage order is row major
+  // -> W_ij = W[ i * W_cols + j ]
 
-  const uint i = get_global_id( 0 ) % W_rows;
-  const uint j = get_global_id( 0 ) / W_rows;
+  const uint i = get_global_id( 0 ) / W_cols;
+  const uint j = get_global_id( 0 ) % W_cols;
 
-  W_outbuf[ i + j * W_rows ] =
+  W_outbuf[ i * W_cols + j ] =
     fma(
-      W_inbuf[     i + k * W_rows ] / W_inbuf[ l + k * W_rows ],
-      W_inbuf[ k_pos + j * W_rows ] - W_inbuf[ l + j * W_rows ],
-      W_inbuf[     i + j * W_rows ]
+      W_inbuf[     i * W_cols + k ] / W_inbuf[ l * W_cols + k ],
+      W_inbuf[ k_pos * W_cols + j ] - W_inbuf[ l * W_cols + j ],
+      W_inbuf[     i * W_cols + j ]
     );
 }
