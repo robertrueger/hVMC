@@ -204,7 +204,7 @@ cl::Context clcontext_setup( cl_uint pl_id, cl_uint dev_id )
 
 #ifdef USE_FP_DBLPREC
     string dev_extensions;
-    selected_devices.at( 0 ).getInfo( CL_DEVICE_EXTENSIONS, &dev_extensions );
+    selected_device.at( 0 ).getInfo( CL_DEVICE_EXTENSIONS, &dev_extensions );
     if ( dev_extensions.find( "cl_khr_fp64" ) == string::npos ) {
       throw runtime_error( "selected device does not support double precision" );
     }
