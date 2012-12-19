@@ -20,10 +20,7 @@
 #ifndef DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED
 #define DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED
 
-#if VERBOSE >= 1
 # include <iostream>
-#endif
-
 #include <vector>
 
 #include <eigen3/Eigen/Core>
@@ -52,5 +49,7 @@ SingleParticleOrbitals wf_tight_binding(
     const std::vector<fptype>& t,
     unsigned int N, Lattice* lat
 );
+
+bool check_openshell( const Eigen::VectorXfp& E, unsigned int N );
 
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED
