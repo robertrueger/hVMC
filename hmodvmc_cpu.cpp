@@ -73,74 +73,121 @@ HubbardModelVMC_CPU::HubbardModelVMC_CPU(
     T_devstat( FPDevStat( T_deviation_target_init ) )
 {
 
-  do { // loop to get a large overlap
+  bool enough_overlap;
 
-    bool invertible;
+  do {
 
-    do { // loop to get any overlap at all
+    econf.distribute_random();
+    enough_overlap = true; // assume until we are proven wrong
 
-      econf.distribute_random();
-
-      if ( M.ssym == true ) {
-
-        Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
-        invertible = ( lu_decomp.rank() == lu_decomp.rows() );
-        if ( invertible ) {
-          Wbu_active->noalias()
-            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
-        } else {
-          continue;
-        }
-
-        lu_decomp.compute( calc_Dd().transpose() );
-        invertible &= ( lu_decomp.rank() == lu_decomp.rows() );
-        if ( invertible ) {
-          Wd_active ->noalias()
-            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
-        }
-
-      } else {
-
-        Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
-        invertible = ( lu_decomp.rank() == lu_decomp.rows() );
-        if ( invertible ) {
-          Wbu_active->noalias()
-            = lu_decomp.solve( M.orbitals.transpose() ).transpose();
-        }
-
-      }
-
-#if VERBOSE >= 1
-      cout << "HubbardModelVMC_CPU::HubbardModelVMC_CPU() : matrix D is not invertible!"
-           << endl;
+#if VERBOSE >=1
+    cout << "HubbardModelVMC::HubbardModelVMC_CPU() : checking newly generated "
+         << "state for enough overlap" << endl;
 #endif
 
-    } while ( !invertible );
-    // initialize the electrons so that D is invertible
-    // (there must be a non-zero overlap between the slater det and |x>)
+    cl_fptype Wbu_avg, Wd_avg;
 
-    // calculate the vector T from scratch
+    if ( M.ssym == true ) {
+
+      // check spin up part
+      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
+      enough_overlap &= lu_decomp.isInvertible();
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC::HubbardModelVMC_CPU() : spin up part has no "
+             << "overlap with the determinantal wavefunction" << endl;
+#endif
+        continue;
+      }
+
+      Wbu_active->noalias()
+        = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+      Wbu_avg
+        = Wbu_active->squaredNorm() / static_cast<cl_fptype>( Wbu_active->size() );
+      enough_overlap &= Wbu_avg < 100.f;
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC::HubbardModelVMC_CPU() : spin up part has too "
+             << "little overlap with the determinantal wavefunction, "
+             << "inverse overlap measure is: " << Wbu_avg << endl;
+#endif
+        continue;
+      }
+
+      // check spin down part
+      lu_decomp.compute( calc_Dd().transpose() );
+      enough_overlap &= lu_decomp.isInvertible();
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC::HubbardModelVMC_CPU() : spin down part has no "
+             << "overlap with the determinantal wavefunction" << endl;
+#endif
+        continue;
+      }
+
+      Wd_active->noalias()
+        = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+      Wd_avg
+        = Wd_active->squaredNorm()  / static_cast<cl_fptype>( Wd_active->size() );
+      enough_overlap &= Wd_avg < 100.f;
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC::HubbardModelVMC_CPU() : spin down part has too "
+             << "little overlap with the determinantal wavefunction, "
+             << "inverse overlap measure is: " << Wd_avg << endl;
+#endif
+        continue;
+      }
+
+    } else {
+
+      // check whole determinantal part
+      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
+      enough_overlap &= lu_decomp.isInvertible();
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC::HubbardModelVMC_CPU() : state has no "
+             << "overlap with the determinantal wavefunction" << endl;
+#endif
+        continue;
+      }
+
+      Wbu_active->noalias()
+        = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+      Wbu_avg
+        = Wbu_active->squaredNorm() / static_cast<cl_fptype>( Wbu_active->size() );
+      enough_overlap &= Wbu_avg < 50.f;
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC::HubbardModelVMC_CPU() : state has too "
+             << "little overlap with the determinantal wavefunction, "
+             << "inverse overlap measure is: " << Wbu_avg << endl;
+#endif
+        continue;
+      }
+
+    }
+
+    // check Jastrow part
     T = calc_new_T();
+    cl_fptype T_avg = T.squaredNorm() / static_cast<cl_fptype>( T.size() );
+    enough_overlap &= T_avg < 100.f;
+    if ( !enough_overlap ) {
+#if VERBOSE >= 1
+      cout << "HubbardModelVMC::HubbardModelVMC_CPU() : Jastrow ratios "
+           << "are to small, inverse measure is: " << T_avg << endl;
+#endif
+      continue;
+    }
 
-    // repeat everything if the initial state has a very low overlap
-    // (it's bad for floating point precision before the first recalc)
-  } while (
+#if VERBOSE >= 1
+    cout << "HubbardModelVMC::HubbardModelVMC_CPU() : state has sufficient "
+         << "overlap! inverse overlap measures are: "
+         << Wbu_avg << " " << Wd_avg << " " << T_avg
+         << " -> initial state selection completed!" << endl;
+#endif
 
-    Wbu_active->array().square().sum()
-    / static_cast<cl_fptype>( Wbu_active->size() ) > 10.f ||
-
-    (
-      M.ssym == true ?
-
-      Wd_active->array().square().sum()
-      / static_cast<cl_fptype>( Wd_active->size() ) > 10.f :
-
-      false
-    ) ||
-
-    T.array().square().sum() / static_cast<cl_fptype>( T.size() ) > 10.f
-
-  );
+  } while ( !enough_overlap );
 
 #if VERBOSE >= 1
   cout << "HubbardModelVMC_CPU::HubbardModelVMC_CPU() : calculated initial matrix W ="
@@ -149,6 +196,7 @@ HubbardModelVMC_CPU::HubbardModelVMC_CPU(
     cout << "----->" << endl << *Wd_active << endl;
   }
 #endif
+
 }
 
 

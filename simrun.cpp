@@ -154,6 +154,9 @@ BinnedData<cl_fptype> simrun_basic_mccycle(
 
   cout << "   -> Running Monte Carlo cycle" << endl;
 
+  // start the stopwatch
+  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+
   for ( cl_uint bin = 0;
         bin < opts["sim.num-bins"].as<cl_uint>();
         ++bin ) {
@@ -161,8 +164,8 @@ BinnedData<cl_fptype> simrun_basic_mccycle(
     // show progress
     cl_uint progress_percent =
       static_cast<cl_uint>(
-        floor( 100 * static_cast<double>( bin ) /
-               static_cast<double>( opts["sim.num-bins"].as<cl_uint>() - 1 ) )
+        floor( 100 * static_cast<cl_double>( bin ) /
+               static_cast<cl_double>( opts["sim.num-bins"].as<cl_uint>() - 1 ) )
       );
     cout << "\r"
          << "      Bin " << bin + 1 << "/" << opts["sim.num-bins"].as<cl_uint>()
@@ -180,6 +183,23 @@ BinnedData<cl_fptype> simrun_basic_mccycle(
     }
   }
   cout << endl;
+
+  // stop the stopwatch and calculate the elapsed time
+  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+  cl_double total_time   = chrono::duration<cl_double>( t2 - t1 ).count();
+  cl_double time_per_mcs
+    = total_time / static_cast<cl_double>
+        ( opts["sim.num-bins"].as<cl_uint>() *
+          opts["sim.num-binmcs"].as<cl_uint>() );
+  cl_double time_per_phop
+    = time_per_mcs / static_cast<cl_double>
+        ( opts["phys.num-electrons"].as<cl_uint>() );
+
+  cout << endl
+       << "      Finished in " << total_time << " sec" << endl
+       << "      => " << 1.0 / time_per_mcs << " MCS/sec" << endl
+       << "      => " << 1.0 / ( time_per_phop * 1000.0 ) << " PHOPs/millisec"
+       << endl;
 
   vector<FPDevStat> devstat;
   devstat.push_back( model->get_W_devstat() );
