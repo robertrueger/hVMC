@@ -24,14 +24,12 @@ using namespace std;
 
 HubbardModelVMC_CL::HubbardModelVMC_CL(
   const cl::Context& clCtx_init,
-  mt19937 rng_init,
+  std::mt19937 rng_init,
   Lattice* const lat_init,
   const SingleParticleOrbitals& M_init,
   const Jastrow& v_init,
   cl_uint N_init,
-  cl_uint update_hop_maxdist_init,
-  const vector<cl_fptype>& t_init,
-  cl_fptype U_init,
+  const std::vector<cl_fptype>& t_init, cl_fptype U_init,
   cl_fptype W_deviation_target_init,
   cl_uint updates_until_W_recalc_init,
   cl_fptype T_deviation_target_init,
@@ -39,31 +37,34 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
   : clCtx( clCtx_init ),
     rng( rng_init ),
     lat( lat_init ), M( M_init ), v( v_init ),
-    update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
     econf( ElectronConfiguration( lat, N_init, &rng ) ),
     Wbu(
       M_init.ssym ?
-      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
-      Eigen::MatrixXfp( 2 * lat->L, N_init )
+      Eigen::MatrixXfp( lat_init->L, N_init / 2 ) :
+      Eigen::MatrixXfp( 2 * lat_init->L, N_init )
     ),
     Wd(
       M_init.ssym ?
-      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
+      Eigen::MatrixXfp( lat_init->L, N_init / 2 ) :
       Eigen::MatrixXfp( 0 , 0 )
     ),
-   Wbu_fromdev(
+    Wbu_fromdev(
       M_init.ssym ?
-      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
-      Eigen::MatrixXfp( 2 * lat->L, N_init )
+      Eigen::MatrixXfp( lat_init->L, N_init / 2 ) :
+      Eigen::MatrixXfp( 2 * lat_init->L, N_init )
     ),
     Wd_fromdev(
       M_init.ssym ?
-      Eigen::MatrixXfp( lat->L, N_init / 2 ) :
+      Eigen::MatrixXfp( lat_init->L, N_init / 2 ) :
       Eigen::MatrixXfp( 0 , 0 )
-    ),   devWbu_active( nullptr ), devWbu_inactive( nullptr ),
+    ),
+    devWbu_active( nullptr ), devWbu_inactive( nullptr ),
     devWd_active( nullptr ), devWd_inactive( nullptr ),
-    T( Eigen::VectorXfp( lat->L ) ),
+    T( Eigen::VectorXfp( lat_init->L ) ),
+    T_fromdev( Eigen::VectorXfp( lat_init->L ) ),
+    devT_active( nullptr ), devT_inactive( nullptr ),
+    E_l_elbuf( Eigen::VectorXfp( N_init ) ),
     completed_mcsteps( 0 ),
     updates_until_W_recalc( updates_until_W_recalc_init ),
     updates_until_T_recalc( updates_until_T_recalc_init ),
@@ -71,151 +72,8 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
     W_devstat( FPDevStat( W_deviation_target_init ) ),
     T_devstat( FPDevStat( T_deviation_target_init ) )
 {
-  // setup up everything OpenCL related (queue, program, buffers, etc ...)
-  ocl_setup();
+  // ----- setup of all OpenCL objects -----
 
-  bool enough_overlap;
-
-  do {
-
-    econf.distribute_random();
-    enough_overlap = true; // assume until we are proven wrong
-
-#if VERBOSE >=1
-    cout << "HubbardModelVMC::HubbardModelVMC_CL() : checking newly generated "
-         << "state for enough overlap" << endl;
-#endif
-
-    cl_fptype Wbu_avg, Wd_avg;
-
-    if ( M.ssym == true ) {
-
-      // check spin up part
-      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
-      enough_overlap &= lu_decomp.isInvertible();
-      if ( !enough_overlap ) {
-#if VERBOSE >= 1
-        cout << "HubbardModelVMC::HubbardModelVMC_CL() : spin up part has no "
-             << "overlap with the determinantal wavefunction" << endl;
-#endif
-        continue;
-      }
-
-      Wbu.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
-      Wbu_avg = Wbu.squaredNorm() / static_cast<cl_fptype>( Wbu.size() );
-      enough_overlap &= Wbu_avg < 100.f;
-      if ( !enough_overlap ) {
-#if VERBOSE >= 1
-        cout << "HubbardModelVMC::HubbardModelVMC_CL() : spin up part has too "
-             << "little overlap with the determinantal wavefunction, "
-             << "inverse overlap measure is: " << Wbu_avg << endl;
-#endif
-        continue;
-      }
-
-      // check spin down part
-      lu_decomp.compute( calc_Dd().transpose() );
-      enough_overlap &= lu_decomp.isInvertible();
-      if ( !enough_overlap ) {
-#if VERBOSE >= 1
-        cout << "HubbardModelVMC::HubbardModelVMC_CL() : spin down part has no "
-             << "overlap with the determinantal wavefunction" << endl;
-#endif
-        continue;
-      }
-
-      Wd.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
-      Wd_avg = Wd.squaredNorm()  / static_cast<cl_fptype>( Wd.size() );
-      enough_overlap &= Wd_avg < 100.f;
-      if ( !enough_overlap ) {
-#if VERBOSE >= 1
-        cout << "HubbardModelVMC::HubbardModelVMC_CL() : spin down part has too "
-             << "little overlap with the determinantal wavefunction, "
-             << "inverse overlap measure is: " << Wd_avg << endl;
-#endif
-        continue;
-      }
-
-    } else {
-
-      // check whole determinantal part
-      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
-      enough_overlap &= lu_decomp.isInvertible();
-      if ( !enough_overlap ) {
-#if VERBOSE >= 1
-        cout << "HubbardModelVMC::HubbardModelVMC_CL() : state has no "
-             << "overlap with the determinantal wavefunction" << endl;
-#endif
-        continue;
-      }
-
-      Wbu.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
-      Wbu_avg = Wbu.squaredNorm() / static_cast<cl_fptype>( Wbu.size() );
-      enough_overlap &= Wbu_avg < 50.f;
-      if ( !enough_overlap ) {
-#if VERBOSE >= 1
-        cout << "HubbardModelVMC::HubbardModelVMC_CL() : state has too "
-             << "little overlap with the determinantal wavefunction, "
-             << "inverse overlap measure is: " << Wbu_avg << endl;
-#endif
-        continue;
-      }
-
-    }
-
-    // check Jastrow part
-    T = calc_new_T();
-    cl_fptype T_avg = T.squaredNorm() / static_cast<cl_fptype>( T.size() );
-    enough_overlap &= T_avg < 100.f;
-    if ( !enough_overlap ) {
-#if VERBOSE >= 1
-      cout << "HubbardModelVMC::HubbardModelVMC_CL() : Jastrow ratios "
-           << "are to small, inverse measure is: " << T_avg << endl;
-#endif
-      continue;
-    }
-
-#if VERBOSE >= 1
-    cout << "HubbardModelVMC::HubbardModelVMC_CL() : state has sufficient "
-         << "overlap! inverse overlap measures are: "
-         << Wbu_avg << " " << Wd_avg << " " << T_avg
-         << " -> initial state selection completed!" << endl;
-#endif
-
-  } while ( !enough_overlap );
-
-#if VERBOSE >= 1
-  cout << "HubbardModelVMC_CPU::HubbardModelVMC_CL() : calculated initial matrix W ="
-       << endl << Wbu << endl;
-  if ( M.ssym == true ) {
-    cout << "----->" << endl << Wd << endl;
-  }
-#endif
-
-  // enqueue transfer of Wbu and Wd to the device
-  clQ_Wbu.enqueueWriteBuffer(
-    *devWbu_active, CL_FALSE,
-    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
-  );
-  if ( M.ssym == true ) {
-    clQ_Wd.enqueueWriteBuffer(
-      *devWd_active, CL_FALSE,
-      0, Wd.size() * sizeof( cl_fptype ), Wd.data()
-    );
-  }
-}
-
-
-
-HubbardModelVMC_CL::~HubbardModelVMC_CL()
-{
-  delete lat;
-}
-
-
-
-void HubbardModelVMC_CL::ocl_setup()
-{
   // read the programs source code from hmodvmc_cl.cl
   string hmodvmc_sourcecode =
     get_file_contents( get_hVMC_dir() / "hmodvmc_cl.cl" );
@@ -232,12 +90,25 @@ void HubbardModelVMC_CL::ocl_setup()
   assert( used_devices.size() == 1 );
 
   // build the program
-  try {
-    string compileropts = "";
+  stringstream compileropts;
+  compileropts <<  "-D LATTICE_TYPE=" << static_cast<cl_uint>( lat->type );
+  compileropts << " -D LATTICE_NUM_SITES=" << lat->L;
+  if ( lat->type == LATTICE_2DSQUARE ) {
+    compileropts << " -D LATTICE_SIZE=" << uintsqrt( lat->L );
+  }
+  compileropts << " -D NUM_ELECTRONS=" << econf.N();
+  if ( M.ssym == true ) {
+    compileropts << " -D M_IS_SPIN_SYMMETRIC";
+  }
 #ifdef USE_FP_DBLPREC
-    compileropts += "-DUSE_FP_DBLPREC_OPENCL";
+  compileropts << " -D USE_FP_DBLPREC_OPENCL";
 #endif
-    clPrg.build( used_devices, compileropts.c_str() );
+#if VERBOSE >= 1
+  cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : building cl::Program with "
+       << compileropts.str() << endl;
+#endif
+  try {
+    clPrg.build( used_devices, compileropts.str().c_str() );
   } catch ( cl::Error& e ) {
     cerr << "Build failed! " << e.what() << " (" << e.err() << ")" << endl;
     cerr << "Build log:" << endl;
@@ -245,13 +116,60 @@ void HubbardModelVMC_CL::ocl_setup()
     throw e;
   }
 
+  // set up Kernel objects
+  clK_hop           = cl::Kernel( clPrg, "hop" );
+  clK_update_devWbu = cl::Kernel( clPrg, "update_Wbu" );
+  if ( M.ssym == true ) {
+    clK_update_devWd  = cl::Kernel( clPrg, "update_Wd" );
+  }
+  clK_update_devT   = cl::Kernel( clPrg, "update_T" );
+  clK_calc_E_l      = cl::Kernel( clPrg, "calc_E_l" );
+
   // setup the command queue
-  clQ_Wbu = cl::CommandQueue(
-              clCtx, used_devices[0]
+  clQ = cl::CommandQueue(
+          clCtx, used_devices[0]
+        );
+
+  // set up and transfer the Jastrow
+  vector<cl_fptype> expv = v.get_reduced_raw_jastrow();
+  devexpv = cl::Buffer(
+              clCtx, CL_MEM_READ_ONLY,
+              expv.size() * sizeof( cl_fptype )
             );
-  clQ_Wd = cl::CommandQueue(
-             clCtx, used_devices[0]
-           );
+  clQ.enqueueWriteBuffer(
+    devexpv, CL_FALSE,
+    0, expv.size() * sizeof( cl_fptype ), expv.data()
+  );
+
+  // set up and transfer hopping parameters + U buffer
+  devUt = cl::Buffer(
+            clCtx, CL_MEM_READ_ONLY,
+            4 * sizeof( cl_fptype )
+          );
+
+  cl_fptype Ut[4];
+  Ut[0] = U;
+  Ut[1] = t[0];
+  Ut[2] = t[1];
+  Ut[3] = t[2];
+
+  clQ.enqueueWriteBuffer(
+    devUt, CL_FALSE,
+    0, 4 * sizeof( cl_fptype ), Ut
+  );
+
+  // set up the device buffer for the current electron hop
+  devehop = cl::Buffer( clCtx, CL_MEM_READ_WRITE, 128 );
+
+  // set up electronic configuration buffers on the device
+  deveconf_site_occ = cl::Buffer(
+                        clCtx, CL_MEM_READ_WRITE,
+                        2 * lat->L * sizeof( cl_uint )
+                      );
+  deveconf_electron_pos = cl::Buffer(
+                            clCtx, CL_MEM_READ_WRITE,
+                            lat->L * sizeof( cl_uint )
+                          );
 
   // set up W buffers on the device
   devWbu_1 = cl::Buffer(
@@ -265,21 +183,209 @@ void HubbardModelVMC_CL::ocl_setup()
   devWbu_active   = &devWbu_1;
   devWbu_inactive = &devWbu_2;
 
+  devWd_1 = cl::Buffer(
+              clCtx, CL_MEM_READ_WRITE,
+              Wd.size() * sizeof( cl_fptype )
+            );
+  devWd_2 = cl::Buffer(
+              clCtx, CL_MEM_READ_WRITE,
+              Wd.size() * sizeof( cl_fptype )
+            );
+  devWd_active   = &devWd_1;
+  devWd_inactive = &devWd_2;
+
+  // set up T buffers on the device
+  devT_1 = cl::Buffer(
+             clCtx, CL_MEM_READ_WRITE,
+             T.size() * sizeof( cl_fptype )
+           );
+  devT_2 = cl::Buffer(
+             clCtx, CL_MEM_READ_WRITE,
+             T.size() * sizeof( cl_fptype )
+           );
+  devT_active   = &devT_1;
+  devT_inactive = &devT_2;
+
+  // set up the E_l output buffer for the individual electrons
+  devE_l_elbuf = cl::Buffer(
+                   clCtx, CL_MEM_WRITE_ONLY,
+                   E_l_elbuf.size() * sizeof( cl_fptype )
+                 );
+
+  // ----- initial state generation -----
+
+  bool enough_overlap;
+
+  do {
+
+    econf.distribute_random();
+    enough_overlap = true; // assume until we are proven wrong
+
+#if VERBOSE >=1
+    cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : checking newly generated "
+         << "state for enough overlap" << endl;
+#endif
+
+    cl_fptype Wbu_avg, Wd_avg;
+
+    if ( M.ssym == true ) {
+
+      // check spin up part
+      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
+      enough_overlap &= lu_decomp.isInvertible();
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : spin up part has no "
+             << "overlap with the determinantal wavefunction" << endl;
+#endif
+        continue;
+      }
+
+      Wbu.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+      Wbu_avg = Wbu.squaredNorm() / static_cast<cl_fptype>( Wbu.size() );
+      enough_overlap &= Wbu_avg < 100.f;
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : spin up part has too "
+             << "little overlap with the determinantal wavefunction, "
+             << "inverse overlap measure is: " << Wbu_avg << endl;
+#endif
+        continue;
+      }
+
+      // check spin down part
+      lu_decomp.compute( calc_Dd().transpose() );
+      enough_overlap &= lu_decomp.isInvertible();
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : spin down part has no "
+             << "overlap with the determinantal wavefunction" << endl;
+#endif
+        continue;
+      }
+
+      Wd.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+      Wd_avg = Wd.squaredNorm()  / static_cast<cl_fptype>( Wd.size() );
+      enough_overlap &= Wd_avg < 100.f;
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : spin down part has too "
+             << "little overlap with the determinantal wavefunction, "
+             << "inverse overlap measure is: " << Wd_avg << endl;
+#endif
+        continue;
+      }
+
+    } else {
+
+      // check whole determinantal part
+      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
+      enough_overlap &= lu_decomp.isInvertible();
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : state has no "
+             << "overlap with the determinantal wavefunction" << endl;
+#endif
+        continue;
+      }
+
+      Wbu.noalias() = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+      Wbu_avg = Wbu.squaredNorm() / static_cast<cl_fptype>( Wbu.size() );
+      enough_overlap &= Wbu_avg < 50.f;
+      if ( !enough_overlap ) {
+#if VERBOSE >= 1
+        cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : state has too "
+             << "little overlap with the determinantal wavefunction, "
+             << "inverse overlap measure is: " << Wbu_avg << endl;
+#endif
+        continue;
+      }
+
+    }
+
+    // check Jastrow part
+    calc_new_T();
+    cl_fptype T_avg = T.squaredNorm() / static_cast<cl_fptype>( T.size() );
+    enough_overlap &= T_avg < 100.f;
+    if ( !enough_overlap ) {
+#if VERBOSE >= 1
+      cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : Jastrow ratios "
+           << "are to small, inverse measure is: " << T_avg << endl;
+#endif
+      continue;
+    }
+
+#if VERBOSE >= 1
+    cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : state has sufficient "
+         << "overlap! inverse overlap measures are: "
+         << Wbu_avg << " " << Wd_avg << " " << T_avg
+         << " -> initial state selection completed!" << endl;
+#endif
+
+  } while ( !enough_overlap );
+
+#if VERBOSE >= 1
+  cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : calculated initial matrix W ="
+       << endl << Wbu << endl;
   if ( M.ssym == true ) {
-    devWd_1 = cl::Buffer(
-                clCtx, CL_MEM_READ_WRITE,
-                Wd.size() * sizeof( cl_fptype )
-              );
-    devWd_2 = cl::Buffer(
-                clCtx, CL_MEM_READ_WRITE,
-                Wd.size() * sizeof( cl_fptype )
-              );
-    devWd_active   = &devWd_1;
-    devWd_inactive = &devWd_2;
+    cout << "----->" << endl << Wd << endl;
+  }
+#endif
+
+
+  // ----- transfer of initial state to the OpenCL device -----
+
+  // enqueue transfer of Wbu and Wd to the device
+  clQ.enqueueWriteBuffer(
+    *devWbu_active, CL_FALSE,
+    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
+  );
+  if ( M.ssym == true ) {
+    clQ.enqueueWriteBuffer(
+      *devWd_active, CL_FALSE,
+      0, Wd.size() * sizeof( cl_fptype ), Wd.data()
+    );
   }
 
-  // set up Kernel objects
-  clK_update_devW = cl::Kernel( clPrg, "update_W" );
+  // copy the current electron configuration to the raw data buffers
+  vector<cl_uint> econf_site_occ     = econf.get_site_occ_raw();
+  vector<cl_uint> econf_electron_pos = econf.get_electron_pos_raw();
+
+  // enqueue transfer of the electron position buffers to the device
+  clQ.enqueueWriteBuffer(
+    deveconf_site_occ, CL_FALSE,
+    0, econf_site_occ.size() * sizeof( cl_uint ), econf_site_occ.data()
+  );
+  clQ.enqueueWriteBuffer(
+    deveconf_electron_pos, CL_FALSE,
+    0, econf_electron_pos.size() * sizeof( cl_uint ), econf_electron_pos.data()
+  );
+
+  // wait for all transfers to the device to complete
+  clQ.finish();
+}
+
+
+
+HubbardModelVMC_CL::~HubbardModelVMC_CL()
+{
+  delete lat;
+}
+
+
+
+void HubbardModelVMC_CL::sync_econf_down()
+{
+  vector<cl_uint> electron_pos_raw( econf.N() );
+
+  // download the electron position buffers from the device (blocking!)
+  clQ.enqueueReadBuffer(
+    deveconf_electron_pos, CL_TRUE,
+    0, electron_pos_raw.size() * sizeof( cl_uint ), electron_pos_raw.data()
+  );
+
+  // use the raw position vector to make a new ElectronConfiguration object
+  econf.init_from_raw_elpos( electron_pos_raw );
 }
 
 
@@ -314,91 +420,41 @@ void HubbardModelVMC_CL::equilibrate( cl_uint N_mcs_equil )
 
 
 
-bool HubbardModelVMC_CL::metstep()
+void HubbardModelVMC_CL::metstep()
 {
-  // let the electron configuration propose a random hop
-  const ElectronHop& phop = econf.propose_random_hop( update_hop_maxdist );
+  clQ.flush();
 
+  // generate the random numbers
+  cl_uint hopping_elid
+    = uniform_int_distribution<cl_uint>( 0, econf.N() - 1 )( rng );
+  cl_uint hopto_nid
+    = uniform_int_distribution<cl_uint>( 0, lat->coordnum - 1 )( rng );
+  cl_fptype hop_selector
+    = uniform_real_distribution<cl_fptype>( 0, 1 )( rng ); 
 
-  // check if the hop is possible (hopto site must be empty)
-  if ( phop.possible == false ) {
+  // enqueue a new hop
+  clK_hop.setArg( 0, devehop );
+  clK_hop.setArg( 1, deveconf_electron_pos );
+  clK_hop.setArg( 2, deveconf_site_occ );
+  clK_hop.setArg( 3, *devWbu_active );
+  clK_hop.setArg( 4, *devWd_active );
+  clK_hop.setArg( 5, *devT_active );
+  clK_hop.setArg( 6, devexpv );
+  clK_hop.setArg( 7, hopping_elid );
+  clK_hop.setArg( 8, hopto_nid );
+  clK_hop.setArg( 9, hop_selector );
+  clQ.enqueueNDRangeKernel( clK_hop,
+    cl::NullRange, cl::NDRange( 1 ), cl::NDRange( 1 )
+  );
 
-    // hop is not possible, rejected!
-#if VERBOSE >= 1
-    cout << "HubbardModelVMC_CL::metstep() : hop impossible!" << endl;
-#endif
-    return false;
-
-  } else { // hop possible!
-
-    // enqueue transfer of W_lk from the device to the host
-    cl_fptype W_lk;
-    if ( M.ssym == true && phop.k >= econf.N() / 2 ) {
-      // the W_lk element is part of devWd_active
-      clQ_Wd.enqueueReadBuffer(
-        *devWd_active, CL_FALSE,
-        ( ( phop.l - lat->L ) * Wd.cols() + ( phop.k - econf.N() / 2 ) )
-        * sizeof( cl_fptype ),
-        sizeof( cl_fptype ), &W_lk
-      );
-    } else {
-      // the W_lk element is part of devWbu_active
-      clQ_Wbu.enqueueReadBuffer(
-        *devWbu_active, CL_FALSE,
-        ( phop.l * Wbu.cols() + phop.k ) * sizeof( cl_fptype ),
-        sizeof( cl_fptype ), &W_lk
-      );
-    }
-
-    const cl_fptype R_j =
-      T( lat->get_spinup_site( phop.l ) )
-      / T( lat->get_spinup_site( phop.k_pos ) )
-      * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
-
-    // wait for the W_lk transfer to finish
-    if ( M.ssym == true && phop.k >= econf.N() / 2 ) {
-      clQ_Wd.finish();
-    } else {
-      clQ_Wbu.finish();
-    }
-
-    const cl_fptype accept_prob = R_j * R_j * W_lk * W_lk;
-
-#if VERBOSE >= 1
-    cout << "HubbardModelVMC_CL::metstep() : hop possible -> "
-         << "R_j = " << R_j
-         << ", sdwf_ratio = " << W_lk
-         << ", accept_prob = " << accept_prob << endl;
-#endif
-
-    if ( accept_prob >= 1.f ||
-         uniform_real_distribution<cl_fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
-
-#if VERBOSE >= 1
-      cout << "HubbardModelVMC_CL::metstep() : hop accepted!" << endl;
-#endif
-
-      econf.do_hop( phop );
-
-      perform_W_update( phop );
-      perform_T_update( phop );
-
-      return true;
-
-    } else { // hop possible but rejected!
-
-#if VERBOSE >= 1
-      cout << "HubbardModelVMC_CL::metstep() : hop rejected!" << endl;
-#endif
-
-      return false;
-    }
-  }
+  // update W and T
+  perform_W_update();
+  perform_T_update();
 }
 
 
 
-void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
+void HubbardModelVMC_CL::perform_W_update()
 {
   if ( updates_since_W_recalc >= updates_until_W_recalc ) {
 
@@ -406,19 +462,23 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
     cout << "HubbardModelVMC_CL::perform_W_update() : recalculating W!" << endl;
 #endif
 
+    // download electron configuration from the device
+    sync_econf_down();
+
     // enqueue update of W on the device
     // (we want to update it to the point of the recalculated W)
-    calc_qupdated_W( hop );
+    // (the updated W will be in the _inactive_ buffer!)
+    calc_qupdated_W();
 
     // enqueue transfer of the updated W from the device to the host
     // (waits for the update to finish first)
-    clQ_Wbu.enqueueReadBuffer(
-      *devWbu_active, CL_FALSE,
+    clQ.enqueueReadBuffer(
+      *devWbu_inactive, CL_FALSE,
       0, Wbu_fromdev.size() * sizeof( cl_fptype ), Wbu_fromdev.data()
     );
     if ( M.ssym == true ) {
-      clQ_Wd.enqueueReadBuffer(
-        *devWd_active, CL_FALSE,
+      clQ.enqueueReadBuffer(
+        *devWd_inactive, CL_FALSE,
         0, Wd_fromdev.size() * sizeof( cl_fptype ), Wd_fromdev.data()
       );
     }
@@ -426,17 +486,17 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
     // recalculate W on the host
     calc_new_W();
 
-    // wait for transfers from the device to finish
-    clQ_Wbu.finish();
-    clQ_Wd.finish();
+    // wait for transfer of W from the device to finish
+    clQ.finish();
 
     // enqueue upload of the recalculated W to the device
-    clQ_Wbu.enqueueWriteBuffer(
+    // (it will be put in the _active_ buffer)
+    clQ.enqueueWriteBuffer(
       *devWbu_active, CL_FALSE,
       0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
     );
     if ( M.ssym == true ) {
-      clQ_Wd.enqueueWriteBuffer(
+      clQ.enqueueWriteBuffer(
         *devWd_active, CL_FALSE,
         0, Wd.size() * sizeof( cl_fptype ), Wd.data()
       );
@@ -480,7 +540,13 @@ void HubbardModelVMC_CL::perform_W_update( const ElectronHop& hop )
          << "performing a quick update of W!" << endl;
 #endif
 
-    calc_qupdated_W( hop );
+    calc_qupdated_W();
+
+    swap( devWbu_active, devWbu_inactive );
+    if ( M.ssym == true ) {
+      swap( devWd_active, devWd_inactive );
+    }
+
     ++updates_since_W_recalc;
   }
 }
@@ -544,61 +610,54 @@ Eigen::MatrixXfp HubbardModelVMC_CL::calc_Dd() const
 void HubbardModelVMC_CL::calc_new_W()
 {
   if ( M.ssym == true ) {
-    Wbu.noalias() =
-      calc_Du().transpose()
-      .partialPivLu().solve( M.orbitals.transpose() )
-      .transpose();
-    Wd.noalias() =
-      calc_Dd().transpose()
-      .partialPivLu().solve( M.orbitals.transpose() )
-      .transpose();
+
+    Wbu.noalias()
+      = calc_Du().transpose()
+        .partialPivLu().solve( M.orbitals.transpose() )
+        .transpose();
+    Wd.noalias()
+      = calc_Dd().transpose()
+        .partialPivLu().solve( M.orbitals.transpose() )
+        .transpose();
+
   } else {
-    Wbu.noalias() =
-      calc_Db().transpose()
-      .partialPivLu().solve( M.orbitals.transpose() )
-      .transpose();
+
+    Wd.noalias()
+      = calc_Db().transpose()
+        .partialPivLu().solve( M.orbitals.transpose() )
+        .transpose();
+
   }
 }
 
 
 
-void HubbardModelVMC_CL::calc_qupdated_W( const ElectronHop& hop )
+void HubbardModelVMC_CL::calc_qupdated_W()
 {
-  // enqueue the kernel that updates W on the device
-  if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
-    // devWd must be updated
-    clK_update_devW.setArg( 0, *devWd_active );
-    clK_update_devW.setArg( 1, *devWd_inactive );
-    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wd.cols() ) );
-    clK_update_devW.setArg( 3, hop.k - econf.N() / 2 );
-    clK_update_devW.setArg( 4, hop.l - lat->L );
-    clK_update_devW.setArg( 5, hop.k_pos - lat->L );
-    cl::NDRange global( Wd.size() );
-    clQ_Wd.enqueueNDRangeKernel(
-      clK_update_devW,
-      cl::NullRange, global, cl::NullRange
+  // enqueue update of Wbu
+  clK_update_devWbu.setArg( 0, devehop );
+  clK_update_devWbu.setArg( 1, *devWbu_active );
+  clK_update_devWbu.setArg( 2, *devWbu_inactive );
+  clQ.enqueueNDRangeKernel(
+    clK_update_devWbu,
+    cl::NullRange, cl::NDRange( Wbu.size() ), cl::NullRange
+  );
+
+  if ( M.ssym == true ) {
+    // enqueue update of Wd
+    clK_update_devWd.setArg( 0, devehop );
+    clK_update_devWd.setArg( 1, *devWd_active );
+    clK_update_devWd.setArg( 2, *devWd_inactive );
+    clQ.enqueueNDRangeKernel(
+      clK_update_devWd,
+      cl::NullRange, cl::NDRange( Wd.size() ), cl::NullRange
     );
-    swap( devWd_active, devWd_inactive );
-  } else {
-    // devWbu must be updated
-    clK_update_devW.setArg( 0, *devWbu_active );
-    clK_update_devW.setArg( 1, *devWbu_inactive );
-    clK_update_devW.setArg( 2, static_cast<cl_uint>( Wbu.cols() ) );
-    clK_update_devW.setArg( 3, hop.k );
-    clK_update_devW.setArg( 4, hop.l );
-    clK_update_devW.setArg( 5, hop.k_pos );
-    cl::NDRange global( Wbu.size() );
-    clQ_Wbu.enqueueNDRangeKernel(
-      clK_update_devW,
-      cl::NullRange, global, cl::NullRange
-    );
-    swap( devWbu_active, devWbu_inactive );
   }
 }
 
 
 
-void HubbardModelVMC_CL::perform_T_update( const ElectronHop& hop )
+void HubbardModelVMC_CL::perform_T_update()
 {
   if ( updates_since_T_recalc >= updates_until_T_recalc ) {
 
@@ -606,12 +665,36 @@ void HubbardModelVMC_CL::perform_T_update( const ElectronHop& hop )
     cout << "HubbardModelVMC_CL::perform_T_update() : recalculating T!" << endl;
 #endif
 
-    updates_since_T_recalc = 0;
+    // download electron configuration from the device
+    sync_econf_down();
+    
+    // enqueue update of T on the device
+    // (we want to update it to the point of the recalculated T)
+    // (the updated T will be in the _inactive_ buffer!)
+    calc_qupdated_T();
 
-    const Eigen::MatrixXfp& T_approx = calc_qupdated_T( hop );
-    T = calc_new_T();
+    // enqueue transfer of the updated T from the device to the host
+    // (waits for the update to finish first)
+    clQ.enqueueReadBuffer(
+      *devT_inactive, CL_FALSE,
+      0, T_fromdev.size() * sizeof( cl_fptype ), T_fromdev.data()
+    );
 
-    cl_fptype dev = calc_deviation( T_approx, T );
+    // recalculate T on the host
+    calc_new_T();
+
+    // wait for transfer of T from the device to finish
+    clQ.finish();
+
+    // enqueue upload of the recalculated T to the device
+    // (it will be put in the _active_ buffer)
+    clQ.enqueueWriteBuffer(
+      *devT_active, CL_FALSE,
+      0, T.size() * sizeof( cl_fptype ), T.data()
+    );
+
+    // compare the recalculated T and the updated T on the host
+    cl_fptype dev = calc_deviation( T, T_fromdev );
     T_devstat.add( dev );
 
 #if VERBOSE >= 1
@@ -622,13 +705,15 @@ void HubbardModelVMC_CL::perform_T_update( const ElectronHop& hop )
       cout << "HubbardModelVMC_CL::perform_T_update() : deviation goal for matrix "
            << "T not met!" << endl
            << "HubbardModelVMC_CL::perform_T_update() : approximate T =" << endl
-           << T_approx.transpose() << endl
-           << "HubbardModelVMC_CL::perform_T_update() : exact T =" << endl
-           << T.transpose() << endl;
+           << T_fromdev << endl;
+      cout << "HubbardModelVMC_CL::perform_T_update() : exact T =" << endl
+           << T << endl;
     }
 #endif
 
     assert( dev < T_devstat.target );
+
+    updates_since_T_recalc = 0;
 
   } else {
 
@@ -637,134 +722,67 @@ void HubbardModelVMC_CL::perform_T_update( const ElectronHop& hop )
          << "performing a quick update of T!" << endl;
 #endif
 
+    calc_qupdated_T();
+
+    swap( devT_active, devT_inactive );
+
     ++updates_since_T_recalc;
-
-    T = calc_qupdated_T( hop );
-
-#ifndef NDEBUG
-    const Eigen::MatrixXfp& T_chk = calc_new_T();
-    cl_fptype dev = calc_deviation( T, T_chk );
-
-# if VERBOSE >= 1
-    cout << "HubbardModelVMC_CL::perform_T_update() : "
-         << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
-
-    if ( dev > T_devstat.target ) {
-      cout << "HubbardModelVMC_CL::perform_T_update() : deviation goal for matrix "
-           << "T not met!" << endl
-           << "HubbardModelVMC_CL::perform_T_update() : quickly updated T =" << endl
-           << T.transpose() << endl
-           << "HubbardModelVMC_CL::perform_T_update() : exact T =" << endl
-           << T_chk.transpose() << endl;
-    }
-# endif
-#endif
-
-    assert( dev < T_devstat.target );
   }
 }
 
 
 
-Eigen::VectorXfp HubbardModelVMC_CL::calc_new_T() const
+void HubbardModelVMC_CL::calc_new_T()
 {
-  Eigen::VectorXfp T_new( lat->L );
-
   for ( cl_uint i = 0; i < lat->L; ++i ) {
     cl_fptype sum = 0.f;
     for ( cl_uint j = 0; j < lat->L; ++j ) {
       sum += v( i, j ) * static_cast<cl_fptype>(
                ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
     }
-    T_new( i ) = exp( sum );
+    T( i ) = exp( sum );
   }
-
-  return T_new;
 }
 
 
 
-Eigen::VectorXfp HubbardModelVMC_CL::calc_qupdated_T( const ElectronHop& hop ) const
+void HubbardModelVMC_CL::calc_qupdated_T()
 {
-  Eigen::VectorXfp T_prime( lat->L );
-
-  for ( cl_uint i = 0; i < lat->L; ++i ) {
-    T_prime( i ) = T( i ) * v.exp( i, lat->get_spinup_site( hop.l ) )
-                   / v.exp( i, lat->get_spinup_site( hop.k_pos ) );
-  }
-
-  return T_prime;
+  clK_update_devT.setArg( 0, devehop );
+  clK_update_devT.setArg( 1, devT_active );
+  clK_update_devT.setArg( 2, devT_inactive );
+  clK_update_devT.setArg( 3, devexpv );
+  clQ.enqueueNDRangeKernel(
+    clK_update_devT,
+    cl::NullRange, cl::NDRange( lat->L ), cl::NullRange
+  );
 }
 
 
 
 cl_fptype HubbardModelVMC_CL::E_l()
 {
-  // enqueue transfer of W from the device to the host
-  clQ_Wbu.enqueueReadBuffer(
-    *devWbu_active, CL_FALSE,
-    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
+  // enqueue calculation of E_l for the individual electrons
+  clK_calc_E_l.setArg( 0, devE_l_elbuf );
+  clK_calc_E_l.setArg( 1, deveconf_electron_pos );
+  clK_calc_E_l.setArg( 2, deveconf_site_occ );
+  clK_calc_E_l.setArg( 3, *devWbu_active );
+  clK_calc_E_l.setArg( 4, *devWd_active );
+  clK_calc_E_l.setArg( 5, *devT_active );
+  clK_calc_E_l.setArg( 6, devexpv );
+  clK_calc_E_l.setArg( 7, devUt );
+  clQ.enqueueNDRangeKernel( clK_calc_E_l,
+    cl::NullRange, cl::NDRange( econf.N() ), cl::NullRange
   );
-  if ( M.ssym == true ) {
-    clQ_Wd.enqueueReadBuffer(
-      *devWd_active, CL_FALSE,
-      0, Wd.size() * sizeof( cl_fptype ), Wd.data()
-    );
-  }
 
-  // buffer vector for X nearest neighbors
-  // (in order to avoid allocating new ones all the time)
-  std::vector<cl_uint> k_pos_Xnn;
+  // transfer results to the host (blocking!)
+  clQ.enqueueReadBuffer(
+    devE_l_elbuf, CL_TRUE,
+    0, E_l_elbuf.size() * sizeof(cl_fptype), E_l_elbuf.data()
+  );
 
-  // calculate expectation value of the T part of H
-  cl_fptype E_l_kin = 0.f;
-
-  // wait for the transfer of W_bu from the device to finish
-  clQ_Wbu.finish();
-
-  for ( cl_uint k = 0; k < econf.N(); ++k ) {
-
-    if ( M.ssym == true && k == econf.N() / 2 ) {
-      // wait for W_d transfer to finish
-      clQ_Wd.finish();
-    }
-
-    const cl_uint k_pos = econf.get_electron_pos( k );
-    assert( econf.get_site_occ( k_pos ) == ELECTRON_OCCUPATION_FULL );
-
-    for ( cl_uint X = 1; X <= t.size(); ++X ) {
-      if ( t[X - 1] == 0.f ) {
-        continue;
-      }
-
-      cl_fptype sum_Xnn = 0.f;
-      lat->get_Xnn( k_pos, X, &k_pos_Xnn );
-      for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
-        if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const cl_fptype R_j = T( lat->get_spinup_site( *l_it ) )
-                                / T( lat->get_spinup_site( k_pos ) )
-                                * v.exp_onsite() / v.exp( *l_it, k_pos );
-          if ( M.ssym == true && k >= econf.N() / 2 ) {
-            sum_Xnn += R_j * Wd( *l_it - lat->L, k - econf.N() / 2 );
-          } else {
-            sum_Xnn += R_j * Wbu( *l_it, k );
-          }
-        }
-      }
-      E_l_kin -= t[X - 1] * sum_Xnn;
-
-    }
-  }
-
-  const cl_fptype E_l_result =
-    ( E_l_kin + U * econf.get_num_dblocc() ) /
-    static_cast<cl_fptype>( lat->L );
-
-#if VERBOSE >= 1
-  cout << "HubbardModelVMC_CL::E_l() = " << E_l_result << endl;
-#endif
-
-  return E_l_result;
+  // return the summed up results of the individual electrons
+  return E_l_elbuf.sum();
 }
 
 

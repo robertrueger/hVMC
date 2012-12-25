@@ -112,7 +112,6 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
       move( M ),
       move( v ),
       opts["phys.num-electrons"].as<cl_uint>(),
-      opts["sim.update-hop-maxdistance"].as<cl_uint>(),
       move( t ),
       opts["phys.onsite-energy"].as<cl_fptype>(),
       opts["fpctrl.W-deviation-target"].as<cl_fptype>(),

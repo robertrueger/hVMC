@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <stdexcept>
 
 #include <CL/cl_platform.h>
 
@@ -44,7 +45,7 @@ class Jastrow final
 
     Lattice* const lat;
 
-    std::vector< std::vector<float> > idxrel_expv;
+    std::vector< std::vector<cl_fptype> > idxrel_expv;
 
   public:
 
@@ -57,6 +58,7 @@ class Jastrow final
     cl_fptype exp_onsite() const;
     void set( cl_uint i, cl_uint j, cl_fptype v_new  );
 
+    std::vector<cl_fptype> get_reduced_raw_jastrow() const;
 };
 
 #endif // JASTROW_H_INCLUDED

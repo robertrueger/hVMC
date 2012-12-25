@@ -32,8 +32,8 @@
 typedef std::pair<cl_uint, cl_uint> IrreducibleIdxRel;
 
 enum lattice_t {
-  LATTICE_1DCHAIN,
-  LATTICE_2DSQUARE
+  LATTICE_1DCHAIN  = 0,
+  LATTICE_2DSQUARE = 1
 };
 
 class Lattice {    
@@ -41,10 +41,11 @@ class Lattice {
   public:
 
     const lattice_t type;
+    const cl_uint coordnum;
     const cl_uint L;
 
-    Lattice( lattice_t type_init, cl_uint L_init )
-      : type( type_init ), L( L_init ) { }
+    Lattice( lattice_t type_init, cl_uint coordnum_init, cl_uint L_init )
+      : type( type_init ), coordnum( coordnum_init), L( L_init ) { }
     virtual ~Lattice() { }
 
     cl_uint get_spinup_site( cl_uint l ) const;

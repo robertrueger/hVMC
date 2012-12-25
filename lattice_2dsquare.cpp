@@ -23,7 +23,7 @@ using namespace std;
 
 
 Lattice2DSquare::Lattice2DSquare( cl_uint L_init )
-  : Lattice( LATTICE_2DSQUARE, L_init ), S( uintsqrt( L_init ) )
+  : Lattice( LATTICE_2DSQUARE, 4, L_init ), S( uintsqrt( L_init ) )
 {
   assert( is_perfect_square( L_init ) );
 }

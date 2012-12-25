@@ -23,7 +23,7 @@ using namespace std;
 
 
 Lattice1DChain::Lattice1DChain( cl_uint L_init )
-  : Lattice( LATTICE_1DCHAIN, L_init ) { }
+  : Lattice( LATTICE_1DCHAIN, 2, L_init ) { }
 
 
 

@@ -26,6 +26,7 @@
 
 #include <vector>
 #include <random>
+#include <stdexcept>
 
 #include <CL/cl_platform.h>
 #include <eigen3/Eigen/Eigen>
@@ -80,8 +81,12 @@ class ElectronConfiguration final
 
   public:
 
-    ElectronConfiguration( Lattice* const lat_init, cl_uint N_init,
-                           std::mt19937* rng_init );
+    ElectronConfiguration(
+      Lattice* const lat_init, cl_uint N_init,
+      std::mt19937* rng_init
+    );
+
+    void init_from_raw_elpos( const std::vector<cl_uint>& raw_electron_pos );
 
     void distribute_random();
 
@@ -92,6 +97,9 @@ class ElectronConfiguration final
     cl_uint get_site_occ( cl_uint l ) const;
     cl_uint N() const;
     cl_uint get_num_dblocc() const;
+
+    std::vector<cl_uint> get_site_occ_raw() const;
+    std::vector<cl_uint> get_electron_pos_raw() const;
 
 };
 

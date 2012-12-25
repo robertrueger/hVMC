@@ -30,10 +30,22 @@ ElectronConfiguration::ElectronConfiguration(
     site_occ(
       Eigen::Matrix<cl_uint, Eigen::Dynamic, 1>::Zero( 2 * lat_init->L )
     ),
-    electron_pos( electron_number_init ),
+    electron_pos( std::vector<cl_uint>( electron_number_init ) ),
     rng( rng_init )
 {
   distribute_random();
+}
+
+
+
+void ElectronConfiguration::init_from_raw_elpos(
+  const std::vector<cl_uint>& raw_electron_pos )
+{
+  assert( raw_electron_pos.size() == electron_number );
+  electron_pos = raw_electron_pos;
+  for ( cl_uint i = 0; i < electron_pos.size(); ++i ) {
+    site_occ( electron_pos[ i ] ) = ELECTRON_OCCUPATION_FULL;
+  }
 }
 
 
@@ -233,4 +245,22 @@ cl_uint ElectronConfiguration::N() const
 cl_uint ElectronConfiguration::get_num_dblocc() const
 {
   return ( site_occ.head( lat->L ).array() * site_occ.tail( lat->L ).array() ).sum();
+}
+
+
+
+vector<cl_uint> ElectronConfiguration::get_site_occ_raw() const
+{
+  vector<cl_uint> rawdat( site_occ.size() );
+  for ( cl_uint i = 0; i < site_occ.size(); ++i ) {
+    rawdat.at( i ) = site_occ( i );
+  }
+  return rawdat;
+}
+
+
+
+vector<cl_uint> ElectronConfiguration::get_electron_pos_raw() const
+{
+  return electron_pos;
 }

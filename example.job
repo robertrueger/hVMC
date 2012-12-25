@@ -34,16 +34,16 @@ onsite-energy = 4.0
 lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 144
+num-lattice-sites = 36
 
 # total number of electrons
-num-electrons = 144
+num-electrons = 26
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
 
 # maximum hopping distance for electronic configuration updates
-update-hop-maxdistance = 2
+update-hop-maxdistance = 1
 
 # number of Monte Carlo steps for equilibration
 num-mcs-equil = 100
@@ -55,7 +55,7 @@ num-bins = 100
 num-binmcs = 100
 
 # random number generator seed
-rng-seed = 1337133789
+# rng-seed = 1337133789
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################
@@ -76,10 +76,10 @@ rng-seed = 1337133789
 [cl] ########################## OPENCL OPTIONS #################################
 
 # use OpenCL
-enabled = 1
+enabled = 0
 
 # OpenCL platform # to use
-platform = 0
+platform = 1
 
 # OpenCL device # in selected platform
 device = 0

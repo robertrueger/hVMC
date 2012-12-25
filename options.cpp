@@ -285,6 +285,20 @@ Options read_options( int argc, char const* argv[] )
     exit( 1 );
   }
 
+
+  // other checks
+  try {
+
+    if ( vm["sim.update-hop-maxdistance"].as<cl_uint>() > 1 &&
+         vm["cl.enable"].as<cl_uint>() == 1 ) {
+      throw runtime_error( "the OpenCL path only supports hopping distance 1" );
+    }
+
+  } catch ( const runtime_error&& e ) {
+    cerr << "Error in parameters: " << e.what() << endl;
+    exit( 1 );
+  }
+
   return vm;
 }
 

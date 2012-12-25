@@ -28,6 +28,13 @@
 
 class HubbardModelVMC
 {
+  private:
+
+    // functions to calculate the matrix D
+    Eigen::MatrixXfp calc_Db() const;
+    Eigen::MatrixXfp calc_Du() const;
+    Eigen::MatrixXfp calc_Dd() const;
+
   public:
 
     virtual ~HubbardModelVMC() { }

@@ -121,3 +121,14 @@ void Jastrow::set( cl_uint i, cl_uint j, cl_fptype v_new )
 
   idxrel_expv.at( redidx.first ).at( redidx.second ) = std::exp( v_new );
 }
+
+
+
+vector<cl_fptype> Jastrow::get_reduced_raw_jastrow() const
+{
+  if ( idxrel_expv.size() == 1 ) {
+    return idxrel_expv[0];
+  } else {
+    throw logic_error("the Jastrow factor is not reducible on this lattice");
+  }
+}
