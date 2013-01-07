@@ -222,7 +222,7 @@ uint lattice_get_2nn( uint l, uint id )
       return l + LATTICE_NUM_SITES - LATTICE_SIZE - 1;
     } else {
       // in the center
-      return l - LATTICE_NUM_SITES - 1;
+      return l - LATTICE_SIZE - 1;
     }
 
   } else if ( id == 1 ) { // bottom right neighbor
@@ -407,6 +407,21 @@ kernel void hop(
 {
   if ( get_global_id( 0 ) == 0 ) {
 
+#if VERBOSE
+    printf( "Electron configuration is \n" );
+    for ( uint i = 0; i < NUM_ELECTRONS; ++i ) {
+      printf( "%i ", electron_pos[ i ] );
+    }
+    printf( "\n" );
+    for ( uint l = 0; l < 2 * LATTICE_NUM_SITES; ++l ) {
+      if ( l == LATTICE_NUM_SITES ) {
+        printf( "\n" );
+      }
+      printf( "%i ", site_occ[ l ] );
+    }
+    printf( "\n" );
+#endif
+
     // propose a hop
     struct ElectronHop thishop;
     thishop.k        = rand_hopel_id;
@@ -414,9 +429,19 @@ kernel void hop(
     thishop.l        = lattice_get_1nn( thishop.k_pos, rand_hopnn_id );
     thishop.accepted = false;
 
+#if VERBOSE
+    printf(
+      "Proposed hop: k = %i, l = %i, k_pos = %i\n",
+      thishop.k, thishop.l, thishop.k_pos
+    );
+#endif
 
     // check if the hop is possible (= if site l is empty)
     if ( site_occ[ thishop.l ] == 0 ) {
+
+#if VERBOSE
+      printf( "Hop possible, site unoccupied!\n" );
+#endif
 
       // calculate the acceptance probability
       const fptype R_j =
@@ -438,6 +463,10 @@ kernel void hop(
       // check if the hop is accepted
       if ( accept_prob >= 1.f || rand_selector < accept_prob ) {
 
+#if VERBOSE
+        printf( "Hop accepted!\n" );
+#endif
+
         // hop is accepted!
         thishop.accepted = true;
 
@@ -445,8 +474,37 @@ kernel void hop(
         site_occ[ thishop.k_pos ] = 0;
         site_occ[ thishop.l ] = 1;
         electron_pos[ thishop.k ] = thishop.l;
+
+#if VERBOSE
+        printf( "New electron configuration is \n" );
+        for ( uint i = 0; i < NUM_ELECTRONS; ++i ) {
+          printf( "%i ", electron_pos[ i ] );
+        }
+        printf( "\n" );
+        for ( uint l = 0; l < 2 * LATTICE_NUM_SITES; ++l ) {
+          if ( l == LATTICE_NUM_SITES ) {
+            printf( "\n" );
+          }
+          printf( "%i ", site_occ[ l ] );
+        }
+        printf( "\n" );
+#endif
+
       }
+
+#if VERBOSE
+      else {
+        printf( "Hop rejected!\n" );
+      }
+#endif
+
     }
+
+#if VERBOSE
+    else {
+      printf( "Hop impossible, site is occupied!\n" );
+    }
+#endif
 
     // write the hop to global memory
     *hop_out = thishop;
@@ -461,10 +519,20 @@ kernel void update_T(
   constant fptype* expv )
 {
   const uint i = get_global_id( 0 );
-  T_out[ i ] =
-    T_in[ i ] *
-    expv[ lattice_reduce_idxrel( i, lattice_get_spinup_site( hop->l ) ) ] /
-    expv[ lattice_reduce_idxrel( i, lattice_get_spinup_site( hop->k_pos ) ) ];
+
+//  printf( "T_in[ %i ] = %f", i, T_in[ i ] );
+
+  if ( hop->accepted ) {
+    T_out[ i ] =
+      T_in[ i ] *
+      expv[ lattice_reduce_idxrel( i, lattice_get_spinup_site( hop->l ) ) ] /
+      expv[ lattice_reduce_idxrel( i, lattice_get_spinup_site( hop->k_pos ) ) ];
+
+//    printf( " -> T_out[ %i ] = %f\n", i, T_out[ i ] );
+  } else {
+    T_out[ i ] = T_in[ i ];
+//    printf( " copied to T_out!\n" );
+  }
 }
 
 
@@ -514,7 +582,7 @@ kernel void update_Wd(
       fma(
 
         Wd_in[ i * W_COLS + ( hop->k - W_COLS ) ]
-        / Wd_in[ hop->l * W_COLS + ( hop->k - W_COLS ) ], // *
+        / Wd_in[ ( hop->l - W_ROWS ) * W_COLS + ( hop->k - W_COLS ) ], // *
 
         Wd_in[ ( hop->k_pos - W_ROWS ) * W_COLS + j ]
         - Wd_in[ ( hop->l - W_ROWS ) * W_COLS + j ], // +
@@ -557,21 +625,38 @@ kernel void calc_E_l(
     // iterate over all neighbors Xni of order X
     for ( uint Xni = 0; Xni < LATTICE_NUM_NEIGHBORS[ X - 1 ]; ++Xni ) {
 
-      // check if electron k could hop to site Xni (it must be empty)
-      if ( site_occ[ Xni ] == 0 ) {
+      // get the position l of the Xni'th neighbor of k_pos
+      uint l;
+      if ( X == 1 ) {
+        l = lattice_get_1nn( k_pos, Xni );
+      } else if ( X == 2 ) {
+        l = lattice_get_2nn( k_pos, Xni );
+      } else { /* X == 3 */
+        l = lattice_get_3nn( k_pos, Xni );
+      }
 
-        const fptype R_j =
-          T[ lattice_get_spinup_site( Xni ) ]
-          / T[ lattice_get_spinup_site( k_pos ) ]
-          * expv[ 0 ] / expv[ lattice_reduce_idxrel( Xni, k_pos ) ];
+#if VERBOSE
+      printf(
+        "Considering hop of electron %i hopping from %i to %i (redidxrel is %i)\n",
+        k, k_pos, l, lattice_reduce_idxrel( l, k_pos )
+      );
+#endif
 
-        const fptype R_s =
+      // check if electron k could hop to site l (it must be empty)
+      if ( site_occ[ l ] == 0 ) {
+
+        const fptype R_j = 1.f;
+        T[ lattice_get_spinup_site( l ) ]
+        / T[ lattice_get_spinup_site( k_pos ) ]
+        * expv[ 0 ] / expv[ lattice_reduce_idxrel( l, k_pos ) ];
+
+        const fptype R_s = 1.f;
 #ifdef M_IS_SPIN_SYMMETRIC
-          ( k >= NUM_ELECTRONS / 2 ) ?
-          Wd[ ( Xni - W_ROWS ) * W_COLS + ( k - W_COLS ) ] :
-          Wbu[ Xni * W_COLS + k ];
+        ( k >= NUM_ELECTRONS / 2 ) ?
+        Wd[ ( l - W_ROWS ) * W_COLS + ( k - W_COLS ) ] :
+        Wbu[ l * W_COLS + k ];
 #else
-          Wbu[ Xni * W_COLS + k ];
+        Wbu[ l * W_COLS + k ];
 #endif
 
         E_l_thisX += R_j * R_s;

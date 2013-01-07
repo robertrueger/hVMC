@@ -329,7 +329,7 @@ void HubbardModelVMC_CPU::perform_W_update( const ElectronHop& hop )
     cout << "HubbardModelVMC_CPU::perform_W_update() : recalculated W "
          << "with deviation = " << dev << endl;
 
-    if ( dev > W_devstat.target ) {
+    if ( !( dev < W_devstat.target ) ) {
       cout << "HubbardModelVMC_CPU::perform_W_update() : deviation goal for matrix "
            << "W not met!" << endl
            << "HubbardModelVMC_CPU::perform_W_update() : approximate W =" << endl
@@ -567,7 +567,7 @@ void HubbardModelVMC_CPU::perform_T_update( const ElectronHop& hop )
     cout << "HubbardModelVMC_CPU::perform_T_update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
-    if ( dev > T_devstat.target ) {
+    if ( !( dev < T_devstat.target ) ) {
       cout << "HubbardModelVMC_CPU::perform_T_update() : deviation goal for matrix "
            << "T not met!" << endl
            << "HubbardModelVMC_CPU::perform_T_update() : quickly updated T =" << endl

@@ -43,9 +43,22 @@ void ElectronConfiguration::init_from_raw_elpos(
 {
   assert( raw_electron_pos.size() == electron_number );
   electron_pos = raw_electron_pos;
+
+  site_occ.setZero();
   for ( cl_uint i = 0; i < electron_pos.size(); ++i ) {
     site_occ( electron_pos[ i ] ) = ELECTRON_OCCUPATION_FULL;
   }
+
+#if VERBOSE >= 1
+  cout << "ElectronConfiguration::init_from_raw_elpos() : positions are" << endl;
+  for ( auto it = electron_pos.begin(); it != electron_pos.end(); ++it ) {
+    cout << *it << " ";
+  }
+  cout << endl;
+  cout << "ElectronConfiguration::init_from_raw_elpos() : new config" << endl;
+  cout << site_occ.head( lat->L ).transpose() << endl
+       << site_occ.tail( lat->L ).transpose() << endl;
+#endif
 }
 
 

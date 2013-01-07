@@ -91,6 +91,7 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
 
   // build the program
   stringstream compileropts;
+//  compileropts << "-g ";
   compileropts <<  "-D LATTICE_TYPE=" << static_cast<cl_uint>( lat->type );
   compileropts << " -D LATTICE_NUM_SITES=" << lat->L;
   if ( lat->type == LATTICE_2DSQUARE ) {
@@ -330,6 +331,8 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
   if ( M.ssym == true ) {
     cout << "----->" << endl << Wd << endl;
   }
+  cout << "HubbardModelVMC_CL::HubbardModelVMC_CL() : calculated initial vector T ="
+       << endl << T << endl;
 #endif
 
 
@@ -346,6 +349,12 @@ HubbardModelVMC_CL::HubbardModelVMC_CL(
       0, Wd.size() * sizeof( cl_fptype ), Wd.data()
     );
   }
+
+  // enqueue transfer of T to the device
+  clQ.enqueueWriteBuffer(
+    *devT_active, CL_FALSE,
+    0, T.size() * sizeof( cl_fptype ), T.data()
+  );
 
   // copy the current electron configuration to the raw data buffers
   vector<cl_uint> econf_site_occ     = econf.get_site_occ_raw();
@@ -422,8 +431,6 @@ void HubbardModelVMC_CL::equilibrate( cl_uint N_mcs_equil )
 
 void HubbardModelVMC_CL::metstep()
 {
-  clQ.flush();
-
   // generate the random numbers
   cl_uint hopping_elid
     = uniform_int_distribution<cl_uint>( 0, econf.N() - 1 )( rng );
@@ -446,6 +453,9 @@ void HubbardModelVMC_CL::metstep()
   clQ.enqueueNDRangeKernel( clK_hop,
     cl::NullRange, cl::NDRange( 1 ), cl::NDRange( 1 )
   );
+
+  // TODO: remove (Robert Rueger, 2013-01-06 15:22)
+  clQ.finish();
 
   // update W and T
   perform_W_update();
@@ -513,7 +523,7 @@ void HubbardModelVMC_CL::perform_W_update()
     cout << "HubbardModelVMC_CL::perform_W_update() : recalculated W "
          << "with deviation = " << dev << endl;
 
-    if ( dev > W_devstat.target ) {
+    if ( !( dev < W_devstat.target ) ) {
       cout << "HubbardModelVMC_CL::perform_W_update() : deviation goal for matrix "
            << "W not met!" << endl
            << "HubbardModelVMC_CL::perform_W_update() : approximate W =" << endl
@@ -701,7 +711,7 @@ void HubbardModelVMC_CL::perform_T_update()
     cout << "HubbardModelVMC_CL::perform_T_update() : recalculated T "
          << "with deviation = " << dev << endl;
 
-    if ( dev > T_devstat.target ) {
+    if ( !( dev < T_devstat.target ) ) {
       cout << "HubbardModelVMC_CL::perform_T_update() : deviation goal for matrix "
            << "T not met!" << endl
            << "HubbardModelVMC_CL::perform_T_update() : approximate T =" << endl
@@ -749,8 +759,8 @@ void HubbardModelVMC_CL::calc_new_T()
 void HubbardModelVMC_CL::calc_qupdated_T()
 {
   clK_update_devT.setArg( 0, devehop );
-  clK_update_devT.setArg( 1, devT_active );
-  clK_update_devT.setArg( 2, devT_inactive );
+  clK_update_devT.setArg( 1, *devT_active );
+  clK_update_devT.setArg( 2, *devT_inactive );
   clK_update_devT.setArg( 3, devexpv );
   clQ.enqueueNDRangeKernel(
     clK_update_devT,
@@ -762,6 +772,7 @@ void HubbardModelVMC_CL::calc_qupdated_T()
 
 cl_fptype HubbardModelVMC_CL::E_l()
 {
+/*
   // enqueue calculation of E_l for the individual electrons
   clK_calc_E_l.setArg( 0, devE_l_elbuf );
   clK_calc_E_l.setArg( 1, deveconf_electron_pos );
@@ -782,7 +793,80 @@ cl_fptype HubbardModelVMC_CL::E_l()
   );
 
   // return the summed up results of the individual electrons
-  return E_l_elbuf.sum();
+  cout << E_l_elbuf.sum() / static_cast<cl_fptype>( lat->L ) << endl;
+  return E_l_elbuf.sum() / static_cast<cl_fptype>( lat->L );
+*/
+
+  // download electron configuration from the device
+  sync_econf_down();
+
+  // enqueue transfer of W from the device to the host
+  clQ.enqueueReadBuffer(
+    *devWbu_inactive, CL_FALSE,
+    0, Wbu.size() * sizeof( cl_fptype ), Wbu.data()
+  );
+  if ( M.ssym == true ) {
+    clQ.enqueueReadBuffer(
+      *devWd_inactive, CL_FALSE,
+      0, Wd.size() * sizeof( cl_fptype ), Wd.data()
+    );
+  }
+
+  // enqueue transfer of from the device to the host
+  clQ.enqueueReadBuffer(
+    *devT_inactive, CL_FALSE,
+    0, T.size() * sizeof( cl_fptype ), T.data()
+  );
+
+  // wait for all transfers to complete
+  clQ.finish();
+
+  // buffer vector for X nearest neighbors
+  // (in order to avoid allocating new ones all the time)
+  std::vector<cl_uint> k_pos_Xnn;
+
+  // calculate expectation value of the T part of H
+  cl_fptype E_l_kin = 0.f;
+
+  for ( cl_uint k = 0; k < econf.N(); ++k ) {
+
+    const cl_uint k_pos = econf.get_electron_pos( k );
+    assert( econf.get_site_occ( k_pos ) == ELECTRON_OCCUPATION_FULL );
+
+    for ( cl_uint X = 1; X <= t.size(); ++X ) {
+      if ( t[X - 1] == 0.f ) {
+        continue;
+      }
+
+      cl_fptype sum_Xnn = 0.f;
+      lat->get_Xnn( k_pos, X, &k_pos_Xnn );
+      for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
+        if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
+          const cl_fptype R_j = T( lat->get_spinup_site( *l_it ) )
+                                / T( lat->get_spinup_site( k_pos ) )
+                                * v.exp_onsite() / v.exp( *l_it, k_pos );
+          if ( M.ssym == true && k >= econf.N() / 2 ) {
+            sum_Xnn += R_j * Wd( *l_it - lat->L, k - econf.N() / 2 );
+          } else {
+            sum_Xnn += R_j * Wbu( *l_it, k );
+          }
+        }
+      }
+      E_l_kin -= t[X - 1] * sum_Xnn;
+
+    }
+  }
+
+  const cl_fptype E_l_result =
+    ( E_l_kin + U * econf.get_num_dblocc() ) /
+    static_cast<cl_fptype>( lat->L );
+
+#if VERBOSE >= 1
+  cout << "HubbardModelVMC_CL::E_l() = " << E_l_result << endl;
+#endif
+
+  return E_l_result;
+
 }
 
 
