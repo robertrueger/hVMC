@@ -621,11 +621,13 @@ fptype HubbardModelVMC::E_l()
   // calculate expectation value of the T part of H
   fptype E_l_kin = 0.f;
 
+  // loop over different elektrons k
   for ( unsigned int k = 0; k < econf.N(); ++k ) {
 
     const unsigned int k_pos = econf.get_electron_pos( k );
     assert( econf.get_site_occ( k_pos ) == ELECTRON_OCCUPATION_FULL );
 
+    // loop over different neighbor orders X
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
       if ( t[X - 1] == 0.f ) {
         continue;
@@ -633,11 +635,19 @@ fptype HubbardModelVMC::E_l()
 
       fptype sum_Xnn = 0.f;
       lat->get_Xnn( k_pos, X, &k_pos_Xnn );
+
+      // calculate part of R_j that is constant for this X and k
+      assert( k_pos_Xnn.size() != 0 );
+      const fptype R_j_constXk =
+        v.exp_onsite() / v.exp( k_pos_Xnn[0], k_pos )
+        / T( lat->get_spinup_site( k_pos ) );
+      // (it is possible to do the idxrel reduction only for one of the
+      // neighbours as it is guaranteed to be the same for all of them)
+
+      // loop over different neighbours l of order X
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const fptype R_j =   T( lat->get_spinup_site( *l_it ) )
-                               / T( lat->get_spinup_site( k_pos ) )
-                               * v.exp_onsite() / v.exp( *l_it, k_pos );
+          const fptype R_j = T( lat->get_spinup_site( *l_it ) ) * R_j_constXk;
           if ( M.ssym == true && k >= econf.N() / 2 ) {
             sum_Xnn += R_j * ( *Wd_active )( *l_it - lat->L, k - econf.N() / 2 );
           } else {
