@@ -20,17 +20,14 @@
 #ifndef ELECTRON_CONFIGURATION_H_INCLUDED
 #define ELECTRON_CONFIGURATION_H_INCLUDED
 
-#if VERBOSE >= 1 
-# include <iostream>
-#endif
-
 #include <vector>
 #include <random>
 
-#include <eigen3/Eigen/Eigen>
+#include <eigen3/Eigen/Core>
 
 #include "macros.h"
 #include "lattice.hpp"
+
 
 enum ElectronOccupation_t {
   ELECTRON_OCCUPATION_EMPTY = 0,

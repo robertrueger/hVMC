@@ -22,16 +22,9 @@
 
 #include <vector>
 #include <set>
-#include <utility>
-#include <algorithm>
-
-#if VERBOSE >= 1
-# include <iostream>
-#endif
 
 #include "macros.h"
 #include "lattice.hpp"
-#include "utils.hpp"
 
 class Lattice2DSquare final : public Lattice {
     

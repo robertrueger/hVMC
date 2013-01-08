@@ -20,18 +20,11 @@
 #ifndef UTILS_H_INCLUDED
 #define UTILS_H_INCLUDED
 
-#include <iostream>
-#include <iomanip>
-#include <limits>
-
-#ifdef OS_WINDOWS
-# include <windows.h>
-#endif
+#include <iosfwd>
 
 #include <boost/filesystem.hpp>
 
 #include "macros.h"
-#include "fptype.hpp"
 
 
 void ostream_setup( std::ostream& stream );

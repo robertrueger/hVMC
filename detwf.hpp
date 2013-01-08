@@ -20,11 +20,9 @@
 #ifndef DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED
 #define DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED
 
-# include <iostream>
 #include <vector>
 
 #include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Eigenvalues>
 
 #include "macros.h"
 #include "fptype.hpp"

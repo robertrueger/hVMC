@@ -20,14 +20,7 @@
 #ifndef JASTROW_H_INCLUDED
 #define JASTROW_H_INCLUDED
 
-#if VERBOSE >= 1
-# include <iostream>
-#endif
-
-#include <set>
 #include <vector>
-#include <algorithm>
-#include <cmath>
 #include <random>
 
 #include "macros.h"

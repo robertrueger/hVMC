@@ -18,6 +18,20 @@
 */
 
 #include "simrun.hpp"
+
+#include <iostream>
+#include <random>
+#include <chrono>
+#include <vector>
+#include <utility>
+
+#include "detwf.hpp"
+#include "jastrow.hpp"
+#include "fpctrl.hpp"
+#include "lattice.hpp"
+#include "lattice_1dchain.hpp"
+#include "lattice_2dsquare.hpp"
+
 using namespace std;
 namespace po = boost::program_options;
 

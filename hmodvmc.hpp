@@ -20,17 +20,10 @@
 #ifndef HUBBARD_MODEL_VMC_H_INCLUDED
 #define HUBBARD_MODEL_VMC_H_INCLUDED
 
-#if VERBOSE >= 1
-# include <iostream>
-#endif
-
-#include <cmath>
 #include <vector>
 #include <random>
-#include <algorithm>
 
 #include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/LU>
 
 #include "macros.h"
 #include "fptype.hpp"

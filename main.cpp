@@ -24,7 +24,6 @@
 #include <boost/program_options.hpp>
 
 #include "macros.h"
-#include "utils.hpp"
 #include "options.hpp"
 #include "simresults.hpp"
 #include "simrun.hpp"

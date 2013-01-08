@@ -18,6 +18,11 @@
 */
 
 #include "econf.hpp"
+
+#if VERBOSE >= 1 
+# include <iostream>
+#endif
+
 using namespace std;
 
 

@@ -20,27 +20,16 @@
 #ifndef SIMRUN_H_INCLUDED
 #define SIMRUN_H_INCLUDED
 
-#include <random>
-#include <chrono>
-#include <vector>
-#include <utility>
-
-//#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
 #include "macros.h"
 #include "fptype.hpp"
-#include "detwf.hpp"
-#include "jastrow.hpp"
+
 #include "hmodvmc.hpp"
+#include "binstat.hpp"
 #include "simresults.hpp"
 #include "options.hpp"
-#include "binstat.hpp"
-#include "fpctrl.hpp"
 
-#include "lattice.hpp"
-#include "lattice_1dchain.hpp"
-#include "lattice_2dsquare.hpp"
 
 BasicSimResults    simrun_basic(         const Options& opts );
 void               simrun_basic_prepare( const Options& opts,

@@ -24,10 +24,6 @@
 #include <set>
 #include <utility>
 
-#if VERBOSE >= 1
-# include <iostream>
-#endif
-
 #include "macros.h"
 #include "lattice.hpp"
 

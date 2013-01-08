@@ -18,6 +18,15 @@
 */
 
 #include "lattice_2dsquare.hpp"
+
+#include <algorithm>
+
+#if VERBOSE >= 1
+# include <iostream>
+#endif
+
+# include "utils.hpp"
+
 using namespace std;
 
 

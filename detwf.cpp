@@ -18,6 +18,11 @@
 */
 
 #include "detwf.hpp"
+
+#include <iostream>
+
+#include <eigen3/Eigen/Eigenvalues>
+
 using namespace std;
 
 

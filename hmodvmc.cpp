@@ -18,6 +18,16 @@
 */
 
 #include "hmodvmc.hpp"
+
+#if VERBOSE >= 1
+# include <iostream>
+#endif
+
+#include <cmath>
+#include <algorithm>
+
+#include <eigen3/Eigen/LU>
+
 using namespace std;
 
 

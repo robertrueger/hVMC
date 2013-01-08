@@ -18,6 +18,18 @@
 */
 
 #include "options.hpp"
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <stdexcept>
+
+#include <boost/filesystem.hpp>
+
+#include "fptype.hpp"
+#include "lattice.hpp"
+#include "utils.hpp"
+
 using namespace std;
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;

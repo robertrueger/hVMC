@@ -18,6 +18,15 @@
 */
 
 #include "jastrow.hpp"
+
+#if VERBOSE >= 1
+# include <iostream>
+#endif
+
+#include <set>
+#include <algorithm>
+#include <cmath>
+
 using namespace std;
 
 

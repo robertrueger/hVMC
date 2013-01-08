@@ -20,23 +20,14 @@
 #ifndef OPTIONS_H_INCLUDED
 #define OPTIONS_H_INCLUDED
 
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <stdexcept>
+#include <iosfwd>
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 
 #include "macros.h"
-#include "fptype.hpp"
-#include "lattice.hpp"
-#include "utils.hpp"
 
 typedef boost::program_options::variables_map Options;
 
 Options read_options( int argc, char const* argv[] );
-
-std::istream& operator>>(std::istream& in, lattice_t& lattice);
 
 #endif // OPTIONS_H_INCLUDED

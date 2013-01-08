@@ -18,6 +18,17 @@
 */
 
 #include "utils.hpp"
+
+#include <iostream>
+#include <iomanip>
+#include <limits>
+
+#ifdef OS_WINDOWS
+# include <windows.h>
+#endif
+
+#include "fptype.hpp"
+
 using namespace std;
 namespace fs = boost::filesystem;
 
