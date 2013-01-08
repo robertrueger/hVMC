@@ -39,8 +39,8 @@ class Lattice1DChain final : public Lattice {
       std::vector<unsigned int>* outbuf
     ) const;
 
-    IrreducibleIdxRel reduce_idxrel( unsigned int i, unsigned int j ) const;
-    std::set<IrreducibleIdxRel> irreducible_idxrel_list() const;
+    unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
+    std::set<unsigned int> irreducible_idxrel_list() const;
 };
 
 #endif // LATTICE_1DCHAIN_H_INCLUDED

@@ -27,8 +27,6 @@
 #include "macros.h"
 
 
-typedef std::pair<unsigned int, unsigned int> IrreducibleIdxRel;
-
 enum lattice_t {
   LATTICE_1DCHAIN,
   LATTICE_2DSQUARE
@@ -52,10 +50,8 @@ class Lattice {
       unsigned int l, unsigned int X, std::vector<unsigned int>* outbuf
     ) const = 0;
 
-    virtual IrreducibleIdxRel reduce_idxrel(
-      unsigned int i, unsigned int j
-    ) const = 0;
-    virtual std::set<IrreducibleIdxRel> irreducible_idxrel_list() const = 0;
+    virtual unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const = 0;
+    virtual std::set<unsigned int> irreducible_idxrel_list() const = 0;
 
 };
 

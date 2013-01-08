@@ -58,20 +58,18 @@ void Lattice1DChain::get_Xnn(
 
 
 
-IrreducibleIdxRel Lattice1DChain::reduce_idxrel(
-  unsigned int i, unsigned int j ) const
+unsigned int Lattice1DChain::reduce_idxrel( unsigned int i, unsigned int j ) const
 {
   assert( i < 2 * L );
   assert( j < 2 * L );
   assert( ( i < L && j < L ) || ( i >= L && j >= L ) );
 
-  unsigned int d = j > i ? j - i : i - j;
-  IrreducibleIdxRel result( 0, min( d, L - d ) );
+  const unsigned int d = j > i ? j - i : i - j;
+  const unsigned int result = min( d, L - d );
 
 #if VERBOSE >= 2
   cout << "Lattice1DChain::reduce_idxrel() : reduction "
-       << "(" << i << "," << j << ") -> "
-       << "(" << result.first << "," << result.second << ")" << endl;
+       << "(" << i << "," << j << ") -> " << result << endl;
 #endif
 
   assert( irreducible_idxrel_list().count( result ) == 1 );
@@ -81,19 +79,19 @@ IrreducibleIdxRel Lattice1DChain::reduce_idxrel(
 
 
 
-set<IrreducibleIdxRel> Lattice1DChain::irreducible_idxrel_list() const
+set<unsigned int> Lattice1DChain::irreducible_idxrel_list() const
 {
-  set<IrreducibleIdxRel> irr_idxrels;
+  set<unsigned int> irr_idxrels;
   for ( unsigned int d = 0; d <= L - d; ++d ) {
     assert( d < L );
-    irr_idxrels.insert( IrreducibleIdxRel( 0, d ) );
+    irr_idxrels.insert( d );
   }
 
 #if VERBOSE >= 2
   cout << "Lattice1DChain::irreducible_idxrel_list() : "
        << "list of irreducible index relations =" << endl;
   for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
-    cout << "(" << it->first << "," << it->second << ")" << endl;
+    cout << *it << endl;
   }
 #endif
 

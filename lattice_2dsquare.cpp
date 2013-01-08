@@ -200,7 +200,7 @@ void Lattice2DSquare::get_3nn( unsigned int l, vector<unsigned int>* outbuf ) co
 
 
 
-IrreducibleIdxRel Lattice2DSquare::reduce_idxrel(
+unsigned int Lattice2DSquare::reduce_idxrel(
   unsigned int i, unsigned int j ) const
 {
   assert( i < 2 * L );
@@ -230,14 +230,14 @@ IrreducibleIdxRel Lattice2DSquare::reduce_idxrel(
     swap( dx, dy );
   }
 
-  return IrreducibleIdxRel( 0, dx + S * dy );
+  return dx + S * dy;
 }
 
 
 
-set<IrreducibleIdxRel> Lattice2DSquare::irreducible_idxrel_list() const
+set<unsigned int> Lattice2DSquare::irreducible_idxrel_list() const
 {
-  set<IrreducibleIdxRel> irr_idxrels;
+  set<unsigned int> irr_idxrels;
   for ( unsigned int i = 0; i < L; ++i ) {
     irr_idxrels.insert( reduce_idxrel( 0, i ) );
   }
@@ -246,7 +246,7 @@ set<IrreducibleIdxRel> Lattice2DSquare::irreducible_idxrel_list() const
   cout << "Lattice2DSquare::irreducible_idxrel_list() : "
        << "list of irreducible index relations =" << endl;
   for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
-    cout << "(" << it->first << "," << it->second << ")" << endl;
+    cout << *it << endl;
   }
 #endif
 

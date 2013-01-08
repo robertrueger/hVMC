@@ -35,7 +35,7 @@ class Jastrow final
 
     Lattice* const lat;
 
-    std::vector< std::vector<float> > idxrel_expv;
+    std::vector<float> idxrel_expv;
 
   public:
 
