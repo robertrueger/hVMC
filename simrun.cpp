@@ -37,11 +37,12 @@ namespace po = boost::program_options;
 
 
 
-BasicSimResults simrun_basic( const Options& opts )
+BasicSimResults simrun_basic(
+  const Options& opts, const VariationalParameters& vpar )
 {
   cout << ":: Preparing simulation objects ..." << endl;
   HubbardModelVMC* model = nullptr;
-  simrun_basic_prepare( opts, model );
+  simrun_basic_prepare( opts, vpar, model );
 
   cout << ":: Equilibrating the system" << endl;
   model->equilibrate( opts["sim.num-mcs-equil"].as<unsigned int>() );
@@ -66,7 +67,9 @@ BasicSimResults simrun_basic( const Options& opts )
 
 
 
-void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
+void simrun_basic_prepare(
+  const Options& opts, const VariationalParameters& vpar,
+  HubbardModelVMC*& model )
 {
   // Mersenne Twister random number generator
   unsigned int rngseed
@@ -88,26 +91,24 @@ void simrun_basic_prepare( const Options& opts, HubbardModelVMC*& model )
   }
   // the lattice object on the heap will be destroyed by hmodvmc's destructor!
 
-  // a vector of the hopping matrix elements
+  // determinantal part of the wavefunction
+  cout << "   -> Determinantal part of the wavefunction" << endl;
+  const SingleParticleOrbitals& M
+    = wf_tight_binding(
+        vpar.determinantal,
+        opts["phys.num-electrons"].as<unsigned int>(),
+        lat
+      );
+
+  // Jastrow factor
+  cout << "   -> Jastrow factor" << endl;
+  Jastrow v( lat, vpar.jastrow );
+
+  // collect hopping matrix elements into a vector
   vector<fptype> t( 3 );
   t[0] = opts["phys.nn-hopping"].as<fptype>();
   t[1] = opts["phys.2nd-nn-hopping"].as<fptype>();
   t[2] = opts["phys.3rd-nn-hopping"].as<fptype>();
-
-  // Jastrow factor
-  cout << "   -> Jastrow factor" << endl;
-  Jastrow v( lat );
-
-  v.randomize( -.075f, 0.f, &rng );
-  v.set( 0, 0, -1.f );
-  v.set( 0, 1, -.5f );
-  v.set( 0, 7, -.2f );
-  v.set( 0, 2, -.1f );
-
-  // determinantal part of the wavefunction
-  cout << "   -> Determinantal part of the wavefunction" << endl;
-  const SingleParticleOrbitals& M
-    = wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
 
   // the Hubbard model object itself
   cout << "   -> HubbardModelVMC object" << endl;

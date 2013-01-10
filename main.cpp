@@ -19,12 +19,11 @@
 
 #include <iostream>
 
-#include <eigen3/Eigen/Core>
-
 #include <boost/program_options.hpp>
 
 #include "macros.h"
 #include "options.hpp"
+#include "varparam.hpp"
 #include "simresults.hpp"
 #include "simrun.hpp"
 
@@ -40,21 +39,15 @@ int main( int argc, char const* argv[] )
   cout << "    ==========================================" << endl;
   cout << endl;
 
-  // make cout and cerr output numbers in scientific notation
-  // ostream_setup( cout );
-  // ostream_setup( cerr );
-
-  // initialize Eigen for parallel execution
-  // (not sure if that is necessary, but better safe than sorry)
-  Eigen::initParallel(); 
-
   // read options from the command line
   const Options& opts = read_options( argc, argv );
-
   // TODO: output all options if verbose (Robert Rueger, 2012-11-02 13:31)
- 
+
+  // initialize the variational parameters
+  const VariationalParameters& vpar = get_initial_varparam( opts );
+
   // run the simulation
-  const BasicSimResults& results = simrun_basic( opts );
+  const BasicSimResults& results = simrun_basic( opts, vpar );
 
   // output results
   cout << ":: Results" << endl;

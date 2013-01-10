@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+ * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
  *
@@ -17,38 +17,22 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef JASTROW_H_INCLUDED
-#define JASTROW_H_INCLUDED
+#ifndef VARPARAM_H_INCLUDED
+#define VARPARAM_H_INCLUDED
 
 #include <vector>
-#include <random>
 
 #include "macros.h"
 #include "fptype.hpp"
-#include "lattice.hpp"
-#include "varparam.hpp"
+#include "options.hpp"
 
 
-class Jastrow final
+struct VariationalParameters
 {
-
-  private:
-
-    Lattice* const lat;
-
-    std::vector<float> idxrel_expv;
-
-  public:
-
-    Jastrow( Lattice* lat_init, const std::vector<fptype>& v_init );
-
-    void randomize( fptype min, fptype max, std::mt19937* rng );
-
-    fptype operator()( unsigned int i, unsigned int j ) const;
-    fptype exp( unsigned int i, unsigned int j ) const;
-    fptype exp_onsite() const;
-    void set( unsigned int i, unsigned int j, fptype v_new  );
-
+  std::vector<fptype> determinantal;
+  std::vector<fptype> jastrow;
 };
 
-#endif // JASTROW_H_INCLUDED
+VariationalParameters get_initial_varparam( const Options& opts );
+
+#endif // VARPARAM_H_INCLUDED

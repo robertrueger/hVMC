@@ -30,13 +30,16 @@ SingleParticleOrbitals wf_tight_binding(
   const vector<fptype>& t,
   unsigned int N, Lattice* lat )
 {
+  // make sure we pass the right number of variational parameters
+  assert( t.size() == 3  );
+
   cout << "      > Constructing TB Hamiltonian" << endl;
 
   Eigen::MatrixXfp H_tb_nospin = Eigen::MatrixXfp::Zero( lat->L, lat->L );
 
   vector<unsigned int> l_Xnn;
   for ( unsigned int l = 0; l < lat->L; ++l ) {
-    for ( unsigned int X = 1; X <= t.size(); ++X ) {
+    for ( unsigned int X = 1; X <= 3; ++X ) {
       lat->get_Xnn( l, X, &l_Xnn );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
         H_tb_nospin( l, *it ) += -1.f * t[X - 1];

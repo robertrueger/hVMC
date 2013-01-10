@@ -30,7 +30,8 @@
 using namespace std;
 
 
-Jastrow::Jastrow( Lattice* lat_init ) : lat( lat_init )
+Jastrow::Jastrow( Lattice* lat_init, const vector<fptype>& v_init )
+  : lat( lat_init )
 {
   const std::set<unsigned int>& irr_idxrels = lat->irreducible_idxrel_list();
   assert( !irr_idxrels.empty() );
@@ -40,7 +41,19 @@ Jastrow::Jastrow( Lattice* lat_init ) : lat( lat_init )
     *( max_element( irr_idxrels.begin(), irr_idxrels.end() ) );
 
   // resize internal vector so that it can hold all needed Jastrows
-  idxrel_expv.resize( max_j + 1, 1.f);
+  idxrel_expv.resize( max_j + 1 );
+
+  // write the variational parameters from v_init to the right elements of
+  // idxrel_expv (make sure the total number is correct first)
+  assert( v_init.size() == irr_idxrels.size() );
+  unsigned int reader = 0;
+  for ( auto irr_idxrel_it = irr_idxrels.begin();
+        irr_idxrel_it != irr_idxrels.end();
+        ++irr_idxrel_it ) {
+    idxrel_expv.at( *irr_idxrel_it ) = std::exp( v_init.at( reader ) );
+    ++reader;
+  }
+  assert( reader == v_init.size() );
 }
 
 

@@ -29,13 +29,20 @@
 #include "binstat.hpp"
 #include "simresults.hpp"
 #include "options.hpp"
+#include "varparam.hpp"
 
 
-BasicSimResults    simrun_basic(         const Options& opts );
-void               simrun_basic_prepare( const Options& opts,
-                                         HubbardModelVMC*& model );
-BinnedData<fptype> simrun_basic_mccycle( const Options& opts,
-                                         HubbardModelVMC* const model );
+BasicSimResults simrun_basic(
+  const Options& opts, const VariationalParameters& vpar
+);
+
+void simrun_basic_prepare(
+  const Options& opts, const VariationalParameters& vpar, HubbardModelVMC*& model
+);
+
+BinnedData<fptype> simrun_basic_mccycle(
+  const Options& opts, HubbardModelVMC* const model
+);
 
 // TODO: simulation with more observables (Robert Rueger, 2012-11-12 15:21)
 // FullSimResults simrun_full( const Options& opts );
