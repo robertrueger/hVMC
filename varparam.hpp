@@ -22,15 +22,27 @@
 
 #include <vector>
 
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
+
 #include "macros.h"
 #include "fptype.hpp"
 #include "options.hpp"
 
 
-struct VariationalParameters
-{
-  std::vector<fptype> determinantal;
-  std::vector<fptype> jastrow;
+struct VariationalParameters {
+
+    std::vector<fptype> determinantal;
+    std::vector<fptype> jastrow;
+
+  private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive& ar, const unsigned int ) {
+      ar & determinantal;
+      ar & jastrow;
+    }
 };
 
 VariationalParameters get_initial_varparam( const Options& opts );

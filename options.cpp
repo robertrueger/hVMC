@@ -24,6 +24,7 @@
 #include <string>
 #include <stdexcept>
 
+#include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 
 #include "fptype.hpp"
@@ -31,11 +32,14 @@
 #include "utils.hpp"
 
 using namespace std;
-namespace po = boost::program_options;
-namespace fs = boost::filesystem;
+namespace po  = boost::program_options;
+namespace fs  = boost::filesystem;
+namespace mpi = boost::mpi;
 
 
-Options read_options( int argc, char const* argv[] )
+Options read_options(
+  int argc, char* argv[],
+  const mpi::communicator& mpiflock )
 {
   Options vm;
 
@@ -47,7 +51,7 @@ Options read_options( int argc, char const* argv[] )
   ( "version,V", "print hVMC's version and exit" )
   ( "verbose,v", "makes hVMC write additional information to stdout" )
   ( "job-file,J", po::value<fs::path>(), "job file to execute" )
-  ( "output-dir,o", po::value<fs::path>()->default_value("."), "output directory" );
+  ( "output-dir,o", po::value<fs::path>()->default_value( "." ), "output directory" );
   po::positional_options_description p;
   p.add( "job-file", -1 );
 
@@ -62,11 +66,11 @@ Options read_options( int argc, char const* argv[] )
     "nearest neighbor hopping matrix element t" )
 
   ( "phys.2nd-nn-hopping,2",
-    po::value<fptype>()->default_value(0.f),
+    po::value<fptype>()->default_value( 0.f ),
     "2nd nearest neighbor hopping matrix element t'" )
 
   ( "phys.3rd-nn-hopping,3",
-    po::value<fptype>()->default_value(0.f),
+    po::value<fptype>()->default_value( 0.f ),
     "3rd nearest neighbor hopping matrix element t''" )
 
   ( "phys.onsite-energy,U",
@@ -89,7 +93,7 @@ Options read_options( int argc, char const* argv[] )
   simset.add_options()
 
   ( "sim.update-hop-maxdistance,H",
-    po::value<unsigned int>()->default_value(1),
+    po::value<unsigned int>()->default_value( 1 ),
     "maximum hopping distance for electronic configuration updates" )
 
   ( "sim.num-mcs-equil,E",
@@ -113,7 +117,7 @@ Options read_options( int argc, char const* argv[] )
 
   ( "fpctrl.W-deviation-target,W",
     po::value<fptype>()->default_value( 0.001f, "0.001" ),
-    "deviation target for the matrix W")
+    "deviation target for the matrix W" )
 
   ( "fpctrl.W-updates-until-recalc,R",
     po::value<unsigned int>()
@@ -147,84 +151,97 @@ Options read_options( int argc, char const* argv[] )
 
   try {
     // parse options from the command line
-    cout << ":: Parsing command line ..." << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cout << ":: Parsing command line ..." << endl;
+    }
     po::store( po::command_line_parser( argc, argv ).
                options( cmdline_options ).positional( p ).run(), vm );
   } catch ( const po::error& e ) {
-    cerr << "Error while parsing the command line: " << e.what() << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cerr << "Error while parsing the command line: " << e.what() << endl;
+    }
     exit( 1 );
   }
 
 
   // display help or hVMC version information
-  
+
   if ( vm.count( "help" ) ) {
-    cout << endl;
-    cout << "usage: hVMC [OPTIONS] JOBFILE -o OUTDIR" << endl;
-    cout << cmdline_options << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cout << endl;
+      cout << "usage: hVMC [OPTIONS] JOBFILE -o OUTDIR" << endl;
+      cout << cmdline_options << endl;
+    }
     exit( 0 );
   }
 
   if ( vm.count( "version" ) ) {
-    cout << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cout << endl;
 
-    cout << "hVMC - built from git commit " << GIT_HASH << endl;
+      cout << "hVMC - built from git commit " << GIT_HASH << endl;
 
 #ifndef NDEBUG
-    cout << "=========== DEBUG BUILD ============" << endl;
+      cout << "=========== DEBUG BUILD ============" << endl;
 #else
-    cout << "========== RELEASE BUILD ===========" << endl;
+      cout << "========== RELEASE BUILD ===========" << endl;
 #endif
 
-    cout << "compiled " << __DATE__ " with ";
+      cout << "compiled " << __DATE__ " with ";
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #  if defined(__GNUC_PATCHLEVEL__)
-    cout << "GCC " << __GNUC__ << "." << __GNUC_MINOR__
-         << "." << __GNUC_PATCHLEVEL__;
+      cout << "GCC " << __GNUC__ << "." << __GNUC_MINOR__
+           << "." << __GNUC_PATCHLEVEL__;
 #  else
-    cout << "GCC " << __GNUC__ << "." << __GNUC_MINOR__;
+      cout << "GCC " << __GNUC__ << "." << __GNUC_MINOR__;
 #  endif
 #elif defined(__INTEL_COMPILER)
-    cout << "ICC " << __INTEL_COMPILER;
+      cout << "ICC " << __INTEL_COMPILER;
 #elif defined(_MSC_VER)
-    cout << "MSC " << _MSC_VER;
+      cout << "MSC " << _MSC_VER;
 #else
-    cout << "unknown compiler";
+      cout << "unknown compiler";
 #endif
-    cout << endl;
+      cout << endl;
 
 #ifdef USE_FP_DBLPREC
-    cout << "floating point precision: double" << endl;
+      cout << "floating point precision: double" << endl;
 #else
-    cout << "floating point precision: single" << endl;
+      cout << "floating point precision: single" << endl;
 #endif
-    cout << endl;
+      cout << endl;
 
-    cout
-    << "Copyright (C) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
-    << "License GPLv3+: GNU GPL version 3 or later"
-       " <http://gnu.org/licenses/gpl.html>" << endl
-    << "This is free software: you are free to change and redistribute it." << endl
-    << "There is NO WARRANTY, to the extent permitted by law." << endl << endl;
-
+      cout
+          << "Copyright (C) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
+          << "License GPLv3+: GNU GPL version 3 or later"
+          " <http://gnu.org/licenses/gpl.html>" << endl
+          << "This is free software: you are free to change and redistribute it." << endl
+          << "There is NO WARRANTY, to the extent permitted by law." << endl << endl;
+    }
     exit( 0 );
   }
 
 
   if ( vm.count( "job-file" ) ) {
     // parse the jobfile
-    cout << ":: Parsing jobfile ..." << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cout << ":: Parsing jobfile ..." << endl;
+    }
     ifstream jobifs( vm["job-file"].as<fs::path>().string() );
     if ( jobifs.is_open() ) {
       try {
         po::store( po::parse_config_file( jobifs, jobfile_options ), vm );
       } catch ( const po::error& e ) {
-        cerr << "Error while parsing the job file: " << e.what() << endl;
+        if ( mpiflock.rank() == 0 ) {
+          cerr << "Error while parsing the job file: " << e.what() << endl;
+        }
         exit( 1 );
       }
     } else {
-      cerr << "Error: unable to open jobfile " << vm["job-file"].as<string>()
-           << endl;
+      if ( mpiflock.rank() == 0 ) {
+        cerr << "Error: unable to open jobfile " << vm["job-file"].as<string>()
+             << endl;
+      }
       exit( 1 );
     }
   }
@@ -234,7 +251,9 @@ Options read_options( int argc, char const* argv[] )
     // (will throw exception on missing options)
     po::notify( vm );
   } catch ( const po::error& e ) {
-    cerr << "Error in program options: " << e.what() << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cerr << "Error in program options: " << e.what() << endl;
+    }
     exit( 1 );
   }
 
@@ -262,19 +281,21 @@ Options read_options( int argc, char const* argv[] )
     if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() > 3 ) {
       throw logic_error(
         "electronic configuration updates with hopping > 3rd nearest neighbors"
-        "is not supported"
+        "are not supported"
       );
     }
 
     if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
-        !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
-      throw logic_error("the number of lattice sites must be a perfect square");
+         !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
+      throw logic_error( "the number of lattice sites must be a perfect square" );
     }
 
     // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
 
   } catch ( const logic_error& e ) {
-    cerr << "Logical error in physical parameters: " << e.what() << endl;
+    if ( mpiflock.rank() == 0 ) {
+      cerr << "Logical error in physical parameters: " << e.what() << endl;
+    }
     exit( 1 );
   }
 

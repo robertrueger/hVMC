@@ -25,6 +25,8 @@
 #include <vector>
 #include <utility>
 
+#include <eigen3/Eigen/Core>
+
 #include "detwf.hpp"
 #include "jastrow.hpp"
 #include "fpctrl.hpp"
@@ -38,23 +40,32 @@ namespace po = boost::program_options;
 
 
 BasicSimResults simrun_basic(
-  const Options& opts, const VariationalParameters& vpar )
+  const Options& opts, const VariationalParameters& vpar,
+  const boost::mpi::communicator& mpiflock )
 {
-  cout << ":: Preparing simulation objects ..." << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << ":: Preparing simulation objects ..." << endl;
+  }
   HubbardModelVMC* model = nullptr;
-  simrun_basic_prepare( opts, vpar, model );
+  simrun_basic_prepare( opts, vpar, model, mpiflock );
 
-  cout << ":: Equilibrating the system" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << ":: Equilibrating the system" << endl;
+  }
   model->equilibrate( opts["sim.num-mcs-equil"].as<unsigned int>() );
 
-  cout << ":: Performing Monte Carlo cycle" << endl;
-  const BinnedData<fptype>& E_l = simrun_basic_mccycle( opts, model );
+  if ( mpiflock.rank() == 0 ) {
+    cout << ":: Performing Monte Carlo cycle" << endl;
+  }
+  const BinnedData<fptype>& E_l = simrun_basic_mccycle( opts, model, mpiflock );
 
   // we don't need the simulation objects anymore ...
   delete model;
   model = nullptr;
 
-  cout << ":: Performing statistical analysis of the E_local data" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << ":: Performing statistical analysis of the E_local data" << endl;
+  }
   const BinnedDataStatistics& E_l_stat = run_bindat_statanalysis( E_l );
 
   BasicSimResults res;
@@ -69,19 +80,24 @@ BasicSimResults simrun_basic(
 
 void simrun_basic_prepare(
   const Options& opts, const VariationalParameters& vpar,
-  HubbardModelVMC*& model )
+  HubbardModelVMC*& model, const boost::mpi::communicator& mpiflock )
 {
   // Mersenne Twister random number generator
   unsigned int rngseed
     = opts.count( "sim.rng-seed" ) ?
       opts["sim.rng-seed"].as<unsigned int>() :
       chrono::system_clock::now().time_since_epoch().count();
-  cout << "   -> MT19937 RNG ( seed = " << rngseed << " )" << endl;
+  rngseed += rngseed / ( mpiflock.rank() + 1 );
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> MT19937 RNG ( seed = " << rngseed << " )" << endl;
+  }
   mt19937 rng( rngseed  );
 
   // Lattice object
   Lattice* lat;
-  cout << "   -> Lattice object" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> Lattice object" << endl;
+  }
   if ( opts["phys.lattice"].as<lattice_t>() == LATTICE_1DCHAIN ) {
     lat = new Lattice1DChain(
       opts["phys.num-lattice-sites"].as<unsigned int>() );
@@ -92,7 +108,9 @@ void simrun_basic_prepare(
   // the lattice object on the heap will be destroyed by hmodvmc's destructor!
 
   // determinantal part of the wavefunction
-  cout << "   -> Determinantal part of the wavefunction" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> Determinantal part of the wavefunction" << endl;
+  }
   const SingleParticleOrbitals& M
     = wf_tight_binding(
         vpar.determinantal,
@@ -100,8 +118,26 @@ void simrun_basic_prepare(
         lat
       );
 
+  // check if the system has an open shell
+  if ( M.energies( M.orbitals.cols() ) - M.energies( M.orbitals.cols() - 1 )
+       < 0.00001 ) {
+    if ( mpiflock.rank() == 0 ) {
+      cout << endl;
+      cout << "      ERROR: Open shell detected!" << endl;
+      cout << "      E_fermi = " << M.energies( M.orbitals.cols() - 1 ) << endl;
+      cout << "      Orbital below = " << M.energies( M.orbitals.cols() - 2 ) << endl;
+      cout << "      Orbital above = " << M.energies( M.orbitals.cols() ) << endl;
+      if ( mpiflock.size() > 1 ) {
+        mpiflock.abort( 1 );
+      }
+    }
+    exit( 1 );
+  }
+
   // Jastrow factor
-  cout << "   -> Jastrow factor" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> Jastrow factor" << endl;
+  }
   Jastrow v( lat, vpar.jastrow );
 
   // collect hopping matrix elements into a vector
@@ -111,7 +147,9 @@ void simrun_basic_prepare(
   t[2] = opts["phys.3rd-nn-hopping"].as<fptype>();
 
   // the Hubbard model object itself
-  cout << "   -> HubbardModelVMC object" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> HubbardModelVMC object" << endl;
+  }
   model =
     new HubbardModelVMC(
     move( rng ),
@@ -132,33 +170,45 @@ void simrun_basic_prepare(
 
 
 BinnedData<fptype> simrun_basic_mccycle(
-  const Options& opts, HubbardModelVMC* const model )
+  const Options& opts, HubbardModelVMC* const model,
+  const boost::mpi::communicator& mpiflock )
 {
-  cout << "   -> Creating E_local output array" << endl;
-  BinnedData<fptype> E_l(
-    opts["sim.num-bins"].as<unsigned int>(),
-    opts["sim.num-binmcs"].as<unsigned int>()
-  );
+  // calculate the number of bins this thread has to calculate
+  const unsigned int mybincount =
+    opts["sim.num-bins"].as<unsigned int>() / mpiflock.size() +
+    (
+      mpiflock.rank() == 0 ?
+      opts["sim.num-bins"].as<unsigned int>() % mpiflock.size() :
+      0
+    );
 
-  cout << "   -> Running Monte Carlo cycle" << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> Creating E_local output array" << endl;
+  }
+  BinnedData<fptype> E_l( mybincount, opts["sim.num-binmcs"].as<unsigned int>() );
+
+  if ( mpiflock.rank() == 0 ) {
+    cout << "   -> Running Monte Carlo cycle" << endl;
+  }
 
   // start the stopwatch
   chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
-  for ( unsigned int bin = 0;
-        bin < opts["sim.num-bins"].as<unsigned int>();
-        ++bin ) {
+  for ( unsigned int bin = 0; bin < mybincount; ++bin ) {
 
     // show progress
     unsigned int progress_percent =
       static_cast<unsigned int>(
         floor( 100 * static_cast<double>( bin ) /
-               static_cast<double>( opts["sim.num-bins"].as<unsigned int>() - 1 ) )
+               static_cast<double>( mybincount - 1 ) )
       );
-    cout << "\r"
-         << "      Bin " << bin + 1 << "/" << opts["sim.num-bins"].as<unsigned int>()
-         << " (" << progress_percent << "%)";
-    cout.flush();
+
+    if ( mpiflock.rank() == 0 ) {
+      cout << "\r"
+           << "      Bin " << bin + 1 << "/" << mybincount
+           << " (" << progress_percent << "%)";
+      cout.flush();
+    }
 
     for ( unsigned int mcs = 0;
           mcs < opts["sim.num-binmcs"].as<unsigned int>();
@@ -170,45 +220,50 @@ BinnedData<fptype> simrun_basic_mccycle(
       E_l[bin][mcs] = model->E_l();
     }
   }
-  cout << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << endl;
+  }
 
   // stop the stopwatch and calculate the elapsed time
   chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-  double total_time   = chrono::duration<double>( t2 - t1 ).count();
-  double time_per_mcs
+  const double total_time = chrono::duration<double>( t2 - t1 ).count();
+  const double time_per_mcs
     = total_time / static_cast<double>
-        ( opts["sim.num-bins"].as<unsigned int>() *
-          opts["sim.num-binmcs"].as<unsigned int>() );
-  double time_per_phop
+      ( mybincount * opts["sim.num-binmcs"].as<unsigned int>() );
+  const double time_per_phop
     = time_per_mcs / static_cast<double>
-        ( opts["phys.num-electrons"].as<unsigned int>() );
+      ( opts["phys.num-electrons"].as<unsigned int>() );
 
-  cout << endl
-       << "      Finished in " << total_time << " sec" << endl
-       << "      => " << 1.0 / time_per_mcs << " MCS/sec" << endl
-       << "      => " << 1.0 / ( time_per_phop * 1000.0 ) << " PHOPs/millisec"
-       << endl;
+  if ( mpiflock.rank() == 0 ) {
+    cout << endl
+         << "      Finished in " << total_time << " sec" << endl
+         << "      => " << 1.0 / time_per_mcs << " MCS/sec" << endl
+         << "      => " << 1.0 / ( time_per_phop * 1000.0 ) << " PHOPs/millisec"
+         << endl;
+  }
 
   vector<FPDevStat> devstat;
   devstat.push_back( model->get_W_devstat() );
   devstat.push_back( model->get_T_devstat() );
 
-  for ( unsigned int i = 0; i < 2; ++i ) {
-    cout << endl;
-    cout << "      Floating point precision control for ";
-    if ( i == 0 ) {
-      cout << "matrix W:";
-    } else {
-      cout << "vector T:";
+  if ( mpiflock.rank() == 0 ) {
+    for ( unsigned int i = 0; i < 2; ++i ) {
+      cout << endl;
+      cout << "      Floating point precision control for ";
+      if ( i == 0 ) {
+        cout << "matrix W:";
+      } else {
+        cout << "vector T:";
+      }
+      cout << endl;
+      cout << "        " << devstat[i].recalcs << " recalculations" << endl;
+      cout << "        " << devstat[i].misses << " misses ("
+           << devstat[i].mag1_misses << " by a factor of 10)" << endl;
+      cout << "        " << devstat[i].hits << " hits ("
+           << devstat[i].mag1_hits << " better than a factor of 10)" << endl;
     }
     cout << endl;
-    cout << "        " << devstat[i].recalcs << " recalculations" << endl;
-    cout << "        " << devstat[i].misses << " misses ("
-         << devstat[i].mag1_misses << " by a factor of 10)" << endl;
-    cout << "        " << devstat[i].hits << " hits ("
-         << devstat[i].mag1_hits << " better than a factor of 10)" << endl;
   }
-  cout << endl;
 
   return E_l;
 }

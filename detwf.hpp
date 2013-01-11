@@ -32,14 +32,19 @@
 struct SingleParticleOrbitals {
 
   // the actual orbitals
-  const Eigen::MatrixXfp orbitals;
+  Eigen::MatrixXfp orbitals;
+
+  // the associated energies
+  Eigen::MatrixXfp energies;
 
   // spin symmetric and orbitals spin eigenstates
-  const bool ssym;
+  bool ssym;
 
   SingleParticleOrbitals(
-    const Eigen::MatrixXfp& orbitals_init, bool ssym_init
-  ) : orbitals( orbitals_init ), ssym( ssym_init ) { }
+    const Eigen::MatrixXfp& orbitals_init,
+    const Eigen::MatrixXfp& energies_init,
+    bool ssym_init
+  ) : orbitals( orbitals_init ), energies( energies_init), ssym( ssym_init ) { }
 };
 
 
@@ -47,7 +52,5 @@ SingleParticleOrbitals wf_tight_binding(
     const std::vector<fptype>& t,
     unsigned int N, Lattice* lat
 );
-
-bool check_openshell( const Eigen::VectorXfp& E, unsigned int N );
 
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED

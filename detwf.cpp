@@ -33,8 +33,6 @@ SingleParticleOrbitals wf_tight_binding(
   // make sure we pass the right number of variational parameters
   assert( t.size() == 3  );
 
-  cout << "      > Constructing TB Hamiltonian" << endl;
-
   Eigen::MatrixXfp H_tb_nospin = Eigen::MatrixXfp::Zero( lat->L, lat->L );
 
   vector<unsigned int> l_Xnn;
@@ -51,8 +49,6 @@ SingleParticleOrbitals wf_tight_binding(
   cout << "wf_tight_binding() : spinless Hamiltonian in single particle basis ="
        << endl << H_tb_nospin << endl;
 #endif
-
-  cout << "      > Diagonalizing TB Hamiltonian" << endl;
 
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> eigensolver( H_tb_nospin );
   assert( eigensolver.info() == Eigen::Success );
@@ -75,36 +71,7 @@ SingleParticleOrbitals wf_tight_binding(
        << 2.f* eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
 #endif
 
-  check_openshell( eigensolver.eigenvalues(), N / 2 );   
+  // check_openshell( eigensolver.eigenvalues(), N / 2 );
 
-  return SingleParticleOrbitals( M, true );
-}
-
-
-
-bool check_openshell( const Eigen::VectorXfp& E, unsigned int N )
-{
-  cout << "      > Checking for open shell" << endl;
-
-#if VERBOSE >= 1
-  cout << "check_openshell() : single particle orbital energies =" << endl;
-  for ( unsigned int n = 0; n < E.size(); ++n ) {
-    cout << E( n );
-    if ( n == N - 1 ) {
-      cout << " <-- E_fermi";
-    }
-    cout << endl;
-  }
-#endif
-
-  if ( E( N ) - E( N - 1 ) < 0.00001 ) {
-    cout << endl;
-    cout << "        ERROR: Open shell detected!" << endl;
-    cout << "        E_fermi = " << E( N - 1 ) << endl;
-    cout << "        Orbital below = " << E( N - 2 ) << endl;
-    cout << "        Orbital above = " << E( N ) << endl;
-    exit( 1 );
-  }
-
-  return true;
+  return SingleParticleOrbitals( M, eigensolver.eigenvalues(), true );
 }

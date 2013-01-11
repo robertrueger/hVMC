@@ -20,21 +20,39 @@
 #ifndef SIMRESULTS_H_INCLUDED
 #define SIMRESULTS_H_INCLUDED
 
+#include <vector>
+
+#include <boost/serialization/access.hpp>
+
 #include "macros.h"
 #include "fptype.hpp"
 
 
 struct BasicSimResults final {
 
-  bool success;
+    bool success;
 
-  fptype E;
-  fptype sigma_E;
+    fptype E;
+    fptype sigma_E;
 
-  fptype var_E_l;
+    fptype var_E_l;
 
-  BasicSimResults() : success( false ) { }
+    BasicSimResults()
+      : success( false ), E( 0.f ), sigma_E( 0.f ), var_E_l( 0.f ) { }
 
+  private:
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize( Archive& ar, const unsigned int ) {
+      ar & success;
+      ar & E;
+      ar & sigma_E;
+      ar & var_E_l;
+    }
 };
+
+
+BasicSimResults combine_results( const std::vector<BasicSimResults>& result_list );
 
 #endif // SIMRESULTS_H_INCLUDED

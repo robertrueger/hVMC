@@ -20,14 +20,16 @@
 #ifndef OPTIONS_H_INCLUDED
 #define OPTIONS_H_INCLUDED
 
-#include <iosfwd>
-
-#include <boost/program_options.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include <boost/mpi/communicator.hpp>
 
 #include "macros.h"
 
 typedef boost::program_options::variables_map Options;
 
-Options read_options( int argc, char const* argv[] );
+Options read_options(
+  int argc, char* argv[],
+  const boost::mpi::communicator& mpiflock
+);
 
 #endif // OPTIONS_H_INCLUDED

@@ -20,7 +20,7 @@
 #ifndef SIMRUN_H_INCLUDED
 #define SIMRUN_H_INCLUDED
 
-#include <boost/program_options.hpp>
+#include <boost/mpi/communicator.hpp>
 
 #include "macros.h"
 #include "fptype.hpp"
@@ -33,15 +33,18 @@
 
 
 BasicSimResults simrun_basic(
-  const Options& opts, const VariationalParameters& vpar
+  const Options& opts, const VariationalParameters& vpar,
+  const boost::mpi::communicator& mpiflock
 );
 
 void simrun_basic_prepare(
-  const Options& opts, const VariationalParameters& vpar, HubbardModelVMC*& model
+  const Options& opts, const VariationalParameters& vpar, HubbardModelVMC*& model,
+  const boost::mpi::communicator& mpiflock
 );
 
 BinnedData<fptype> simrun_basic_mccycle(
-  const Options& opts, HubbardModelVMC* const model
+  const Options& opts, HubbardModelVMC* const model,
+  const boost::mpi::communicator& mpiflock
 );
 
 // TODO: simulation with more observables (Robert Rueger, 2012-11-12 15:21)
