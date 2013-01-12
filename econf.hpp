@@ -35,7 +35,7 @@ enum ElectronOccupation_t {
 };
 
 
-struct ElectronHop final {
+struct ElectronHop {
 
   // id of the hopping electron
   const unsigned int k;
@@ -56,7 +56,7 @@ struct ElectronHop final {
 };
 
 
-class ElectronConfiguration final
+class ElectronConfiguration
 {
 
   private:

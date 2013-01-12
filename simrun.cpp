@@ -21,9 +21,10 @@
 
 #include <iostream>
 #include <random>
-#include <chrono>
 #include <vector>
 #include <utility>
+
+#include <boost/chrono.hpp>
 
 #include <eigen3/Eigen/Core>
 
@@ -36,7 +37,7 @@
 
 using namespace std;
 namespace po = boost::program_options;
-
+namespace chrono = boost::chrono;
 
 
 BasicSimResults simrun_basic(

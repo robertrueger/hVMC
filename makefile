@@ -27,9 +27,9 @@ GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 
 # compiler options
 CXX      = mpic++
-CXXFLAGS = -std=c++11 -Wall -Wextra
+CXXFLAGS = -std=c++0x -Wall -Wextra -I/home/rueger/include
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
-LDFLAGS += -lboost_serialization -lboost_mpi
+LDFLAGS += -lboost_serialization -lboost_mpi -lboost_chrono
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
 DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING -DEIGEN_DONT_PARALLELIZE -DEIGEN_DEFAULT_TO_ROW_MAJOR
 ifeq ($(BUILD), RELEASE)

@@ -35,7 +35,7 @@
 
 
 template <typename T>
-class Bin final
+class Bin
 {
 
   private:
@@ -101,7 +101,7 @@ class Bin final
 
 
 template <typename T>
-class BinnedData final
+class BinnedData
 {
 
   private:
@@ -171,7 +171,7 @@ class BinnedData final
 };
 
 
-struct BinnedDataStatistics final {
+struct BinnedDataStatistics {
 
   fptype mean;
   fptype sigma_mean;

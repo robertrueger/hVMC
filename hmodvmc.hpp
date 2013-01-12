@@ -34,7 +34,7 @@
 #include "econf.hpp"
 
 
-class HubbardModelVMC final
+class HubbardModelVMC
 {
   private:
 

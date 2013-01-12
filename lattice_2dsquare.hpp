@@ -26,7 +26,7 @@
 #include "macros.h"
 #include "lattice.hpp"
 
-class Lattice2DSquare final : public Lattice {
+class Lattice2DSquare : public Lattice {
 
   private:
 

@@ -28,7 +28,7 @@
 #include "lattice.hpp"
 
 
-class Lattice1DChain final : public Lattice {
+class Lattice1DChain : public Lattice {
 
   public:
 

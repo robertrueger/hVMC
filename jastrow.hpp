@@ -29,7 +29,7 @@
 #include "varparam.hpp"
 
 
-class Jastrow final
+class Jastrow
 {
 
   private:

@@ -28,7 +28,7 @@
 #include "fptype.hpp"
 
 
-struct BasicSimResults final {
+struct BasicSimResults {
 
     bool success;
 

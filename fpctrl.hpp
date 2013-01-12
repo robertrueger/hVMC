@@ -26,7 +26,7 @@
 #include "fptype.hpp"
 
 
-struct FPDevStat final {
+struct FPDevStat {
 
   // the desired deviation
   fptype target;

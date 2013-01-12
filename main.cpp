@@ -19,8 +19,8 @@
 
 #include <iostream>
 #include <vector>
-#include <chrono>
 
+#include <boost/chrono.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 #include <boost/mpi/collectives.hpp>
@@ -34,6 +34,7 @@
 
 using namespace std;
 namespace mpi = boost::mpi;
+namespace chrono = boost::chrono;
 
 
 int main( int argc, char* argv[] )
