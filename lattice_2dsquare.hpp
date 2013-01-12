@@ -27,7 +27,7 @@
 #include "lattice.hpp"
 
 class Lattice2DSquare final : public Lattice {
-    
+
   private:
 
     // side length of the square lattice of L sites
@@ -45,7 +45,7 @@ class Lattice2DSquare final : public Lattice {
       unsigned int l, unsigned int X,
       std::vector<unsigned int>* outbuf
     ) const;
-    
+
     unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<unsigned int> irreducible_idxrel_list() const;
 };

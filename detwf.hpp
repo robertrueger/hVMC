@@ -29,7 +29,7 @@
 #include "lattice.hpp"
 
 
-struct SingleParticleOrbitals {
+struct SingleParticleOrbitals final {
 
   // the actual orbitals
   Eigen::MatrixXfp orbitals;

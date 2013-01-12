@@ -30,7 +30,7 @@
 #include "options.hpp"
 
 
-struct VariationalParameters {
+struct VariationalParameters final {
 
     std::vector<fptype> determinantal;
     std::vector<fptype> jastrow;

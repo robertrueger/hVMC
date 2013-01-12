@@ -32,8 +32,8 @@ enum lattice_t {
   LATTICE_2DSQUARE
 };
 
-class Lattice {    
- 
+class Lattice {
+
   public:
 
     const lattice_t type;

@@ -43,5 +43,5 @@ BasicSimResults combine_results( const vector<BasicSimResults>& result_list )
     = sqrt( combined_results.sigma_E ) / static_cast<fptype>( result_list.size() );
   combined_results.var_E_l /= static_cast<fptype>( result_list.size() );
 
-  return combined_results; 
+  return combined_results;
 }

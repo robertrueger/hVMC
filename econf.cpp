@@ -19,7 +19,7 @@
 
 #include "econf.hpp"
 
-#if VERBOSE >= 1 
+#if VERBOSE >= 1
 # include <iostream>
 #endif
 

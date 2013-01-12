@@ -204,7 +204,7 @@ BinnedDataStatistics run_bindat_statanalysis( const BinnedData<T>& bd )
                std::ostream_iterator<T>( std::cout, " " ) );
     std::cout << std::endl;
 #endif
-    
+
     binmean[bin] =
       static_cast<fptype>( accumulate( bd[bin].begin(), bd[bin].end(), 0.f ) ) /
       static_cast<fptype>( bd[bin].size() );
