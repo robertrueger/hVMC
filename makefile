@@ -26,7 +26,7 @@ MAKEFLAGS += --no-builtin-rules
 GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 
 # compiler options
-CXX      = g++
+CXX      = mpic++
 CXXFLAGS = -std=c++11 -Wall -Wextra
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 LDFLAGS += -lboost_serialization -lboost_mpi
