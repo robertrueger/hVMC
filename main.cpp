@@ -67,25 +67,19 @@ int main( int argc, char* argv[] )
     VariationalParameters vpar = get_initial_varparam( opts );
     mpi::broadcast( mpiflock, vpar, 0 );
     if ( mpiflock.size() != 1 ) {
-      cout << ":: Starting the simulation on all members of the flock" << endl;
+      cout << ":: Starting the simulation" << endl;
     }
 
     vector<BasicSimResults> flockresults;
 
-    if ( mpiflock.size() != 1 ) {
-      cout << ":: Flock leader runs simulation part #0" << endl;
-    }
     cout << endl;
     cout << "----- SIMULATION OUTPUT ------------------------------" << endl;
     const BasicSimResults& myresult = simrun_basic( opts, vpar, mpiflock );
     cout << "------------------------------------------------------" << endl;
     cout << endl;
-    if ( mpiflock.size() != 1 ) {
-      cout << ":: Flock leader finished simulation part #0" << endl;
-    }
 
     if ( mpiflock.size() != 1 ) {
-      cout << ":: Waiting for the flock's results" << endl;
+      cout << ":: Collecting the flock's results" << endl;
     }
     mpi::gather( mpiflock, myresult, flockresults, 0 );
 
