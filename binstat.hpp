@@ -106,29 +106,37 @@ class BinnedData final
 
   private:
 
+    const size_t binsize;
     std::vector< Bin<T> > data;
 
   public:
 
-    BinnedData( size_t num_bins, size_t num_binmcs )
-      : data( std::vector< Bin<T> >( num_bins, Bin<T>( num_binmcs ) ) ) {
-      if ( num_bins == 0 || num_binmcs == 0 ) {
-        throw std::logic_error( "num_bins and num_binmcs must be >0" );
+    BinnedData( size_t num_bins, size_t binsize_init )
+      : binsize( binsize_init ),
+        data( std::vector< Bin<T> >( num_bins, Bin<T>( binsize_init ) ) ) {
+      if ( binsize == 0 ) {
+        throw std::logic_error( "binsize must be >0" );
       }
     };
-    BinnedData( size_t num_bins, size_t num_binmcs, T init )
-      : data( std::vector< Bin<T> >( num_bins, Bin<T>( num_binmcs, init ) ) ) {
-      if ( num_bins == 0 || num_binmcs == 0 ) {
-        throw std::logic_error( "num_bins and num_binmcs must be >0" );
+    BinnedData( size_t num_bins, size_t binsize_init, T init )
+      : binsize( binsize_init ),
+        data( std::vector< Bin<T> >( num_bins, Bin<T>( binsize_init, init ) ) ) {
+      if ( binsize == 0 ) {
+        throw std::logic_error( "num_binmcs must be >0" );
       }
     };
+
+
+    void append_empty_bins( size_t num_appended_bins ) {
+      data.resize( data.size() + num_appended_bins, Bin<T>( binsize ) );
+    }
 
 
     size_t num_bins() const {
       return data.size();
     }
     size_t num_binmcs() const {
-      return data[0].size();
+      return binsize;
     }
 
 
