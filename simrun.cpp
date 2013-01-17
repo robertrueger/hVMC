@@ -144,6 +144,10 @@ void simrun_basic_prepare(
     cout << "   -> Jastrow factor" << endl;
   }
   Jastrow v( lat, vpar.jastrow );
+  // TODO: REMOVE (Robert Rueger, 2013-01-17 13:31)
+  // set some short range terms
+  v.set( 0, 0, -1.f );
+  v.set( 0, 1, -0.25f );
 
   // collect hopping matrix elements into a vector
   vector<fptype> t( 3 );
