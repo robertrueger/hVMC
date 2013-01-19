@@ -75,7 +75,6 @@ HubbardModelVMC::HubbardModelVMC(
     Wd_active(   M_init.ssym ? &Wd_1 : nullptr ),
     Wd_inactive( M_init.ssym ? &Wd_2 : nullptr ),
     T( Eigen::VectorXfp( lat->L ) ),
-    completed_mcsteps( 0 ),
     updates_until_W_recalc( updates_until_W_recalc_init ),
     updates_until_T_recalc( updates_until_T_recalc_init ),
     updates_since_W_recalc( 0 ), updates_since_T_recalc( 0 ),
@@ -232,17 +231,6 @@ void HubbardModelVMC::mcs()
 #endif
     metstep();
   }
-  ++completed_mcsteps;
-}
-
-
-
-void HubbardModelVMC::equilibrate( unsigned int N_mcs_equil )
-{
-  for ( unsigned int n = 0; n < N_mcs_equil; ++n ) {
-    mcs();
-  }
-  completed_mcsteps -= N_mcs_equil;
 }
 
 
@@ -679,13 +667,6 @@ fptype HubbardModelVMC::E_l()
 #endif
 
   return E_l_result;
-}
-
-
-
-unsigned long int HubbardModelVMC::mctime() const
-{
-  return completed_mcsteps;
 }
 
 

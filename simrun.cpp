@@ -24,9 +24,11 @@
 #include <chrono>
 #include <vector>
 #include <utility>
+#include <functional>
 
 #include <boost/optional.hpp>
 #include <boost/mpi/status.hpp>
+#include <boost/mpi/request.hpp>
 
 #include <eigen3/Eigen/Core>
 
@@ -53,14 +55,6 @@ BasicSimResults simrun_basic(
   HubbardModelVMC* model = nullptr;
   simrun_basic_prepare( opts, vpar, model, mpiflock );
 
-  if ( mpiflock.rank() == 0 ) {
-    cout << ":: Equilibrating the system" << endl;
-  }
-  model->equilibrate( opts["sim.num-mcs-equil"].as<unsigned int>() );
-
-  if ( mpiflock.rank() == 0 ) {
-    cout << ":: Performing Monte Carlo cycle" << endl;
-  }
   const BinnedData<fptype>& E_l = simrun_basic_mccycle( opts, model, mpiflock );
 
   // we don't need the simulation objects anymore ...
@@ -191,8 +185,50 @@ BinnedData<fptype> simrun_basic_mccycle(
     unsigned int completed_bins = 0;
     unsigned int enqueued_bins  = opts["sim.num-bins"].as<unsigned int>();
 
+    // define procedure to query the flock for new work requests
+    function<void()> mpiquery_work_requests( [&]() {
+      while ( boost::optional<mpi::status> status
+              = mpiflock.iprobe( mpi::any_source, 0 ) ) {
+        // receive the "I'm ready" message and hand out new bins to the source
+        mpiflock.recv( status->source(), 0 );
+        if ( enqueued_bins > 0 ) {
+          mpiflock.isend( status->source(), 1, 1 );
+          scheduled_bins += 1;
+          enqueued_bins  -= 1;
+        } else {
+          mpiflock.isend( status->source(), 1, 0 );
+          ++finished_flock_members;
+        }
+      }
+    } );
+
+    // define procedure to query the flock for finished work
+    function<void()> mpiquery_finished_work( [&]() {
+      while ( boost::optional<mpi::status> status
+                = mpiflock.iprobe( mpi::any_source, 2 ) ) {
+        mpiflock.recv( status->source(), 2 );
+        --scheduled_bins;
+        ++completed_bins;
+      }
+    } );
+
     unsigned int completed_bins_leader = 0;
 
+    cout << ":: Equilibrating the system" << endl;
+    for (
+      unsigned int mcs = 0;
+      mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+      ++mcs
+    ) {
+      // 1.: take care of the flock
+      mpiquery_finished_work();
+      mpiquery_work_requests();
+
+      // 2.: leader calculates a Monte Carlo step in his own cycle
+      model->mcs();
+    }
+
+    cout << ":: Performing Monte Carlo cycle" << endl;
     cout << endl;
     cout << "      Progress:" << endl;
 
@@ -207,35 +243,14 @@ BinnedData<fptype> simrun_basic_mccycle(
 
       E_l.append_empty_bins( 1 );
 
-      for ( unsigned int mcs = 0;
-            mcs < opts["sim.num-binmcs"].as<unsigned int>();
-            ++mcs ) {
-
-        // 1.: send new work to the flock
-
-        // check if anyone in the flock has finished his work
-        while ( boost::optional<mpi::status> status
-                = mpiflock.iprobe( mpi::any_source, 2 ) ) {
-          unsigned int completed_bins_fromsource;
-          mpiflock.recv( status->source(), 2, completed_bins_fromsource );
-          scheduled_bins -= completed_bins_fromsource;
-          completed_bins += completed_bins_fromsource;
-        }
-
-        // check if anyone in the flock is ready to accept new work
-        while ( boost::optional<mpi::status> status
-                = mpiflock.iprobe( mpi::any_source, 0 ) ) {
-          // receive the "I'm ready" message and hand out new bins to the source
-          mpiflock.recv( status->source(), 0 );
-          if ( enqueued_bins > 0 ) {
-            mpiflock.send( status->source(), 1, 1 );
-            scheduled_bins += 1;
-            enqueued_bins  -= 1;
-          } else {
-            mpiflock.send( status->source(), 1, 0 );
-            ++finished_flock_members;
-          }
-        }
+      for (
+        unsigned int mcs = 0;
+        mcs < opts["sim.num-binmcs"].as<unsigned int>();
+        ++mcs
+      ) {
+        // 1.: take care of the flock
+        mpiquery_finished_work();
+        mpiquery_work_requests();
 
         // 2.: leader calculates a Monte Carlo step in his own cycle
         model->mcs();
@@ -252,24 +267,22 @@ BinnedData<fptype> simrun_basic_mccycle(
             static_cast<int>( finished_flock_members ) < mpiflock.size() ) {
       if ( boost::optional<mpi::status> status
            = mpiflock.iprobe( mpi::any_source, 2 ) ) {
-        unsigned int completed_bins_fromsource;
-        mpiflock.recv( status->source(), 2, completed_bins_fromsource );
-        scheduled_bins -= completed_bins_fromsource;
-        completed_bins += completed_bins_fromsource;
-      }
-
-      if ( boost::optional<mpi::status> status
-           = mpiflock.iprobe( mpi::any_source, 0 ) ) {
-        // wait for the source to request more work
-        mpiflock.recv( status->source(), 0 );
-
-        // tell him there is no more work
-        mpiflock.send( status->source(), 1, 0 );
-        ++finished_flock_members;
+        mpiflock.recv( status->source(), 2 );
+        --scheduled_bins;
+        ++completed_bins;
 
         cout << '\r' << "        Bin "
              << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
         cout.flush();
+      }
+
+      if ( boost::optional<mpi::status> status
+           = mpiflock.iprobe( mpi::any_source, 0 ) ) {
+        // receive the request for more work
+        mpiflock.recv( status->source(), 0 );
+        // tell him there is no more work
+        mpiflock.isend( status->source(), 1, 0 );
+        ++finished_flock_members;
       }
     }
     assert( enqueued_bins == 0 );
@@ -308,37 +321,58 @@ BinnedData<fptype> simrun_basic_mccycle(
   } else {
     // ----- thread is following the flock -----
 
+   // equilibrate the system
+   for (
+      unsigned int mcs = 0;
+      mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+      ++mcs
+    ) {
+      model->mcs();
+    }
+
     unsigned int completed_bins_thisslave = 0;
+    bool leader_out_of_work = false;
+    unsigned int scheduled_bins_thisslave;
+    mpiflock.isend( 0, 0 );
+    mpiflock.recv( 0, 1, scheduled_bins_thisslave );
+    leader_out_of_work = ( scheduled_bins_thisslave == 0 );
 
-    while ( true ) {
+    while ( scheduled_bins_thisslave > 0 ) {
 
-      // ask the flock leader for new work
-      unsigned int scheduled_bins_thisslave;
-      mpiflock.send( 0, 0 );
-      mpiflock.recv( 0, 1, scheduled_bins_thisslave );
-
-      if ( scheduled_bins_thisslave > 0 ) {
-        // there is work to do, do it!
-
-        E_l.append_empty_bins( scheduled_bins_thisslave );
-
-        for ( unsigned int bin = 0; bin < scheduled_bins_thisslave; ++bin ) {
-          for ( unsigned int mcs = 0;
-                mcs < opts["sim.num-binmcs"].as<unsigned int>();
-                ++mcs ) {
-            model->mcs();
-            E_l[completed_bins_thisslave][mcs] = model->E_l();
-          }
-          ++completed_bins_thisslave;
-        }
-
-        // report completion of the work
-        mpiflock.send( 0, 2, scheduled_bins_thisslave );
-
-      } else {
-        // there is no more work, stop working!
-        break;
+      unsigned int new_scheduled_bins_thisslave;
+      mpi::request leader_answer;
+      if ( !leader_out_of_work ) {
+        // ask the flock leader for more work
+        mpiflock.isend( 0, 0 );
+        leader_answer = mpiflock.irecv( 0, 1, new_scheduled_bins_thisslave );
       }
+
+      E_l.append_empty_bins( 1 );
+
+      for (
+        unsigned int mcs = 0;
+        mcs < opts["sim.num-binmcs"].as<unsigned int>();
+        ++mcs
+      ) {
+        model->mcs();
+        E_l[completed_bins_thisslave][mcs] = model->E_l();
+      }
+
+      // report completion of the work
+      mpiflock.isend( 0, 2 );
+      ++completed_bins_thisslave;
+      --scheduled_bins_thisslave;
+
+      if ( !leader_out_of_work ) {
+        // wait for answer from leader concerning the next bin
+        leader_answer.wait();
+        if ( new_scheduled_bins_thisslave == 1 ) {
+          ++scheduled_bins_thisslave;
+        } else {
+          leader_out_of_work = true;
+        }
+      }
+
     }
 
   }
