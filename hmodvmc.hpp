@@ -83,8 +83,6 @@ class HubbardModelVMC
     // (in order to avoid allocating new ones all the time)
     std::vector<unsigned int> k_pos_Xnn;
 
-    unsigned long int completed_mcsteps;
-
     // floating point precision control
     const unsigned int updates_until_W_recalc, updates_until_T_recalc;
     unsigned int updates_since_W_recalc, updates_since_T_recalc;
@@ -133,11 +131,9 @@ class HubbardModelVMC
 
     // Monte Carlo step
     void mcs();
-    void equilibrate( unsigned int N_mcs_equil );
 
     // observable measurements
     fptype E_l();
-    unsigned long int mctime() const;
 
     // floating point precision control
     FPDevStat get_W_devstat() const;
