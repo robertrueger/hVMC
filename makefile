@@ -34,6 +34,7 @@ DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
 DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING -DEIGEN_DONT_PARALLELIZE -DEIGEN_DEFAULT_TO_ROW_MAJOR
 ifeq ($(BUILD), RELEASE)
   CXXFLAGS += -march=native -O3 -flto -fuse-linker-plugin -fomit-frame-pointer
+  LDFLAGS  += -fwhole-program -s
   DEFINES  += -DNDEBUG
 else ifeq ($(BUILD), PROFILE)
   CXXFLAGS += -march=native -O3 -g
