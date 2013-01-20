@@ -25,7 +25,7 @@
 #include <stdexcept>
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "fptype.hpp"
 #include "lattice.hpp"

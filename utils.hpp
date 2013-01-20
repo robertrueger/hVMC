@@ -22,7 +22,7 @@
 
 #include <iosfwd>
 
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include "macros.h"
 
