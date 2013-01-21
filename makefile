@@ -31,13 +31,13 @@ CXXFLAGS = -std=c++11 -Wall -Wextra
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 LDFLAGS += -lboost_serialization -lboost_mpi
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
-DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING -DEIGEN_DONT_PARALLELIZE -DEIGEN_DEFAULT_TO_ROW_MAJOR
+DEFINES += -DEIGEN_DEFAULT_TO_ROW_MAJOR -DEIGEN_NO_AUTOMATIC_RESIZING
 ifeq ($(BUILD), RELEASE)
-  CXXFLAGS += -march=native -O3 -flto -fuse-linker-plugin -fomit-frame-pointer
-  LDFLAGS  += -fwhole-program -s
+  CXXFLAGS += -march=native -O2 -flto
+  LDFLAGS  += -fuse-linker-plugin -s
   DEFINES  += -DNDEBUG
 else ifeq ($(BUILD), PROFILE)
-  CXXFLAGS += -march=native -O3 -g
+  CXXFLAGS += -march=native -O2 -g
   DEFINES  += -DNDEBUG
 else
   CXXFLAGS += -g
