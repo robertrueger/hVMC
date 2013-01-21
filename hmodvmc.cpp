@@ -226,8 +226,7 @@ void HubbardModelVMC::mcs()
   // perform a number of metropolis steps equal to the number of electrons
   for ( unsigned int s = 0; s < lat->L; ++s ) {
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::mcs() : Monte Carlo step = " << completed_mcsteps
-         << ", Metropolis step = " << s << endl;
+    cout << "HubbardModelVMC::mcs() : Metropolis step = " << s << endl;
 #endif
     metstep();
   }
