@@ -79,6 +79,12 @@ class HubbardModelVMC final
 
     Eigen::VectorXfp T;
 
+#ifdef USE_ATLAS
+    // a temporary vectors that are large enough to hold one row/col of Wbu
+    Eigen::VectorXfp tempWcol;
+    Eigen::VectorXfp tempWrow;
+#endif
+
     // buffer vector for X nearest neighbors
     // (in order to avoid allocating new ones all the time)
     std::vector<unsigned int> k_pos_Xnn;
@@ -100,8 +106,7 @@ class HubbardModelVMC final
 
     // update and recalc functions for the internal objects
     void calc_new_W();
-    void calc_qupdated_Wbu( const ElectronHop& hop );
-    void calc_qupdated_Wd(  const ElectronHop& hop );
+    void calc_qupdated_W( const ElectronHop& hop );
     Eigen::VectorXfp calc_new_T() const;
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
 

@@ -34,10 +34,10 @@ onsite-energy = 4.0
 lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 144
+num-lattice-sites = 576
 
 # total number of electrons
-num-electrons = 144
+num-electrons = 562
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
@@ -46,13 +46,13 @@ num-electrons = 144
 update-hop-maxdistance = 2
 
 # number of Monte Carlo steps for equilibration
-num-mcs-equil = 100
+num-mcs-equil = 50
 
 # number of measurement bins
-num-bins = 100
+num-bins = 50
 
 # number of Monte Carlo steps per bin
-num-binmcs = 100
+num-binmcs = 50
 
 # random number generator seed
 rng-seed = 1337133789

@@ -30,8 +30,16 @@ CXX      = mpic++
 CXXFLAGS = -std=c++11 -Wall -Wextra
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 LDFLAGS += -lboost_serialization -lboost_mpi
+ifeq ($(ATLAS), ENABLED)
+  LDFLAGS += -lcblas -latlas
+endif
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
-DEFINES += -DEIGEN_DEFAULT_TO_ROW_MAJOR -DEIGEN_NO_AUTOMATIC_RESIZING
+DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING
+ifeq ($(ATLAS), ENABLED)
+  DEFINES += -DUSE_ATLAS
+else
+  DEFINES += -DEIGEN_DEFAULT_TO_ROW_MAJOR
+endif
 ifeq ($(BUILD), RELEASE)
   CXXFLAGS += -march=native -O2 -flto
   LDFLAGS  += -fuse-linker-plugin -s
