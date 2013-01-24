@@ -55,23 +55,28 @@ SingleParticleOrbitals wf_tight_binding(
 
   assert( N % 2 == 0 );
 
-  /*
-    Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
-    for ( unsigned int k = 0; k < N / 2; ++k ) {
-      M.col( 2 * k ).head( lat->L )     = eigensolver.eigenvectors().col( k );
-      M.col( 2 * k + 1 ).tail( lat->L ) = eigensolver.eigenvectors().col( k );
-    }
-  */
+/*
+  Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
+  for ( unsigned int k = 0; k < N / 2; ++k ) {
+    M.col( 2 * k ).head( lat->L )     = eigensolver.eigenvectors().col( k );
+    M.col( 2 * k + 1 ).tail( lat->L ) = eigensolver.eigenvectors().col( k );
+  }
+  Eigen::VectorXfp E = Eigen::VectorXfp::Zero( 2 * lat->L );
+  for ( unsigned int k = 0; k < lat->L; ++k ) {
+    E( 2 * k )     = eigensolver.eigenvalues()( k );
+    E( 2 * k + 1 ) = eigensolver.eigenvalues()( k );
+  }
+*/
 
   const Eigen::MatrixXfp& M
     = eigensolver.eigenvectors().topLeftCorner( lat->L, N / 2 );
+
 #if VERBOSE >= 1
   cout << "wf_tight_binding() : M = " << endl << M << endl
        << "wf_tight_binding() : slater determinant ground state energy = "
        << 2.f* eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
 #endif
 
-  // check_openshell( eigensolver.eigenvalues(), N / 2 );
-
+  //return SingleParticleOrbitals( M, E, false );
   return SingleParticleOrbitals( M, eigensolver.eigenvalues(), true );
 }

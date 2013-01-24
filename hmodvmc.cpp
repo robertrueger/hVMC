@@ -28,6 +28,12 @@
 
 #include <eigen3/Eigen/LU>
 
+#ifdef USE_ATLAS
+extern "C" {
+# include <cblas.h>
+}
+#endif
+
 using namespace std;
 
 
@@ -75,6 +81,18 @@ HubbardModelVMC::HubbardModelVMC(
     Wd_active(   M_init.ssym ? &Wd_1 : nullptr ),
     Wd_inactive( M_init.ssym ? &Wd_2 : nullptr ),
     T( Eigen::VectorXfp( lat->L ) ),
+#ifdef USE_ATLAS
+    tempWcol(
+      M_init.ssym ?
+      Eigen::VectorXfp( lat->L ) :
+      Eigen::VectorXfp( 2 * lat->L )
+    ),
+    tempWrow(
+      M_init.ssym ?
+      Eigen::VectorXfp( N_init / 2 ) :
+      Eigen::VectorXfp( N_init )
+    ),
+#endif
     updates_until_W_recalc( updates_until_W_recalc_init ),
     updates_until_T_recalc( updates_until_T_recalc_init ),
     updates_since_W_recalc( 0 ), updates_since_T_recalc( 0 ),
@@ -306,11 +324,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 
     // puts updated W into the active buffer
     // (only buffer of the hopping spin direction is changed)
-    if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
-      calc_qupdated_Wd( hop );
-    } else {
-      calc_qupdated_Wbu( hop );
-    }
+    calc_qupdated_W( hop );
 
     // puts recalculated W in the active buffers
     // (pushs updated W into the inactive buffers)
@@ -355,11 +369,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 
     // puts updated W into the active buffer
     // (only buffer of the hopping spin direction is changed)
-    if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
-      calc_qupdated_Wd( hop );
-    } else {
-      calc_qupdated_Wbu( hop );
-    }
+    calc_qupdated_W( hop );
 
 #ifndef NDEBUG
     // puts recalculated W in the active buffers
@@ -399,9 +409,8 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
       }
     }
 # endif
-#endif
-
     assert( dev < W_devstat.target );
+#endif
   }
 }
 
@@ -485,30 +494,65 @@ void HubbardModelVMC::calc_new_W()
 
 
 
-void HubbardModelVMC::calc_qupdated_Wbu( const ElectronHop& hop )
+void HubbardModelVMC::calc_qupdated_W( const ElectronHop& hop )
 {
-  *Wbu_inactive = *Wbu_active;
+  unsigned int k     = hop.k;
+  unsigned int l     = hop.l;
+  unsigned int k_pos = hop.k_pos;
 
-  Wbu_inactive->noalias() -=
-    ( Wbu_active->col( hop.k ) / ( *Wbu_active )( hop.l, hop.k ) )
-    * ( Wbu_active->row( hop.l ) - Wbu_active->row( hop.k_pos ) );
+  Eigen::MatrixXfp*& W = ( M.ssym == true && hop.k >= econf.N() / 2 ) ?
+                         Wd_active : Wbu_active;
 
-  swap( Wbu_inactive, Wbu_active );
-}
+  if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
+    k     -= econf.N() / 2;
+    l     -= lat->L;
+    k_pos -= lat->L;
+  }
 
+#ifdef USE_ATLAS
 
+  tempWcol = W->col( k );
+  tempWrow = W->row( l ) - W->row( k_pos );
 
-void HubbardModelVMC::calc_qupdated_Wd( const ElectronHop& hop )
-{
-  *Wd_inactive = *Wd_active;
+#ifdef USE_FP_DBLPREC
+  cblas_dger(
+#else
+  cblas_sger(
+#endif
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+    CblasRowMajor,
+#else
+    CblasColMajor,
+#endif
+    W->rows(),
+    W->cols(),
+    - 1.f / ( *W )( l, k ),
+    tempWcol.data(),
+    1,
+    tempWrow.data(),
+    1,
+    W->data(),
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+    W->cols()
+#else
+    W->rows()
+#endif
+  );
 
-  Wd_inactive->noalias() -=
-    ( Wd_active->col( hop.k - econf.N() / 2 )
-      / ( *Wd_active )( hop.l - lat->L, hop.k - econf.N() / 2 ) )
-    * ( Wd_active->row( hop.l - lat->L )
-        - Wd_active->row( hop.k_pos - lat->L ) );
+#else // #ifndef USE_ATLAS
 
-  swap( Wd_inactive, Wd_active );
+  Eigen::MatrixXfp*& W_inactive = ( M.ssym == true && hop.k >= econf.N() / 2 ) ?
+                                  Wd_inactive : Wbu_inactive;
+
+  *W_inactive = *W;
+
+  W_inactive->noalias() -=
+    ( W->col( k ) / ( *W )( l, k ) )
+    * ( W->row( l ) - W->row( k_pos ) );
+
+  swap( W_inactive, W );
+
+#endif
 }
 
 
