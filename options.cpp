@@ -209,6 +209,16 @@ Options read_options(
 #else
       cout << "floating point precision: single" << endl;
 #endif
+#ifdef USE_ATLAS
+      cout << "ATLAS support: enabled" << endl;
+#else
+      cout << "ATLAS support: disabled" << endl;
+#endif
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+      cout << "matrix storage order: row major" << endl;
+#else
+      cout << "matrix storage order: column major" << endl;
+#endif
       cout << endl;
 
       cout
