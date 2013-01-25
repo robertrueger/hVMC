@@ -78,5 +78,5 @@ SingleParticleOrbitals wf_tight_binding(
 #endif
 
   //return SingleParticleOrbitals( M, E, false );
-  return SingleParticleOrbitals( M, eigensolver.eigenvalues(), true );
+  return SingleParticleOrbitals( M.transpose(), eigensolver.eigenvalues(), true );
 }

@@ -67,22 +67,22 @@ class HubbardModelVMC final
 
     ElectronConfiguration econf;
 
-    Eigen::MatrixXfp  Wbu_1;
-    Eigen::MatrixXfp  Wbu_2;
-    Eigen::MatrixXfp* Wbu_active;
-    Eigen::MatrixXfp* Wbu_inactive;
+    Eigen::MatrixXfp  WbuT_1;
+    Eigen::MatrixXfp  WbuT_2;
+    Eigen::MatrixXfp* WbuT_active;
+    Eigen::MatrixXfp* WbuT_inactive;
 
-    Eigen::MatrixXfp  Wd_1;
-    Eigen::MatrixXfp  Wd_2;
-    Eigen::MatrixXfp* Wd_active;
-    Eigen::MatrixXfp* Wd_inactive;
+    Eigen::MatrixXfp  WdT_1;
+    Eigen::MatrixXfp  WdT_2;
+    Eigen::MatrixXfp* WdT_active;
+    Eigen::MatrixXfp* WdT_inactive;
 
     Eigen::VectorXfp T;
 
 #ifdef USE_ATLAS
     // a temporary vectors that are large enough to hold one row/col of Wbu
-    Eigen::VectorXfp tempWcol;
-    Eigen::VectorXfp tempWrow;
+    Eigen::VectorXfp tempWTrow;
+    Eigen::VectorXfp tempWTcol;
 #endif
 
     // buffer vector for X nearest neighbors
@@ -111,9 +111,9 @@ class HubbardModelVMC final
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
 
     // functions to calculate the matrix D
-    Eigen::MatrixXfp calc_Db() const;
-    Eigen::MatrixXfp calc_Du() const;
-    Eigen::MatrixXfp calc_Dd() const;
+    Eigen::MatrixXfp calc_DbT() const;
+    Eigen::MatrixXfp calc_DuT() const;
+    Eigen::MatrixXfp calc_DdT() const;
 
 
   public:

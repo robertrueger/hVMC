@@ -117,14 +117,14 @@ void simrun_basic_prepare(
       );
 
   // check if the system has an open shell
-  if ( M.energies( M.orbitals.cols() ) - M.energies( M.orbitals.cols() - 1 )
+  if ( M.energies( M.orbitalsT.rows() ) - M.energies( M.orbitalsT.rows() - 1 )
        < 0.00001 ) {
     if ( mpiflock.rank() == 0 ) {
       cout << endl;
       cout << "      ERROR: Open shell detected!" << endl;
-      cout << "      E_fermi = " << M.energies( M.orbitals.cols() - 1 ) << endl;
-      cout << "      Orbital below = " << M.energies( M.orbitals.cols() - 2 ) << endl;
-      cout << "      Orbital above = " << M.energies( M.orbitals.cols() ) << endl;
+      cout << "      E_fermi = " << M.energies( M.orbitalsT.rows() - 1 ) << endl;
+      cout << "      Orbital below = " << M.energies( M.orbitalsT.rows() - 2 ) << endl;
+      cout << "      Orbital above = " << M.energies( M.orbitalsT.rows() ) << endl;
       if ( mpiflock.size() > 1 ) {
         mpiflock.abort( 1 );
       }

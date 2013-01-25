@@ -32,7 +32,7 @@
 struct SingleParticleOrbitals final {
 
   // the actual orbitals
-  Eigen::MatrixXfp orbitals;
+  Eigen::MatrixXfp orbitalsT;
 
   // the associated energies
   Eigen::MatrixXfp energies;
@@ -41,10 +41,10 @@ struct SingleParticleOrbitals final {
   bool ssym;
 
   SingleParticleOrbitals(
-    const Eigen::MatrixXfp& orbitals_init,
+    const Eigen::MatrixXfp& orbitalsT_init,
     const Eigen::MatrixXfp& energies_init,
     bool ssym_init
-  ) : orbitals( orbitals_init ), energies( energies_init), ssym( ssym_init ) { }
+  ) : orbitalsT( orbitalsT_init ), energies( energies_init), ssym( ssym_init ) { }
 };
 
 
