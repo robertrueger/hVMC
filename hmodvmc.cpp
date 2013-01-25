@@ -169,7 +169,7 @@ HubbardModelVMC::HubbardModelVMC(
     } else {
 
       // check whole determinantal part
-      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db() );
+      Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db().transpose() );
       enough_overlap &= lu_decomp.isInvertible();
       if ( !enough_overlap ) {
 #if VERBOSE >= 1
