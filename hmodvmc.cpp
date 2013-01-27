@@ -31,6 +31,7 @@
 #ifdef USE_ATLAS
 extern "C" {
 # include <cblas.h>
+# include <clapack.h>
 }
 #endif
 
@@ -471,15 +472,92 @@ void HubbardModelVMC::calc_new_W()
 {
   if ( M.ssym == true ) {
 
+#ifdef USE_ATLAS
+
+    Eigen::MatrixXfp DT = calc_DuT();
+    Eigen::Matrix< fptype, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor >
+      inMT_outW = M.orbitalsT;
+    Eigen::VectorXi ipiv( DT.rows() );
+    int info;
+
+
+    info =
+#ifdef USE_FP_DBLPREC
+    clapack_dgesv(
+#else
+    clapack_sgesv(
+#endif
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+      CblasRowMajor,
+#else
+      CblasColMajor,
+#endif
+      DT.rows(),
+      inMT_outW.cols(),
+      DT.data(),
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+      DT.cols(),
+#else
+      DT.rows(),
+#endif
+      ipiv.data(),
+      inMT_outW.data(),
+      inMT_outW.rows()
+    );
+    assert( info == 0 );
+
+    *WbuT_inactive = inMT_outW;
+
+
+    DT = calc_DdT();
+    inMT_outW = M.orbitalsT;
+
+    info =
+#ifdef USE_FP_DBLPREC
+    clapack_dgesv(
+#else
+    clapack_sgesv(
+#endif
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+      CblasRowMajor,
+#else
+      CblasColMajor,
+#endif
+      DT.rows(),
+      inMT_outW.cols(),
+      DT.data(),
+#ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
+      DT.cols(),
+#else
+      DT.rows(),
+#endif
+      ipiv.data(),
+      inMT_outW.data(),
+      inMT_outW.rows()
+    );
+    assert( info == 0 );
+
+    *WdT_inactive = inMT_outW;
+
+#else
+
     *WbuT_inactive = calc_DuT().partialPivLu().solve( M.orbitalsT );
     *WdT_inactive  = calc_DdT().partialPivLu().solve( M.orbitalsT );
+
+#endif
 
     swap( WbuT_inactive, WbuT_active );
     swap( WdT_inactive, WdT_active );
 
   } else {
 
+#ifdef USE_ATLAS
+
+#else
+
     *WbuT_inactive = calc_DbT().partialPivLu().solve( M.orbitalsT );
+
+#endif
 
     swap( WbuT_inactive, WbuT_active );
 

@@ -31,7 +31,7 @@ CXXFLAGS = -std=c++11 -Wall -Wextra
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 LDFLAGS += -lboost_serialization -lboost_mpi
 ifeq ($(ATLAS), ENABLED)
-  LDFLAGS += -lcblas -latlas
+  LDFLAGS += -llapack -lcblas -latlas
 endif
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
 DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING
