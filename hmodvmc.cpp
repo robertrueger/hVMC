@@ -26,9 +26,10 @@
 #include <cmath>
 #include <algorithm>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/LU>
 
-#ifdef USE_ATLAS
+#ifdef USE_CBLAS
 extern "C" {
 # include <cblas.h>
 }
@@ -81,7 +82,7 @@ HubbardModelVMC::HubbardModelVMC(
     Wd_active(   M_init.ssym ? &Wd_1 : nullptr ),
     Wd_inactive( M_init.ssym ? &Wd_2 : nullptr ),
     T( Eigen::VectorXfp( lat->L ) ),
-#ifdef USE_ATLAS
+#ifdef USE_CBLAS
     tempWcol(
       M_init.ssym ?
       Eigen::VectorXfp( lat->L ) :
@@ -509,7 +510,7 @@ void HubbardModelVMC::calc_qupdated_W( const ElectronHop& hop )
     k_pos -= lat->L;
   }
 
-#ifdef USE_ATLAS
+#ifdef USE_CBLAS
 
   tempWcol = W->col( k );
   tempWrow = W->row( l ) - W->row( k_pos );
@@ -539,7 +540,7 @@ void HubbardModelVMC::calc_qupdated_W( const ElectronHop& hop )
 #endif
   );
 
-#else // #ifndef USE_ATLAS
+#else // #ifndef USE_CBLAS
 
   Eigen::MatrixXfp*& W_inactive = ( M.ssym == true && hop.k >= econf.N() / 2 ) ?
                                   Wd_inactive : Wbu_inactive;

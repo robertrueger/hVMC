@@ -20,6 +20,7 @@
 #ifndef FPCTRL_H_INCLUDED
 #define FPCTRL_H_INCLUDED
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "macros.h"

@@ -23,6 +23,7 @@
 #include <vector>
 #include <random>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "macros.h"
@@ -79,7 +80,7 @@ class HubbardModelVMC
 
     Eigen::VectorXfp T;
 
-#ifdef USE_ATLAS
+#ifdef USE_CBLAS
     // a temporary vectors that are large enough to hold one row/col of Wbu
     Eigen::VectorXfp tempWcol;
     Eigen::VectorXfp tempWrow;
