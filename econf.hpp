@@ -23,6 +23,7 @@
 #include <vector>
 #include <random>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "macros.h"

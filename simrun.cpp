@@ -21,7 +21,6 @@
 
 #include <iostream>
 #include <random>
-#include <chrono>
 #include <vector>
 #include <utility>
 #include <functional>
@@ -30,6 +29,7 @@
 #include <boost/mpi/status.hpp>
 #include <boost/mpi/request.hpp>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "detwf.hpp"
@@ -81,10 +81,7 @@ void simrun_basic_prepare(
   HubbardModelVMC*& model, const boost::mpi::communicator& mpiflock )
 {
   // Mersenne Twister random number generator
-  unsigned int rngseed
-    = opts.count( "sim.rng-seed" ) ?
-      opts["sim.rng-seed"].as<unsigned int>() :
-      chrono::system_clock::now().time_since_epoch().count();
+  unsigned int rngseed = opts["sim.rng-seed"].as<unsigned int>();
   rngseed += rngseed / ( mpiflock.rank() + 1 );
   if ( mpiflock.rank() == 0 ) {
     cout << "   -> MT19937 RNG ( seed = " << rngseed << " )" << endl;

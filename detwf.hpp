@@ -22,6 +22,7 @@
 
 #include <vector>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "macros.h"

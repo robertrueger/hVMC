@@ -23,6 +23,7 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
+#include <chrono>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -109,7 +110,9 @@ Options read_options(
     "number of Monte Carlo steps per bin" )
 
   ( "sim.rng-seed,S",
-    po::value<unsigned int>(),
+    po::value<unsigned int>()->default_value(
+      chrono::system_clock::now().time_since_epoch().count()
+    ),
     "random number generator seed" );
 
   po::options_description fpctrl( "floating point precision control" );
@@ -209,10 +212,10 @@ Options read_options(
 #else
       cout << "floating point precision: single" << endl;
 #endif
-#ifdef USE_ATLAS
-      cout << "ATLAS support: enabled" << endl;
+#ifdef USE_CBLAS
+      cout << "external CBLAS: enabled" << endl;
 #else
-      cout << "ATLAS support: disabled" << endl;
+      cout << "external CBLAS: disabled" << endl;
 #endif
 #ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
       cout << "matrix storage order: row major" << endl;

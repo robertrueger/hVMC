@@ -25,31 +25,40 @@ MAKEFLAGS += --no-builtin-rules
 # find the hash of the git commit we are building from
 GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 
-# compiler options
+# common compiler/linker flags
 CXX      = mpic++
 CXXFLAGS = -std=c++11 -Wall -Wextra
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 LDFLAGS += -lboost_serialization -lboost_mpi
-ifeq ($(ATLAS), ENABLED)
-  LDFLAGS += -lcblas -latlas
+DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"
+
+# feature specific compiler/linker flags
+BUILD   ?= RELEASE
+DBLPREC ?= DISABLED
+CBLAS   ?= ENABLED
+
+ifeq ($(DBLPREC), ENABLED)
+  DEFINES += -DUSE_FP_DBLPREC
 endif
-DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"#-DUSE_FP_DBLPREC
-DEFINES += -DEIGEN_NO_AUTOMATIC_RESIZING
-ifeq ($(ATLAS), ENABLED)
-  DEFINES += -DUSE_ATLAS
+
+ifneq ($(CBLAS), DISABLED)
+  DEFINES += -DUSE_CBLAS
+  LDFLAGS += -lcblas
 else
   DEFINES += -DEIGEN_DEFAULT_TO_ROW_MAJOR
 endif
-ifeq ($(BUILD), RELEASE)
-  CXXFLAGS += -march=native -O2 -flto
-  LDFLAGS  += -fuse-linker-plugin -s
-  DEFINES  += -DNDEBUG
+
+# build [debug/profile/release] specific compiler/linker flags
+ifeq ($(BUILD), DEBUG)
+  CXXFLAGS += -g
+  DEFINES  += -DVERBOSE=1
 else ifeq ($(BUILD), PROFILE)
   CXXFLAGS += -march=native -O2 -g
   DEFINES  += -DNDEBUG
 else
-  CXXFLAGS += -g
-  DEFINES  += -DVERBOSE=1
+  CXXFLAGS += -march=native -O2 -flto
+  LDFLAGS  += -fuse-linker-plugin -s
+  DEFINES  += -DNDEBUG
 endif
 
 

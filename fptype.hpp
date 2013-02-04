@@ -27,6 +27,7 @@ typedef float fptype;
 #endif
 
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 namespace Eigen {
