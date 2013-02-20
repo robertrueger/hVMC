@@ -34,9 +34,9 @@ int main( int argc, char* argv[] )
 {
   // initialize mpi
   mpi::environment  mpienv( argc, argv );
-  mpi::communicator mpiflock;
+  mpi::communicator mpicomm;
 
-  if ( mpiflock.rank() == 0 ) { // only flock leader prints welcome message
+  if ( mpicomm.rank() == 0 ) { // only flock leader prints welcome message
     cout << endl;
     cout << "    ==========================================" << endl;
     cout << "    | hVMC - hubbard Variational Monte Carlo |" << endl;
@@ -45,13 +45,13 @@ int main( int argc, char* argv[] )
   }
 
   // read options from the command line
-  const Options& opts = read_options( argc, argv, mpiflock.rank() == 0 );
+  const Options& opts = read_options( argc, argv, mpicomm.rank() == 0 );
   // TODO: output all options if verbose (Robert Rueger, 2012-11-02 13:31)
 
-  if ( mpiflock.rank() == 0 ) { // this process is the master
-    sched_master( opts, mpiflock );
+  if ( mpicomm.rank() == 0 ) { // this process is the master
+    sched_master( opts, mpicomm );
   } else { // this process is a slave
-    sched_slave( opts, mpiflock );
+    sched_slave( opts, mpicomm );
   }
 
   return 0;
