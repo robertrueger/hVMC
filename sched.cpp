@@ -19,13 +19,21 @@
 
 #include "sched.hpp"
 
-#include <vector>
+#include <set>
+
+#include <eigen3/Eigen/Core>
 
 #include <boost/mpi/collectives.hpp>
+#include <boost/serialization/set.hpp>
 
+#include "serialization_eigen.hpp"
 //#include "mccrun.hpp"
 #include "msgtags.hpp"
+#include "fptype.hpp"
+#include "observables.hpp"
+#include "varparam.hpp"
 
+using namespace std;
 namespace mpi = boost::mpi;
 
 
@@ -40,7 +48,17 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   schedmsg = SCHEDMSG_START_MCC;
   mpi::broadcast( mpicomm, schedmsg, 0 );
 
-  // do something ...
+  // prepare the input data for the Monte Carlo Cycle
+  Eigen::VectorXfp vpar = get_initial_varparam( opts );
+
+  set<observables_t> obs;
+  obs.insert( OBSERVABLE_H );
+
+  // send the varparams and the set of observables to the slaves
+  mpi::broadcast( mpicomm, vpar, 0);
+  mpi::broadcast( mpicomm, obs,  0);
+
+  // run master part of the Monte Carlo cycle
 
   // everything done, tell everyone to quit!
   schedmsg = SCHEDMSG_EXIT;
@@ -56,7 +74,13 @@ void sched_slave( const Options& opts, const mpi::communicator& mpicomm )
 
     if ( schedmsg == SCHEDMSG_START_MCC ) {
 
-      // do something ...
+      // get variational parameters and set of observables from master
+      Eigen::VectorXfp vpar;
+      mpi::broadcast( mpicomm, vpar, 0);
+      set<observables_t> obs;
+      mpi::broadcast( mpicomm, obs,  0);
+
+      // run slave part of the Monte Carlo cycle
 
     }
 
