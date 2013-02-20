@@ -21,15 +21,11 @@
 #define OPTIONS_H_INCLUDED
 
 #include <boost/program_options/variables_map.hpp>
-#include <boost/mpi/communicator.hpp>
 
 #include "macros.h"
 
 typedef boost::program_options::variables_map Options;
 
-Options read_options(
-  int argc, char* argv[],
-  const boost::mpi::communicator& mpiflock
-);
+Options read_options( int argc, char* argv[], bool is_master );
 
 #endif // OPTIONS_H_INCLUDED

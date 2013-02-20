@@ -35,12 +35,9 @@
 using namespace std;
 namespace po  = boost::program_options;
 namespace fs  = boost::filesystem;
-namespace mpi = boost::mpi;
 
 
-Options read_options(
-  int argc, char* argv[],
-  const mpi::communicator& mpiflock )
+Options read_options( int argc, char* argv[], bool is_master )
 {
   Options vm;
 
@@ -154,13 +151,13 @@ Options read_options(
 
   try {
     // parse options from the command line
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cout << ":: Parsing command line ..." << endl;
     }
     po::store( po::command_line_parser( argc, argv ).
                options( cmdline_options ).positional( p ).run(), vm );
   } catch ( const po::error& e ) {
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cerr << "Error while parsing the command line: " << e.what() << endl;
     }
     exit( 1 );
@@ -170,7 +167,7 @@ Options read_options(
   // display help or hVMC version information
 
   if ( vm.count( "help" ) ) {
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cout << endl;
       cout << "usage: hVMC [OPTIONS] JOBFILE -o OUTDIR" << endl;
       cout << cmdline_options << endl;
@@ -179,7 +176,7 @@ Options read_options(
   }
 
   if ( vm.count( "version" ) ) {
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cout << endl;
 
       cout << "hVMC - built from git commit " << GIT_HASH << endl;
@@ -237,7 +234,7 @@ Options read_options(
 
   if ( vm.count( "job-file" ) ) {
     // parse the jobfile
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cout << ":: Parsing jobfile ..." << endl;
     }
     ifstream jobifs( vm["job-file"].as<fs::path>().string() );
@@ -245,13 +242,13 @@ Options read_options(
       try {
         po::store( po::parse_config_file( jobifs, jobfile_options ), vm );
       } catch ( const po::error& e ) {
-        if ( mpiflock.rank() == 0 ) {
+        if ( is_master ) {
           cerr << "Error while parsing the job file: " << e.what() << endl;
         }
         exit( 1 );
       }
     } else {
-      if ( mpiflock.rank() == 0 ) {
+      if ( is_master ) {
         cerr << "Error: unable to open jobfile " << vm["job-file"].as<string>()
              << endl;
       }
@@ -264,7 +261,7 @@ Options read_options(
     // (will throw exception on missing options)
     po::notify( vm );
   } catch ( const po::error& e ) {
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cerr << "Error in program options: " << e.what() << endl;
     }
     exit( 1 );
@@ -306,7 +303,7 @@ Options read_options(
     // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
 
   } catch ( const logic_error& e ) {
-    if ( mpiflock.rank() == 0 ) {
+    if ( is_master ) {
       cerr << "Logical error in physical parameters: " << e.what() << endl;
     }
     exit( 1 );
