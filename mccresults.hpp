@@ -17,14 +17,33 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBSERVABLES_H_INCLUDED
-#define OBSERVABLES_H_INCLUDED
+#ifndef MCCRESULTS_H_INCLUDED
+#define MCCRESULTS_H_INCLUDED
 
-enum observables_t {
-  OBSERVABLE_E,
-  OBSERVABLE_DELTAK,
-  OBSERVABLE_DELTAK_DELTAKPRIME,
-  OBSERVABLE_DELTAK_E
+#include <boost/optional.hpp>
+
+#include <eigen3/Eigen/Core>
+
+#include "fptype.hpp"
+
+
+template<typename T>
+struct UncertainQuantity {
+  T mean, sigma;
+  UncertainQuantity() {}
+  UncertainQuantity( T mean_init, T sigma_init )
+    : mean( mean_init ), sigma( sigma_init ) { }
 };
 
-#endif // OBSERVABLES_H_INCLUDED
+
+struct MCCResults {
+
+  bool success;
+
+  boost::optional< UncertainQuantity<fptype> > E;
+  boost::optional< Eigen::VectorXfp > Deltak;
+  boost::optional< Eigen::MatrixXfp > Deltak_Deltakprime;
+  boost::optional< Eigen::VectorXfp > Deltak_E;
+};
+
+#endif // MCCRESULTS_H_INCLUDED

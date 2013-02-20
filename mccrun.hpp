@@ -17,14 +17,29 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBSERVABLES_H_INCLUDED
-#define OBSERVABLES_H_INCLUDED
+#ifndef MCCRUN_H_INCLUDED
+#define MCCRUN_H_INCLUDED
 
-enum observables_t {
-  OBSERVABLE_E,
-  OBSERVABLE_DELTAK,
-  OBSERVABLE_DELTAK_DELTAKPRIME,
-  OBSERVABLE_DELTAK_E
-};
+#include <set>
 
-#endif // OBSERVABLES_H_INCLUDED
+#include <boost/mpi/communicator.hpp>
+
+#include <eigen3/Eigen/Core>
+
+#include "fptype.hpp"
+#include "options.hpp"
+#include "mccresults.hpp"
+#include "observables.hpp"
+
+
+MCCResults mccrun_master(
+  const Options& opts, const Eigen::VectorXfp& vpar,
+  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
+);
+
+void mccrun_slave(
+  const Options& opts, const Eigen::VectorXfp& vpar,
+  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
+);
+
+#endif // MCCRUN_H_INCLUDED

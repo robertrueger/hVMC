@@ -27,7 +27,8 @@
 #include <boost/serialization/set.hpp>
 
 #include "serialization_eigen.hpp"
-//#include "mccrun.hpp"
+#include "mccresults.hpp"
+#include "mccrun.hpp"
 #include "msgtags.hpp"
 #include "fptype.hpp"
 #include "observables.hpp"
@@ -49,16 +50,18 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   mpi::broadcast( mpicomm, schedmsg, 0 );
 
   // prepare the input data for the Monte Carlo Cycle
-  Eigen::VectorXfp vpar = get_initial_varparam( opts );
+  const Eigen::VectorXfp vpar = get_initial_varparam( opts );
 
   set<observables_t> obs;
-  obs.insert( OBSERVABLE_H );
+  obs.insert( OBSERVABLE_E );
 
   // send the varparams and the set of observables to the slaves
   mpi::broadcast( mpicomm, vpar, 0);
   mpi::broadcast( mpicomm, obs,  0);
 
   // run master part of the Monte Carlo cycle
+  const MCCResults& res
+    = mccrun_master( opts, vpar, obs, mpicomm );
 
   // everything done, tell everyone to quit!
   schedmsg = SCHEDMSG_EXIT;
@@ -81,6 +84,7 @@ void sched_slave( const Options& opts, const mpi::communicator& mpicomm )
       mpi::broadcast( mpicomm, obs,  0);
 
       // run slave part of the Monte Carlo cycle
+      mccrun_slave( opts, vpar, obs, mpicomm );
 
     }
 
