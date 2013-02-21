@@ -37,13 +37,6 @@
 
 class HubbardModelVMC final
 {
-  private:
-
-    // forbid copy construction and assignment
-    HubbardModelVMC( const HubbardModelVMC& other );
-    HubbardModelVMC& operator=( const HubbardModelVMC& other );
-    // (both are not implemented)
-
   protected:
 
     // ----- independent objects -----

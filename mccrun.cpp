@@ -19,20 +19,315 @@
 
 #include "mccrun.hpp"
 
+#include <random>
+#include <memory>
+#include <vector>
+#include <functional>
+
+#include "hmodvmc.hpp"
+#include "lattice.hpp"
+#include "lattice_1dchain.hpp"
+#include "lattice_2dsquare.hpp"
+#include "obs_energy.hpp"
+#include "msgtags.hpp"
+
+HubbardModelVMC prepare_model(
+  const Options& opts, const Eigen::VectorXfp& vpar,
+  const boost::mpi::communicator& mpicomm
+);
+
+std::shared_ptr<std::mt19937> prepare_rng(
+  const Options& opts, const boost::mpi::communicator& mpicomm
+);
+
+std::shared_ptr<Lattice> prepare_lattice( const Options& opts );
+
+//Wavefunction prepare_wavefunction(
+//  const std::shared_ptr<Lattice>& lat, const Options& opts,
+//  const Eigen::VectorXfp& vpar
+//);
+
+std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
+  const std::set<observables_t>& obs
+);
+
 using namespace std;
 namespace mpi = boost::mpi;
+
 
 
 MCCResults mccrun_master(
   const Options& opts, const Eigen::VectorXfp& vpar,
   const set<observables_t>& obs, const mpi::communicator& mpicomm )
 {
+  cout << ":: Preparing the simulation" << endl;
 
+  HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
+
+  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+
+  unsigned int finished_workers = 0;
+  unsigned int scheduled_bins = 0;
+  unsigned int completed_bins = 0;
+  unsigned int enqueued_bins  = opts["sim.num-bins"].as<unsigned int>();
+
+  // define procedure to query the slaves for new work requests
+  function<void()> mpiquery_work_requests( [&]() {
+    while ( boost::optional<mpi::status> status
+            = mpicomm.iprobe( mpi::any_source, MSGTAG_S_M_REQUEST_BINS ) ) {
+      // receive the request and hand out new bins to the source
+      mpicomm.recv( status->source(), MSGTAG_S_M_REQUEST_BINS );
+      if ( enqueued_bins > 0 ) {
+        mpicomm.isend( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 1 );
+        scheduled_bins += 1;
+        enqueued_bins  -= 1;
+      } else {
+        mpicomm.isend( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 0 );
+        ++finished_workers;
+      }
+    }
+  } );
+
+  // define procedure to query the slaves for finished work
+  function<void()> mpiquery_finished_work( [&]() {
+    while ( boost::optional<mpi::status> status
+            = mpicomm.iprobe( mpi::any_source, 2 ) ) {
+      mpicomm.recv( status->source(), 2 );
+      --scheduled_bins;
+      ++completed_bins;
+    }
+  } );
+
+  cout << ":: Equilibrating the system" << endl;
+
+  for (
+    unsigned int mcs = 0;
+    mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+    ++mcs ) {
+    // take care of the slaves
+    mpiquery_finished_work();
+    mpiquery_work_requests();
+
+    // perform a Monte Carlo step
+    model.mcs();
+  }
+
+  unsigned int completed_bins_leader = 0;
+
+  cout << ":: Performing Monte Carlo cycle" << endl;
+  cout << endl;
+  cout << "      Progress:" << endl;
+
+  while ( enqueued_bins > 0 ) {
+
+    cout << '\r' << "        Bin "
+         << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
+    cout.flush();
+
+    --enqueued_bins;
+    ++scheduled_bins;
+
+    for (
+      unsigned int mcs = 0;
+      mcs < opts["sim.num-binmcs"].as<unsigned int>();
+      ++mcs ) {
+      // take care of the slaves
+      mpiquery_finished_work();
+      mpiquery_work_requests();
+
+      // perform a Monte Carlo step
+      model.mcs();
+
+      // measure observables
+      for ( const unique_ptr<Observable>& o : obscalc ) {
+        o->measure( model );
+      }
+    }
+
+    // tell the observables that a bin has been completed
+    for ( const unique_ptr<Observable>& o : obscalc ) {
+      o->completebin();
+    }
+
+    --scheduled_bins;
+    ++completed_bins_leader;
+    ++completed_bins;
+  }
+  ++finished_workers;
+
+  while ( completed_bins != opts["sim.num-bins"].as<unsigned int>() ||
+          static_cast<int>( finished_workers ) < mpicomm.size() ) {
+    if ( boost::optional<mpi::status> status
+         = mpicomm.iprobe( mpi::any_source, MSGTAG_S_M_FINISHED_BINS ) ) {
+      mpicomm.recv( status->source(), MSGTAG_S_M_FINISHED_BINS );
+      --scheduled_bins;
+      ++completed_bins;
+
+      cout << '\r' << "        Bin "
+           << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
+      cout.flush();
+    }
+
+    if ( boost::optional<mpi::status> status
+         = mpicomm.iprobe( mpi::any_source, MSGTAG_S_M_REQUEST_BINS ) ) {
+      // receive the request for more work
+      mpicomm.recv( status->source(), MSGTAG_S_M_REQUEST_BINS );
+      // tell him there is no more work
+      mpicomm.isend( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 0 );
+      ++finished_workers;
+    }
+  }
+  assert( enqueued_bins == 0 );
+  assert( scheduled_bins == 0 );
+
+  cout << '\r' << "        Bin "
+       << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>()
+       << endl;
+  cout.flush();
+
+  MCCResults results;
+  for ( const unique_ptr<Observable>& o : obscalc ) {
+    o->collect_and_write_results( mpicomm, results );
+  }
+  results.success = true;
+  return results;
 }
+
 
 void mccrun_slave(
   const Options& opts, const Eigen::VectorXfp& vpar,
   const set<observables_t>& obs, const mpi::communicator& mpicomm )
 {
+  // prepare the simulation
 
+  HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
+  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+
+  // equilibrate the system
+
+  for (
+    unsigned int mcs = 0;
+    mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+    ++mcs )
+  {
+    model.mcs();
+  }
+
+  // run this slaves part of the Monte Carlo cycle
+
+  unsigned int completed_bins_thisslave = 0;
+  bool master_out_of_work = false;
+  unsigned int scheduled_bins_thisslave;
+  mpicomm.isend( 0, MSGTAG_S_M_REQUEST_BINS );
+  mpicomm.recv( 0, MSGTAG_M_S_DISPATCHED_BINS, scheduled_bins_thisslave );
+  master_out_of_work = ( scheduled_bins_thisslave == 0 );
+
+  while ( scheduled_bins_thisslave > 0 ) {
+
+    unsigned int new_scheduled_bins_thisslave;
+    mpi::request master_answer;
+    if ( !master_out_of_work ) {
+      // ask the flock leader for more work
+      mpicomm.isend( 0, MSGTAG_S_M_REQUEST_BINS );
+      master_answer = mpicomm.irecv(
+        0, MSGTAG_M_S_DISPATCHED_BINS,
+        new_scheduled_bins_thisslave
+      );
+    }
+
+    for (
+      unsigned int mcs = 0;
+      mcs < opts["sim.num-binmcs"].as<unsigned int>();
+      ++mcs )
+    {
+      // perform a Monte Carlo step
+      model.mcs();
+
+     // measure observables
+      for ( const unique_ptr<Observable>& o : obscalc ) {
+        o->measure( model );
+      }
+    }
+
+    // tell the observables that a bin has been completed
+    for ( const unique_ptr<Observable>& o : obscalc ) {
+      o->completebin();
+    }
+
+    // report completion of the work
+    mpicomm.isend( 0, 2 );
+    ++completed_bins_thisslave;
+    --scheduled_bins_thisslave;
+
+    if ( !master_out_of_work ) {
+      // wait for answer from master concerning the next bin
+      master_answer.wait();
+      if ( new_scheduled_bins_thisslave == 1 ) {
+        ++scheduled_bins_thisslave;
+      } else {
+        master_out_of_work = true;
+      }
+    }
+  }
+
+  // send observables to master
+  for ( const unique_ptr<Observable>& o : obscalc ) {
+    o->send_results_to_master( mpicomm );
+  }
+}
+
+
+
+HubbardModelVMC prepare_model(
+  const Options& opts, const Eigen::VectorXfp& vpar,
+  const mpi::communicator& mpicomm )
+{
+  shared_ptr<mt19937> rng = prepare_rng( opts, mpicomm );
+  shared_ptr<Lattice> lat = prepare_lattice( opts );
+  //Wavefunction psi = prepare_wavefunction( lat, opts, vpar );
+
+  // TODO: create the actual model ... (Robert Rueger, 2013-02-21 15:47)
+}
+
+
+shared_ptr<mt19937> prepare_rng(
+  const Options& opts, const mpi::communicator& mpicomm )
+{
+  unsigned int rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  rngseed += rngseed / ( mpicomm.rank() + 1 );
+  return make_shared<mt19937>( rngseed );
+}
+
+
+shared_ptr<Lattice> prepare_lattice( const Options& opts )
+{
+  if ( opts["phys.lattice"].as<lattice_t>() == LATTICE_1DCHAIN ) {
+    return make_shared<Lattice1DChain>(
+             opts["phys.num-lattice-sites"].as<unsigned int>()
+           );
+  } else {
+    return make_shared<Lattice2DSquare>(
+             opts["phys.num-lattice-sites"].as<unsigned int>()
+           );
+  }
+}
+
+/*
+Wavefunction prepare_wavefunction(
+  const shared_ptr<Lattice>& lat, const Options& opts,
+  const Eigen::VectorXfp& vpar )
+{
+
+}
+*/
+
+vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs )
+{
+  vector< unique_ptr<Observable> > obscalc;
+
+  if ( obs.count( OBSERVABLE_E ) ) {
+    obscalc.push_back( unique_ptr<Observable>( new ObservableEnergy() ) );
+  }
+
+  return obscalc;
 }

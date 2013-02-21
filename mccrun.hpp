@@ -30,7 +30,7 @@
 #include "fptype.hpp"
 #include "options.hpp"
 #include "mccresults.hpp"
-#include "observables.hpp"
+#include "obs.hpp"
 
 
 MCCResults mccrun_master(
