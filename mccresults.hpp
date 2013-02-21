@@ -20,6 +20,9 @@
 #ifndef MCCRESULTS_H_INCLUDED
 #define MCCRESULTS_H_INCLUDED
 
+#include <vector>
+#include <numeric>
+
 #include <boost/optional.hpp>
 
 #include <eigen3/Eigen/Core>
@@ -29,10 +32,35 @@
 
 template<typename T>
 struct UncertainQuantity {
+
   T mean, sigma;
+
   UncertainQuantity() {}
+
   UncertainQuantity( T mean_init, T sigma_init )
     : mean( mean_init ), sigma( sigma_init ) { }
+
+  UncertainQuantity( const std::vector<T>& binmeans ) {
+    // calculate the average of the binmeans
+    mean =
+      accumulate( binmeans.begin(), binmeans.end(), 0.f ) /
+      static_cast<fptype>( binmeans.size() );
+
+    // calculate the variance of the binmeans
+    fptype binmeans_variance =
+      static_cast<fptype>( binmeans.size() ) /
+      static_cast<fptype>( binmeans.size() - 1 ) *
+      (
+        accumulate(
+          binmeans.begin(), binmeans.end(), 0.f,
+          []( fptype sum, fptype m ) { return sum + m * m; }
+        ) / static_cast<fptype>( binmeans.size() )
+        - mean * mean
+      );
+
+    // uncertainty of the mean is sqrt(variance / num_bins)
+    sigma = sqrt( binmeans_variance / static_cast<fptype>( binmeans.size() ) );
+  }
 };
 
 

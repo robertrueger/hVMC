@@ -17,14 +17,39 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBSERVABLES_H_INCLUDED
-#define OBSERVABLES_H_INCLUDED
+#ifndef OBS_ENERGY_H_INCLUDED
+#define OBS_ENERGY_H_INCLUDED
 
-enum observables_t {
-  OBSERVABLE_E,
-  OBSERVABLE_DELTAK,
-  OBSERVABLE_DELTAK_DELTAKPRIME,
-  OBSERVABLE_DELTAK_E
+#include "obs.hpp"
+
+#include <vector>
+
+#include "fptype.hpp"
+
+
+class ObservableEnergy final : public Observable
+{
+  private:
+
+    std::vector<fptype> E_l_currentbin;
+    std::vector<fptype> E_l_binmeans;
+
+  protected:
+
+    void completebin();
+
+  public:
+
+    ObservableEnergy();
+
+    void measure( HubbardModelVMC& model );
+
+    void collect_and_write_results(
+      const boost::mpi::communicator& mpicomm,
+      MCCResults& results
+    ) const;
+
+    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
 };
 
-#endif // OBSERVABLES_H_INCLUDED
+#endif // OBS_ENERGY_H_INCLUDED
