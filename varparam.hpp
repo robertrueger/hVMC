@@ -20,6 +20,7 @@
 #ifndef VARPARAM_H_INCLUDED
 #define VARPARAM_H_INCLUDED
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "fptype.hpp"

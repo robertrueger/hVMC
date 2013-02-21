@@ -20,6 +20,9 @@
 #ifndef SERIALIZATION_EIGEN_H_INCLUDED
 #define SERIALIZATION_EIGEN_H_INCLUDED
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
+
 namespace boost
 {
   namespace serialization

@@ -24,6 +24,7 @@
 
 #include <boost/mpi/communicator.hpp>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "fptype.hpp"
