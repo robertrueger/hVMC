@@ -28,9 +28,9 @@ using namespace std;
 
 
 ElectronConfiguration::ElectronConfiguration(
-  Lattice* const lat_init,
+  const shared_ptr<Lattice>& lat_init,
   unsigned int electron_number_init,
-  mt19937* rng_init )
+  const shared_ptr<mt19937>& rng_init )
   : lat( lat_init ), electron_number( electron_number_init ),
     site_occ(
       Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat_init->L )

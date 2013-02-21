@@ -29,7 +29,7 @@ using namespace std;
 
 SingleParticleOrbitals wf_tight_binding(
   const vector<fptype>& t,
-  unsigned int N, Lattice* lat )
+  unsigned int N, const shared_ptr<Lattice>& lat )
 {
   // make sure we pass the right number of variational parameters
   assert( t.size() == 3  );

@@ -21,6 +21,7 @@
 #define DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED
 
 #include <vector>
+#include <memory>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -33,25 +34,25 @@
 struct SingleParticleOrbitals final {
 
   // the actual orbitals
-  Eigen::MatrixXfp orbitals;
+  Eigen::MatrixXfp M;
 
   // the associated energies
-  Eigen::MatrixXfp energies;
+  Eigen::MatrixXfp E;
 
   // spin symmetric and orbitals spin eigenstates
   bool ssym;
 
   SingleParticleOrbitals(
-    const Eigen::MatrixXfp& orbitals_init,
-    const Eigen::MatrixXfp& energies_init,
+    const Eigen::MatrixXfp& M_init,
+    const Eigen::MatrixXfp& E_init,
     bool ssym_init
-  ) : orbitals( orbitals_init ), energies( energies_init), ssym( ssym_init ) { }
+  ) : M( M_init ), E( E_init), ssym( ssym_init ) { }
 };
 
 
 SingleParticleOrbitals wf_tight_binding(
-    const std::vector<fptype>& t,
-    unsigned int N, Lattice* lat
+  const std::vector<fptype>& t,
+  unsigned int N, const std::shared_ptr<Lattice>& lat
 );
 
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED

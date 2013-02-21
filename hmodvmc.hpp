@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <random>
+#include <memory>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -42,13 +43,13 @@ class HubbardModelVMC final
     // ----- independent objects -----
 
     // random number generator
-    std::mt19937 rng;
+    const std::shared_ptr<std::mt19937> rng;
 
     // the underlying lattice
-    Lattice* const lat;
+    const std::shared_ptr<Lattice> lat;
 
     // wavefunction and Jastrow
-    const SingleParticleOrbitals M;
+    const SingleParticleOrbitals detwf;
     const Jastrow v;
 
     // Hubbard model parameters
@@ -113,9 +114,9 @@ class HubbardModelVMC final
   public:
 
     HubbardModelVMC(
-      std::mt19937 rng_init,
-      Lattice* const lat_init,
-      const SingleParticleOrbitals& M_init,
+      const std::shared_ptr<std::mt19937>& rng_init,
+      const std::shared_ptr<Lattice>& lat_init,
+      const SingleParticleOrbitals& detwf_init,
       const Jastrow& v_init,
       unsigned int N_init,
       unsigned int update_hop_maxdist_init,
@@ -125,8 +126,6 @@ class HubbardModelVMC final
       fptype T_deviation_target_init,
       unsigned int updates_until_T_recalc_init
     );
-
-    ~HubbardModelVMC();
 
     // Monte Carlo step
     void mcs();

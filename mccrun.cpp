@@ -24,32 +24,10 @@
 #include <vector>
 #include <functional>
 
+#include "mccrun_prepare.hpp"
 #include "hmodvmc.hpp"
-#include "lattice.hpp"
-#include "lattice_1dchain.hpp"
-#include "lattice_2dsquare.hpp"
 #include "obs_energy.hpp"
 #include "msgtags.hpp"
-
-HubbardModelVMC prepare_model(
-  const Options& opts, const Eigen::VectorXfp& vpar,
-  const boost::mpi::communicator& mpicomm
-);
-
-std::shared_ptr<std::mt19937> prepare_rng(
-  const Options& opts, const boost::mpi::communicator& mpicomm
-);
-
-std::shared_ptr<Lattice> prepare_lattice( const Options& opts );
-
-//Wavefunction prepare_wavefunction(
-//  const std::shared_ptr<Lattice>& lat, const Options& opts,
-//  const Eigen::VectorXfp& vpar
-//);
-
-std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
-  const std::set<observables_t>& obs
-);
 
 using namespace std;
 namespace mpi = boost::mpi;
@@ -274,60 +252,4 @@ void mccrun_slave(
   for ( const unique_ptr<Observable>& o : obscalc ) {
     o->send_results_to_master( mpicomm );
   }
-}
-
-
-
-HubbardModelVMC prepare_model(
-  const Options& opts, const Eigen::VectorXfp& vpar,
-  const mpi::communicator& mpicomm )
-{
-  shared_ptr<mt19937> rng = prepare_rng( opts, mpicomm );
-  shared_ptr<Lattice> lat = prepare_lattice( opts );
-  //Wavefunction psi = prepare_wavefunction( lat, opts, vpar );
-
-  // TODO: create the actual model ... (Robert Rueger, 2013-02-21 15:47)
-}
-
-
-shared_ptr<mt19937> prepare_rng(
-  const Options& opts, const mpi::communicator& mpicomm )
-{
-  unsigned int rngseed = opts["sim.rng-seed"].as<unsigned int>();
-  rngseed += rngseed / ( mpicomm.rank() + 1 );
-  return make_shared<mt19937>( rngseed );
-}
-
-
-shared_ptr<Lattice> prepare_lattice( const Options& opts )
-{
-  if ( opts["phys.lattice"].as<lattice_t>() == LATTICE_1DCHAIN ) {
-    return make_shared<Lattice1DChain>(
-             opts["phys.num-lattice-sites"].as<unsigned int>()
-           );
-  } else {
-    return make_shared<Lattice2DSquare>(
-             opts["phys.num-lattice-sites"].as<unsigned int>()
-           );
-  }
-}
-
-/*
-Wavefunction prepare_wavefunction(
-  const shared_ptr<Lattice>& lat, const Options& opts,
-  const Eigen::VectorXfp& vpar )
-{
-
-}
-*/
-
-vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs )
-{
-  vector< unique_ptr<Observable> > obscalc;
-
-  if ( obs.count( OBSERVABLE_E ) ) {
-    obscalc.push_back( unique_ptr<Observable>( new ObservableEnergy() ) );
-  }
-
-  return obscalc;
 }

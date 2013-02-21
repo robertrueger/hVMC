@@ -21,7 +21,10 @@
 #define JASTROW_H_INCLUDED
 
 #include <vector>
-#include <random>
+#include <memory>
+
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
 
 #include "macros.h"
 #include "fptype.hpp"
@@ -34,15 +37,16 @@ class Jastrow final
 
   private:
 
-    Lattice* const lat;
+    const std::shared_ptr<Lattice> lat;
 
-    std::vector<float> idxrel_expv;
+    std::vector<fptype> idxrel_expv;
 
   public:
 
-    Jastrow( Lattice* lat_init, const std::vector<fptype>& v_init );
-
-    void randomize( fptype min, fptype max, std::mt19937* rng );
+    Jastrow(
+      const std::shared_ptr<Lattice>& lat_init,
+      const Eigen::VectorXfp& v_init
+    );
 
     fptype operator()( unsigned int i, unsigned int j ) const;
     fptype exp( unsigned int i, unsigned int j ) const;
