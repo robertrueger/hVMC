@@ -23,11 +23,15 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <numeric>
+
+#include <boost/mpi/collectives.hpp>
 
 #include "mccrun_prepare.hpp"
 #include "hmodvmc.hpp"
 #include "obs_energy.hpp"
 #include "msgtags.hpp"
+#include "fpctrl.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;
@@ -94,11 +98,11 @@ MCCResults mccrun_master(
 
   cout << ":: Performing Monte Carlo cycle" << endl;
   cout << endl;
-  cout << "      Progress:" << endl;
+  cout << "   Progress:" << endl;
 
   while ( enqueued_bins > 0 ) {
 
-    cout << '\r' << "        Bin "
+    cout << '\r' << "     Bin "
          << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
     cout.flush();
 
@@ -141,7 +145,7 @@ MCCResults mccrun_master(
       --scheduled_bins;
       ++completed_bins;
 
-      cout << '\r' << "        Bin "
+      cout << '\r' << "     Bin "
            << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
       cout.flush();
     }
@@ -158,11 +162,53 @@ MCCResults mccrun_master(
   assert( enqueued_bins == 0 );
   assert( scheduled_bins == 0 );
 
-  cout << '\r' << "        Bin "
+  cout << '\r' << "     Bin "
        << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>()
        << endl;
   cout.flush();
 
+  // check for floating point precision problems
+
+  cout << endl;
+  cout << "   Floating point precision control" << endl;
+
+  vector<FPDevStat> W_devstats;
+  assert( mpicomm.rank() == 0 );
+  mpi::gather( mpicomm, model.get_W_devstat(), W_devstats, 0 );
+  FPDevStat W_devstat_combined =
+    accumulate(
+      W_devstats.begin(), W_devstats.end(),
+      FPDevStat( opts["fpctrl.W-deviation-target"].as<fptype>() )
+    );
+  cout << "     W: " << W_devstat_combined.recalcs
+       << "/" << W_devstat_combined.misses
+       << "/" << W_devstat_combined.mag1_misses << endl;
+
+  vector<FPDevStat> T_devstats;
+  assert( mpicomm.rank() == 0 );
+  mpi::gather( mpicomm, model.get_T_devstat(), T_devstats, 0 );
+  FPDevStat T_devstat_combined =
+    accumulate(
+      T_devstats.begin(), T_devstats.end(),
+      FPDevStat( opts["fpctrl.T-deviation-target"].as<fptype>() )
+    );
+  cout << "     T: " << T_devstat_combined.recalcs
+       << "/" << T_devstat_combined.misses
+       << "/" << T_devstat_combined.mag1_misses << endl;
+
+  if ( W_devstat_combined.mag1_misses > 0 ||
+       T_devstat_combined.mag1_misses > 0 ) {
+    cout << "   Precision targets missed by more than an order of magnitude!" << endl
+         << "   WARNING: Your results might be unreliable!!!" << endl << endl;
+  } else if ( W_devstat_combined.misses > 0 ||
+              T_devstat_combined.misses > 0 ) {
+    cout << "   Some precision targets were missed, but your results should be fine."
+         << endl << endl;
+  } else {
+    cout << "   No missed precision targets." << endl << endl;
+  }
+
+  // collect results from the slaves and return results the scheduler
   MCCResults results;
   for ( const unique_ptr<Observable>& o : obscalc ) {
     o->collect_and_write_results( mpicomm, results );
@@ -247,6 +293,10 @@ void mccrun_slave(
       }
     }
   }
+
+  // send floating point precision control data to master
+  mpi::gather( mpicomm, model.get_W_devstat(), 0 );
+  mpi::gather( mpicomm, model.get_T_devstat(), 0 );
 
   // send observables to master
   for ( const unique_ptr<Observable>& o : obscalc ) {

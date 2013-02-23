@@ -20,6 +20,7 @@
 #include "sched.hpp"
 
 #include <set>
+#include <chrono>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -46,6 +47,9 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   // TODO: use options to decide what to do (Robert Rueger, 2013-02-20 12:12)
   // for now: just run a single Monte Carlo cycle ...
 
+  // start the stopwatch
+  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+
   // tell everyone that we want to start a Monte Carlo cycle
   schedmsg = SCHEDMSG_START_MCC;
   mpi::broadcast( mpicomm, schedmsg, 0 );
@@ -53,6 +57,7 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   // prepare the input data for the Monte Carlo Cycle
   Eigen::VectorXfp vpar = get_initial_varparam( opts );
 
+  // add the observables you want to measure to the set
   set<observables_t> obs;
   obs.insert( OBSERVABLE_E );
 
@@ -61,8 +66,17 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   mpi::broadcast( mpicomm, obs,  0 );
 
   // run master part of the Monte Carlo cycle
-  const MCCResults& res
-    = mccrun_master( opts, vpar, obs, mpicomm );
+  const MCCResults& res = mccrun_master( opts, vpar, obs, mpicomm );
+
+  // stop the stopwatch and calculate the elapsed time
+  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+  const double total_time = chrono::duration<double>( t2 - t1 ).count();
+  const double time_per_mcs = total_time / static_cast<double>
+                              ( opts["sim.num-bins"].as<unsigned int>() *
+                                opts["sim.num-binmcs"].as<unsigned int>() );
+  cout << ":: Simulation has finished in " << total_time << " sec" << endl;
+  cout << "   Total performance = "
+       << 1.0 / time_per_mcs << " effMCS/sec" << endl;
 
   cout << ":: Simulation results" << endl;
   cout << "       E = " << res.E->mean << endl;

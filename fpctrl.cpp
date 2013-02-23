@@ -36,6 +36,19 @@ void FPDevStat::add( fptype dev )
 }
 
 
+FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs )
+{
+  assert( lhs.target = rhs.target );
+  FPDevStat result( lhs.target );
+  result.recalcs     = lhs.recalcs + rhs.recalcs;
+  result.misses      = lhs.misses + rhs.misses;
+  result.hits        = lhs.hits + rhs.hits;
+  result.mag1_misses = lhs.mag1_misses + rhs.mag1_misses;
+  result.mag1_hits   = lhs.mag1_hits + rhs.mag1_hits;
+  return result;
+}
+
+
 fptype calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact )
 {

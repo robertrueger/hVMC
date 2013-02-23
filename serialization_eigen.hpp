@@ -23,6 +23,10 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
+// adapted from the excellent stackoverflow.com answer by Jakob
+// Profile: http://stackoverflow.com/users/672634/jakob
+//  Answer: http://stackoverflow.com/questions/12580579#12618789
+
 namespace boost
 {
   namespace serialization

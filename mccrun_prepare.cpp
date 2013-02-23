@@ -45,10 +45,11 @@ HubbardModelVMC prepare_model(
   if ( detwf.E( detwf.M.cols() ) - detwf.E( detwf.M.cols() - 1 ) < 0.00001 ) {
     if ( mpicomm.rank() == 0 ) {
       cout << endl;
-      cout << "      WARNING: Open shell detected!" << endl;
-      cout << "      E_fermi = " << detwf.E( detwf.M.cols() - 1 ) << endl;
-      cout << "      Orbital below = " << detwf.E( detwf.M.cols() - 2 ) << endl;
-      cout << "      Orbital above = " << detwf.E( detwf.M.cols() ) << endl;
+      cout << "   WARNING: Open shell detected!" << endl;
+      cout << "     E_fermi = " << detwf.E( detwf.M.cols() - 1 ) << endl;
+      cout << "     Orbital below = " << detwf.E( detwf.M.cols() - 2 ) << endl;
+      cout << "     Orbital above = " << detwf.E( detwf.M.cols() ) << endl;
+      cout << endl;
     }
   }
 
