@@ -17,30 +17,41 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LATTICE_1DCHAIN_H_INCLUDED
-#define LATTICE_1DCHAIN_H_INCLUDED
+#include "obs_deltak.hpp"
 
-#include <vector>
-#include <set>
-#include <utility>
+#include <boost/mpi/collectives.hpp>
 
-#include "macros.h"
-#include "lattice.hpp"
+using namespace std;
+namespace mpi = boost::mpi;
 
 
-class Lattice1DChain final : public Lattice {
+ObservableDeltaK::ObservableDeltaK() : Observable( OBSERVABLE_DELTAK ) { }
 
-  public:
 
-    Lattice1DChain( unsigned int L_init );
+void ObservableDeltaK::measure( HubbardModelVMC& model )
+{
 
-    void get_Xnn(
-      unsigned int l, unsigned int X,
-      std::vector<unsigned int>* outbuf
-    ) const;
+}
 
-    unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
-    std::set<unsigned int> irreducible_idxrel_list() const;
-};
 
-#endif // LATTICE_1DCHAIN_H_INCLUDED
+void ObservableDeltaK::completebin()
+{
+
+}
+
+
+void ObservableDeltaK::collect_and_write_results(
+  const mpi::communicator& mpicomm,
+  MCCResults& results ) const
+{
+  assert( mpicomm.rank() == 0 );
+
+}
+
+
+void ObservableDeltaK::send_results_to_master(
+  const mpi::communicator& mpicomm ) const
+{
+  assert( mpicomm.rank() != 0 );
+
+}

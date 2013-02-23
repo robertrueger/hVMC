@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+ * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
  *
@@ -38,7 +38,7 @@ void FPDevStat::add( fptype dev )
 
 FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs )
 {
-  assert( lhs.target = rhs.target );
+  assert( lhs.target == rhs.target );
   FPDevStat result( lhs.target );
   result.recalcs     = lhs.recalcs + rhs.recalcs;
   result.misses      = lhs.misses + rhs.misses;

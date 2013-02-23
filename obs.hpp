@@ -25,6 +25,7 @@
 #include "hmodvmc.hpp"
 #include "mccresults.hpp"
 
+
 enum observables_t {
   OBSERVABLE_E,
   OBSERVABLE_DELTAK,
@@ -54,6 +55,5 @@ class Observable
       const boost::mpi::communicator& mpicomm
     ) const = 0;
 };
-
 
 #endif // OBSERVABLES_H_INCLUDED

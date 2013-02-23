@@ -47,7 +47,7 @@ void ObservableEnergy::completebin()
 
 
 void ObservableEnergy::collect_and_write_results(
-  const boost::mpi::communicator& mpicomm,
+  const mpi::communicator& mpicomm,
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
@@ -66,7 +66,7 @@ void ObservableEnergy::collect_and_write_results(
 
 
 void ObservableEnergy::send_results_to_master(
-  const boost::mpi::communicator& mpicomm ) const
+  const mpi::communicator& mpicomm ) const
 {
   assert( mpicomm.rank() != 0 );
   mpi::gather( mpicomm, E_l_binmeans, 0 );

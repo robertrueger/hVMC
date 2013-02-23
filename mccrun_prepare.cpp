@@ -23,7 +23,7 @@
 
 #include "lattice_1dchain.hpp"
 #include "lattice_2dsquare.hpp"
-#include "obs_energy.hpp"
+#include "obs_all.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;

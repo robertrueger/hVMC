@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+ * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
  *
@@ -222,7 +222,7 @@ Options read_options( int argc, char* argv[], bool is_master )
       cout << endl;
 
       cout
-          << "Copyright (C) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
+          << "Copyright (C) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
           << "License GPLv3+: GNU GPL version 3 or later"
           " <http://gnu.org/licenses/gpl.html>" << endl
           << "This is free software: you are free to change and redistribute it." << endl
