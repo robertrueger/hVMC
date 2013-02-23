@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+ * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
  *

@@ -29,7 +29,7 @@
 
 #include "mccrun_prepare.hpp"
 #include "hmodvmc.hpp"
-#include "obs_energy.hpp"
+#include "obs_all.hpp"
 #include "msgtags.hpp"
 #include "fpctrl.hpp"
 

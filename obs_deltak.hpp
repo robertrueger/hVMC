@@ -17,43 +17,36 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBSERVABLES_H_INCLUDED
-#define OBSERVABLES_H_INCLUDED
+#ifndef OBS_DELTAK_H_INCLUDED
+#define OBS_DELTAK_H_INCLUDED
 
-#include <boost/mpi/communicator.hpp>
+#include "obs.hpp"
 
-#include "hmodvmc.hpp"
-#include "mccresults.hpp"
-
-
-enum observables_t {
-  OBSERVABLE_E,
-  OBSERVABLE_DELTAK,
-  OBSERVABLE_DELTAK_DELTAKPRIME,
-  OBSERVABLE_DELTAK_E
-};
+#include "fptype.hpp"
 
 
-class Observable
+class ObservableDeltaK : public Observable
 {
+  private:
+
+
+
+  protected:
+
+    void completebin();
+
   public:
 
-    const observables_t type;
+    ObservableDeltaK();
 
-    Observable( observables_t type_init )
-      : type( type_init ) { }
+    void measure( HubbardModelVMC& model );
 
-    virtual void measure( HubbardModelVMC& model ) = 0;
-
-    virtual void completebin() = 0;
-
-    virtual void collect_and_write_results(
+    void collect_and_write_results(
       const boost::mpi::communicator& mpicomm,
       MCCResults& results
-    ) const = 0;
-    virtual void send_results_to_master(
-      const boost::mpi::communicator& mpicomm
-    ) const = 0;
+    ) const;
+
+    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
 };
 
-#endif // OBSERVABLES_H_INCLUDED
+#endif // OBS_DELTAK_H_INCLUDED

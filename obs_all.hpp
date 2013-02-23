@@ -17,30 +17,12 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LATTICE_1DCHAIN_H_INCLUDED
-#define LATTICE_1DCHAIN_H_INCLUDED
+#ifndef OBS_ALL_H_INCLUDED
+#define OBS_ALL_H_INCLUDED
 
-#include <vector>
-#include <set>
-#include <utility>
+#include "obs_energy.hpp"
+#include "obs_deltak.hpp"
+#include "obs_dkdkp.hpp"
+#include "obs_dkerg.hpp"
 
-#include "macros.h"
-#include "lattice.hpp"
-
-
-class Lattice1DChain : public Lattice {
-
-  public:
-
-    Lattice1DChain( unsigned int L_init );
-
-    void get_Xnn(
-      unsigned int l, unsigned int X,
-      std::vector<unsigned int>* outbuf
-    ) const;
-
-    unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
-    std::set<unsigned int> irreducible_idxrel_list() const;
-};
-
-#endif // LATTICE_1DCHAIN_H_INCLUDED
+#endif // OBS_ALL_H_INCLUDED
