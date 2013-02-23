@@ -20,6 +20,8 @@
 #ifndef FPCTRL_H_INCLUDED
 #define FPCTRL_H_INCLUDED
 
+#include <boost/serialization/access.hpp>
+
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
@@ -47,14 +49,32 @@ struct FPDevStat {
   // the number of hits better than an order of magnitude
   unsigned int mag1_hits;
 
+  FPDevStat()
+    : target( 0.f ),
+      recalcs( 0 ), misses( 0 ), hits( 0 ),
+      mag1_misses( 0 ), mag1_hits( 0 ) { }
+
   FPDevStat( fptype target_init )
     : target( target_init ),
       recalcs( 0 ), misses( 0 ), hits( 0 ),
-      mag1_misses( 0 ), mag1_hits( 0 ) {}
+      mag1_misses( 0 ), mag1_hits( 0 ) { }
 
   void add( fptype dev );
+
+  // make FPDevStat serializable
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize( Archive& ar, const unsigned int ) {
+    ar & target;
+    ar & recalcs;
+    ar & misses;
+    ar & hits;
+    ar & mag1_misses;
+    ar & mag1_hits;
+  }
 };
 
+FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs );
 
 fptype calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact

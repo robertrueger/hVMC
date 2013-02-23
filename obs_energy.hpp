@@ -17,21 +17,39 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "varparam.hpp"
+#ifndef OBS_ENERGY_H_INCLUDED
+#define OBS_ENERGY_H_INCLUDED
 
-#include <set>
+#include "obs.hpp"
 
-#include "mccrun_prepare.hpp"
-#include "lattice.hpp"
+#include <vector>
 
-
-using namespace std;
+#include "fptype.hpp"
 
 
-Eigen::VectorXfp get_initial_varparam( const Options& opts )
+class ObservableEnergy : public Observable
 {
-  return
-    Eigen::VectorXfp::Zero(
-      prepare_lattice( opts )->irreducible_idxrel_list().size()
-    );
-}
+  private:
+
+    std::vector<fptype> E_l_currentbin;
+    std::vector<fptype> E_l_binmeans;
+
+  protected:
+
+    void completebin();
+
+  public:
+
+    ObservableEnergy();
+
+    void measure( HubbardModelVMC& model );
+
+    void collect_and_write_results(
+      const boost::mpi::communicator& mpicomm,
+      MCCResults& results
+    ) const;
+
+    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
+};
+
+#endif // OBS_ENERGY_H_INCLUDED

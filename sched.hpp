@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+ * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
  *
@@ -17,38 +17,22 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SIMRUN_H_INCLUDED
-#define SIMRUN_H_INCLUDED
+#ifndef SCHED_H_INCLUDED
+#define SCHED_H_INCLUDED
 
 #include <boost/mpi/communicator.hpp>
 
-#include "macros.h"
-#include "fptype.hpp"
-
-#include "hmodvmc.hpp"
-#include "binstat.hpp"
-#include "simresults.hpp"
 #include "options.hpp"
-#include "varparam.hpp"
 
 
-BasicSimResults simrun_basic(
-  const Options& opts, const VariationalParameters& vpar,
+void sched_master(
+  const Options& opts,
   const boost::mpi::communicator& mpiflock
 );
 
-void simrun_basic_prepare(
-  const Options& opts, const VariationalParameters& vpar, HubbardModelVMC*& model,
+void sched_slave(
+  const Options& opts,
   const boost::mpi::communicator& mpiflock
 );
 
-BinnedData<fptype> simrun_basic_mccycle(
-  const Options& opts, HubbardModelVMC* const model,
-  const boost::mpi::communicator& mpiflock
-);
-
-// TODO: simulation with more observables (Robert Rueger, 2012-11-12 15:21)
-// FullSimResults simrun_full( const Options& opts );
-// ...
-
-#endif // SIMRUN_H_INCLUDED
+#endif // SCHED_H_INCLUDED

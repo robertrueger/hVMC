@@ -1,5 +1,5 @@
-   /*
- * Copyright (c) 2012, Robert Rueger <rueger@itp.uni-frankfurt.de>
+/*
+ * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
  *
@@ -17,15 +17,20 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OPTIONS_H_INCLUDED
-#define OPTIONS_H_INCLUDED
+#ifndef MSGTAGS_H_INCLUDED
+#define MSGTAGS_H_INCLUDED
 
-#include <boost/program_options/variables_map.hpp>
+enum msgtag_t {
+  // convention:
+  // MSGTAG_SENDER_RECEIVER_CONTENT
+  MSGTAG_S_M_REQUEST_BINS,
+  MSGTAG_M_S_DISPATCHED_BINS,
+  MSGTAG_S_M_FINISHED_BINS
+};
 
-#include "macros.h"
+enum schedmsg_t {
+  SCHEDMSG_START_MCC,
+  SCHEDMSG_EXIT
+};
 
-typedef boost::program_options::variables_map Options;
-
-Options read_options( int argc, char* argv[], bool is_master );
-
-#endif // OPTIONS_H_INCLUDED
+#endif // MSGTAGS_H_INCLUDED

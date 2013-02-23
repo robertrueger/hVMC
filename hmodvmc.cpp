@@ -40,9 +40,9 @@ using namespace std;
 
 
 HubbardModelVMC::HubbardModelVMC(
-  mt19937 rng_init,
-  Lattice* const lat_init,
-  const SingleParticleOrbitals& M_init,
+  const shared_ptr<mt19937>& rng_init,
+  const shared_ptr<Lattice>& lat_init,
+  const SingleParticleOrbitals& detwf_init,
   const Jastrow& v_init,
   unsigned int N_init,
   unsigned int update_hop_maxdist_init,
@@ -53,43 +53,43 @@ HubbardModelVMC::HubbardModelVMC(
   fptype T_deviation_target_init,
   unsigned int updates_until_T_recalc_init )
   : rng( rng_init ),
-    lat( lat_init ), M( M_init ), v( v_init ),
+    lat( lat_init ), detwf( detwf_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
-    econf( ElectronConfiguration( lat, N_init, &rng ) ),
+    econf( ElectronConfiguration( lat, N_init, rng ) ),
     Wbu_1(
-      M_init.ssym ?
+      detwf_init.ssym ?
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 2 * lat->L, N_init )
     ),
     Wbu_2(
-      M_init.ssym ?
+      detwf_init.ssym ?
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 2 * lat->L, N_init )
     ),
     Wbu_active(   &Wbu_1 ),
     Wbu_inactive( &Wbu_2 ),
     Wd_1(
-      M_init.ssym ?
+      detwf_init.ssym ?
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 0 , 0 )
     ),
     Wd_2(
-      M_init.ssym ?
+      detwf_init.ssym ?
       Eigen::MatrixXfp( lat->L, N_init / 2 ) :
       Eigen::MatrixXfp( 0 , 0 )
     ),
-    Wd_active(   M_init.ssym ? &Wd_1 : nullptr ),
-    Wd_inactive( M_init.ssym ? &Wd_2 : nullptr ),
+    Wd_active(   detwf_init.ssym ? &Wd_1 : nullptr ),
+    Wd_inactive( detwf_init.ssym ? &Wd_2 : nullptr ),
     T( Eigen::VectorXfp( lat->L ) ),
 #ifdef USE_CBLAS
     tempWcol(
-      M_init.ssym ?
+      detwf_init.ssym ?
       Eigen::VectorXfp( lat->L ) :
       Eigen::VectorXfp( 2 * lat->L )
     ),
     tempWrow(
-      M_init.ssym ?
+      detwf_init.ssym ?
       Eigen::VectorXfp( N_init / 2 ) :
       Eigen::VectorXfp( N_init )
     ),
@@ -115,7 +115,7 @@ HubbardModelVMC::HubbardModelVMC(
 
     fptype Wbu_avg, Wd_avg;
 
-    if ( M.ssym == true ) {
+    if ( detwf.ssym == true ) {
 
       // check spin up part
       Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
@@ -129,7 +129,7 @@ HubbardModelVMC::HubbardModelVMC(
       }
 
       Wbu_active->noalias()
-        = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+        = lu_decomp.solve( detwf.M.transpose() ).transpose();
       Wbu_avg
         = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
       enough_overlap &= Wbu_avg < 100.f;
@@ -154,7 +154,7 @@ HubbardModelVMC::HubbardModelVMC(
       }
 
       Wd_active->noalias()
-        = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+        = lu_decomp.solve( detwf.M.transpose() ).transpose();
       Wd_avg
         = Wd_active->squaredNorm()  / static_cast<fptype>( Wd_active->size() );
       enough_overlap &= Wd_avg < 100.f;
@@ -181,7 +181,7 @@ HubbardModelVMC::HubbardModelVMC(
       }
 
       Wbu_active->noalias()
-        = lu_decomp.solve( M.orbitals.transpose() ).transpose();
+        = lu_decomp.solve( detwf.M.transpose() ).transpose();
       Wbu_avg
         = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
       enough_overlap &= Wbu_avg < 50.f;
@@ -220,18 +220,11 @@ HubbardModelVMC::HubbardModelVMC(
 #if VERBOSE >= 1
   cout << "HubbardModelVMC::HubbardModelVMC() : calculated initial matrix W ="
        << endl << *Wbu_active << endl;
-  if ( M.ssym == true ) {
+  if ( detwf.ssym == true ) {
     cout << "----->" << endl << *Wd_active << endl;
   }
 #endif
 
-}
-
-
-
-HubbardModelVMC::~HubbardModelVMC()
-{
-  delete lat;
 }
 
 
@@ -274,7 +267,7 @@ bool HubbardModelVMC::metstep()
                        / T( lat->get_spinup_site( phop.k_pos ) )
                        * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
 
-    const fptype R_s = ( M.ssym == true && phop.k >= econf.N() / 2 ) ?
+    const fptype R_s = ( detwf.ssym == true && phop.k >= econf.N() / 2 ) ?
                        ( *Wd_active  )( phop.l - lat->L, phop.k - econf.N() / 2 ) :
                        ( *Wbu_active )( phop.l, phop.k );
     const fptype accept_prob = R_j * R_j * R_s * R_s;
@@ -287,7 +280,7 @@ bool HubbardModelVMC::metstep()
 #endif
 
     if ( accept_prob >= 1.f ||
-         uniform_real_distribution<fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
+         uniform_real_distribution<fptype>( 0.f, 1.f )( *rng ) < accept_prob ) {
 
 #if VERBOSE >= 1
       cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;
@@ -332,7 +325,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     calc_new_W();
 
     fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
-    if ( M.ssym == true ) {
+    if ( detwf.ssym == true ) {
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }
     W_devstat.add( dev );
@@ -346,12 +339,12 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
            << "W not met!" << endl
            << "HubbardModelVMC::perform_W_update() : approximate W =" << endl
            << *Wbu_inactive << endl;
-      if ( M.ssym == true ) {
+      if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_inactive << endl;
       }
       cout << "HubbardModelVMC::perform_W_update() : exact W =" << endl
            << *Wbu_active << endl;
-      if ( M.ssym == true ) {
+      if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_active << endl;
       }
     }
@@ -379,7 +372,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 
     // swap the buffers (since we want the updated buffer to be the active one)
     swap( Wbu_inactive, Wbu_active );
-    if ( M.ssym == true ) {
+    if ( detwf.ssym == true ) {
       swap( Wd_inactive, Wd_active );
     }
 
@@ -387,7 +380,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     // debug check recalc W should be in the inactive buffer
 
     fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
-    if ( M.ssym == true ) {
+    if ( detwf.ssym == true ) {
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }
 
@@ -400,12 +393,12 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
            << "W not met!" << endl
            << "HubbardModelVMC::perform_W_update() : quickly updated W =" << endl
            << *Wbu_active << endl;
-      if ( M.ssym == true ) {
+      if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_active << endl;
       }
       cout << "HubbardModelVMC::perform_W_update() : exact W =" << endl
            << *Wbu_inactive << endl;
-      if ( M.ssym == true ) {
+      if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_inactive << endl;
       }
     }
@@ -419,11 +412,11 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 
 Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
 {
-  assert( M.ssym == false );
+  assert( detwf.ssym == false );
 
   Eigen::MatrixXfp Db( econf.N(), econf.N() );
   for ( unsigned int eid = 0; eid < econf.N(); ++eid ) {
-    Db.row( eid ) = M.orbitals.row( econf.get_electron_pos( eid ) );
+    Db.row( eid ) = detwf.M.row( econf.get_electron_pos( eid ) );
   }
 
 #if VERBOSE >= 2
@@ -437,11 +430,11 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
 
 Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
 {
-  assert( M.ssym == true );
+  assert( detwf.ssym == true );
 
   Eigen::MatrixXfp Du( econf.N() / 2, econf.N() / 2 );
   for ( unsigned int eid = 0; eid < econf.N() / 2; ++eid ) {
-    Du.row( eid ) = M.orbitals.row( econf.get_electron_pos( eid ) );
+    Du.row( eid ) = detwf.M.row( econf.get_electron_pos( eid ) );
   }
 
 #if VERBOSE >= 2
@@ -455,12 +448,12 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
 
 Eigen::MatrixXfp HubbardModelVMC::calc_Dd() const
 {
-  assert( M.ssym == true );
+  assert( detwf.ssym == true );
 
   Eigen::MatrixXfp Dd( econf.N() / 2, econf.N() / 2 );
   for ( unsigned int eid = econf.N() / 2; eid < econf.N(); ++eid ) {
     Dd.row( eid - econf.N() / 2 )
-      = M.orbitals.row( lat->get_spinup_site( econf.get_electron_pos( eid ) ) );
+      = detwf.M.row( lat->get_spinup_site( econf.get_electron_pos( eid ) ) );
   }
 
 #if VERBOSE >= 2
@@ -473,12 +466,12 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Dd() const
 
 void HubbardModelVMC::calc_new_W()
 {
-  if ( M.ssym == true ) {
+  if ( detwf.ssym == true ) {
 
     Wbu_inactive->noalias()
-      = calc_Du().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
+      = calc_Du().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
     Wd_inactive->noalias()
-      = calc_Dd().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
+      = calc_Dd().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
 
     swap( Wbu_inactive, Wbu_active );
     swap( Wd_inactive, Wd_active );
@@ -486,7 +479,7 @@ void HubbardModelVMC::calc_new_W()
   } else {
 
     Wbu_inactive->noalias()
-      = calc_Db().transpose().partialPivLu().solve( M.orbitals.transpose() ).transpose();
+      = calc_Db().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
 
     swap( Wbu_inactive, Wbu_active );
 
@@ -501,10 +494,10 @@ void HubbardModelVMC::calc_qupdated_W( const ElectronHop& hop )
   unsigned int l     = hop.l;
   unsigned int k_pos = hop.k_pos;
 
-  Eigen::MatrixXfp*& W = ( M.ssym == true && hop.k >= econf.N() / 2 ) ?
+  Eigen::MatrixXfp*& W = ( detwf.ssym == true && hop.k >= econf.N() / 2 ) ?
                          Wd_active : Wbu_active;
 
-  if ( M.ssym == true && hop.k >= econf.N() / 2 ) {
+  if ( detwf.ssym == true && hop.k >= econf.N() / 2 ) {
     k     -= econf.N() / 2;
     l     -= lat->L;
     k_pos -= lat->L;
@@ -542,7 +535,7 @@ void HubbardModelVMC::calc_qupdated_W( const ElectronHop& hop )
 
 #else // #ifndef USE_CBLAS
 
-  Eigen::MatrixXfp*& W_inactive = ( M.ssym == true && hop.k >= econf.N() / 2 ) ?
+  Eigen::MatrixXfp*& W_inactive = ( detwf.ssym == true && hop.k >= econf.N() / 2 ) ?
                                   Wd_inactive : Wbu_inactive;
 
   *W_inactive = *W;
@@ -690,7 +683,7 @@ fptype HubbardModelVMC::E_l()
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
           const fptype R_j = T( lat->get_spinup_site( *l_it ) ) * R_j_constXk;
-          if ( M.ssym == true && k >= econf.N() / 2 ) {
+          if ( detwf.ssym == true && k >= econf.N() / 2 ) {
             sum_Xnn += R_j * ( *Wd_active )( *l_it - lat->L, k - econf.N() / 2 );
           } else {
             sum_Xnn += R_j * ( *Wbu_active )( *l_it, k );

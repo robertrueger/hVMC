@@ -30,7 +30,8 @@
 using namespace std;
 
 
-Jastrow::Jastrow( Lattice* lat_init, const vector<fptype>& v_init )
+Jastrow::Jastrow(
+  const shared_ptr<Lattice>& lat_init, const Eigen::VectorXfp& v_init )
   : lat( lat_init )
 {
   const std::set<unsigned int>& irr_idxrels = lat->irreducible_idxrel_list();
@@ -45,27 +46,15 @@ Jastrow::Jastrow( Lattice* lat_init, const vector<fptype>& v_init )
 
   // write the variational parameters from v_init to the right elements of
   // idxrel_expv (make sure the total number is correct first)
-  assert( v_init.size() == irr_idxrels.size() );
+  assert( static_cast<unsigned int>( v_init.size() ) == irr_idxrels.size() );
   unsigned int reader = 0;
   for ( auto irr_idxrel_it = irr_idxrels.begin();
         irr_idxrel_it != irr_idxrels.end();
         ++irr_idxrel_it ) {
-    idxrel_expv.at( *irr_idxrel_it ) = std::exp( v_init.at( reader ) );
+    idxrel_expv.at( *irr_idxrel_it ) = std::exp( v_init( reader) );
     ++reader;
   }
   assert( reader == v_init.size() );
-}
-
-
-
-void Jastrow::randomize( fptype min, fptype max, mt19937* rng )
-{
-  const std::set<unsigned int>& irr_idxrels = lat->irreducible_idxrel_list();
-
-  for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
-    idxrel_expv[*it]
-      = std::exp( uniform_real_distribution<fptype>( min, max )( *rng ) );
-  }
 }
 
 

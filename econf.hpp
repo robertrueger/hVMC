@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <random>
+#include <memory>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -62,12 +63,12 @@ class ElectronConfiguration
 
   private:
 
-    Lattice* const lat;
+    const std::shared_ptr<Lattice> lat;
     const unsigned int electron_number;
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
     std::vector<unsigned int> electron_pos;
 
-    std::mt19937* const rng;
+    const std::shared_ptr<std::mt19937> rng;
 
     // buffer vectors for nearest-neighbors
     // (in order to avoid allocating new ones all the time)
@@ -77,8 +78,10 @@ class ElectronConfiguration
 
   public:
 
-    ElectronConfiguration( Lattice* const lat_init, unsigned int N_init,
-                           std::mt19937* rng_init );
+    ElectronConfiguration(
+      const std::shared_ptr<Lattice>& lat_init, unsigned int N_init,
+      const std::shared_ptr<std::mt19937>& rng_init
+    );
 
     void distribute_random();
 

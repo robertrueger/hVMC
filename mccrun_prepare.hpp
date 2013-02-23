@@ -17,15 +17,44 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VARPARAM_H_INCLUDED
-#define VARPARAM_H_INCLUDED
+#ifndef MCCRUN_PREPARE_H_INCLUDED
+#define MCCRUN_PREPARE_H_INCLUDED
+
+#include <set>
+#include <memory>
+#include <random>
+
+#include <boost/mpi/communicator.hpp>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
+#include "hmodvmc.hpp"
+#include "lattice.hpp"
 #include "fptype.hpp"
 #include "options.hpp"
+#include "obs.hpp"
+#include "detwf.hpp"
 
-Eigen::VectorXfp get_initial_varparam( const Options& opts );
 
-#endif // VARPARAM_H_INCLUDED
+HubbardModelVMC prepare_model(
+  const Options& opts, const Eigen::VectorXfp& vpar,
+  const boost::mpi::communicator& mpicomm
+);
+
+std::shared_ptr<std::mt19937> prepare_rng(
+  const Options& opts, const boost::mpi::communicator& mpicomm
+);
+
+std::shared_ptr<Lattice> prepare_lattice( const Options& opts );
+
+SingleParticleOrbitals prepare_detwf(
+  const std::shared_ptr<Lattice>& lat, const Options& opts
+);
+
+std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
+  const std::set<observables_t>& obs
+);
+
+
+#endif // MCCRUN_PREPARE_H_INCLUDED
