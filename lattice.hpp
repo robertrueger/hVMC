@@ -22,7 +22,6 @@
 
 #include <vector>
 #include <set>
-#include <utility>
 
 #include "macros.h"
 
@@ -52,6 +51,7 @@ class Lattice {
 
     virtual unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const = 0;
     virtual std::set<unsigned int> irreducible_idxrel_list() const = 0;
+    virtual unsigned int irreducible_idxrel_maxdist() const = 0;
 
 };
 

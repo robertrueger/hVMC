@@ -48,6 +48,7 @@ class Lattice2DSquare final : public Lattice {
 
     unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<unsigned int> irreducible_idxrel_list() const;
+    unsigned int irreducible_idxrel_maxdist() const;
 };
 
 #endif // LATTICE_2DSQUARE_H_INCLUDED

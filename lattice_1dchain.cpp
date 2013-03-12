@@ -97,3 +97,9 @@ set<unsigned int> Lattice1DChain::irreducible_idxrel_list() const
 
   return irr_idxrels;
 }
+
+
+
+unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const {
+  return L / 2;
+}

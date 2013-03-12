@@ -252,3 +252,14 @@ set<unsigned int> Lattice2DSquare::irreducible_idxrel_list() const
 
   return irr_idxrels;
 }
+
+
+
+unsigned int Lattice2DSquare::irreducible_idxrel_maxdist() const
+{
+  if ( S / 2 == 0 ) {
+    return L / 2 + S / 2;
+  } else {
+    return L / 2;
+  }
+}

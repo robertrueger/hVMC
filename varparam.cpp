@@ -32,6 +32,6 @@ Eigen::VectorXfp get_initial_varparam( const Options& opts )
 {
   return
     Eigen::VectorXfp::Zero(
-      prepare_lattice( opts )->irreducible_idxrel_list().size()
+      prepare_lattice( opts )->irreducible_idxrel_list().size() - 1
     );
 }

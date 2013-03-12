@@ -34,7 +34,7 @@ Jastrow::Jastrow(
   const shared_ptr<Lattice>& lat_init, const Eigen::VectorXfp& v_init )
   : lat( lat_init )
 {
-  const std::set<unsigned int>& irr_idxrels = lat->irreducible_idxrel_list();
+  std::set<unsigned int> irr_idxrels = lat->irreducible_idxrel_list();
   assert( !irr_idxrels.empty() );
 
   // find maximum j in v_0j
@@ -44,6 +44,9 @@ Jastrow::Jastrow(
   // resize internal vector so that it can hold all needed Jastrows
   idxrel_expv.resize( max_j + 1 );
 
+  // delete irreducible index relation corresponding to the largest distance
+  irr_idxrels.erase( lat->irreducible_idxrel_maxdist() );
+
   // write the variational parameters from v_init to the right elements of
   // idxrel_expv (make sure the total number is correct first)
   assert( static_cast<unsigned int>( v_init.size() ) == irr_idxrels.size() );
@@ -51,10 +54,13 @@ Jastrow::Jastrow(
   for ( auto irr_idxrel_it = irr_idxrels.begin();
         irr_idxrel_it != irr_idxrels.end();
         ++irr_idxrel_it ) {
-    idxrel_expv.at( *irr_idxrel_it ) = std::exp( v_init( reader) );
+    idxrel_expv.at( *irr_idxrel_it ) = std::exp( v_init( reader ) );
     ++reader;
   }
   assert( reader == v_init.size() );
+
+  // set the parameter corresponding to the largest distance to 1
+  idxrel_expv.at( lat->irreducible_idxrel_maxdist() ) = 1.f;
 }
 
 
