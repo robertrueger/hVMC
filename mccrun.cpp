@@ -94,7 +94,7 @@ MCCResults mccrun_master(
     model.mcs();
   }
 
-  unsigned int completed_bins_leader = 0;
+  unsigned int completed_bins_master = 0;
 
   cout << ":: Performing Monte Carlo cycle" << endl;
   cout << endl;
@@ -132,7 +132,7 @@ MCCResults mccrun_master(
     }
 
     --scheduled_bins;
-    ++completed_bins_leader;
+    ++completed_bins_master;
     ++completed_bins;
   }
   ++finished_workers;
@@ -251,7 +251,7 @@ void mccrun_slave(
     unsigned int new_scheduled_bins_thisslave;
     mpi::request master_answer;
     if ( !master_out_of_work ) {
-      // ask the flock leader for more work
+      // ask the master for more work
       mpicomm.isend( 0, MSGTAG_S_M_REQUEST_BINS );
       master_answer = mpicomm.irecv(
         0, MSGTAG_M_S_DISPATCHED_BINS,

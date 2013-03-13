@@ -27,12 +27,12 @@
 
 void sched_master(
   const Options& opts,
-  const boost::mpi::communicator& mpiflock
+  const boost::mpi::communicator& mpicomm
 );
 
 void sched_slave(
   const Options& opts,
-  const boost::mpi::communicator& mpiflock
+  const boost::mpi::communicator& mpicomm
 );
 
 #endif // SCHED_H_INCLUDED

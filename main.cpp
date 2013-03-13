@@ -36,7 +36,7 @@ int main( int argc, char* argv[] )
   mpi::environment  mpienv( argc, argv );
   mpi::communicator mpicomm;
 
-  if ( mpicomm.rank() == 0 ) { // only flock leader prints welcome message
+  if ( mpicomm.rank() == 0 ) { // only master prints welcome message
     cout << endl;
     cout << "    ==========================================" << endl;
     cout << "    | hVMC - hubbard Variational Monte Carlo |" << endl;
