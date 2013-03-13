@@ -60,6 +60,7 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   // add the observables you want to measure to the set
   set<observables_t> obs;
   obs.insert( OBSERVABLE_E );
+  obs.insert( OBSERVABLE_DELTAK );
 
   // send the varparams and the set of observables to the slaves
   mpi::broadcast( mpicomm, vpar, 0 );

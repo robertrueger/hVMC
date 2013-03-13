@@ -708,6 +708,33 @@ fptype HubbardModelVMC::E_l()
 
 
 
+Eigen::VectorXfp HubbardModelVMC::Delta_k() const
+{
+  Eigen::VectorXfp sum = Eigen::VectorXfp::Zero( v.get_num_vpar() );
+
+  for ( unsigned int i = 0; i < lat->L; ++i ) {
+    for ( unsigned int j = 0; j < lat->L; ++j ) {
+
+      unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
+
+      if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
+        unsigned int vparnum = v.get_vparnum( irr_idxrel );
+        sum( vparnum ) +=
+          ( econf.get_site_occ( i ) + econf.get_site_occ( i + lat->L ) ) *
+          ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) );
+      }
+    }
+  }
+
+#if VERBOSE >= 1
+  cout << "HubbardModelVMC::Delta_k() = " << endl << sum.transpose() << endl;
+#endif
+
+  return 0.5f * sum;
+}
+
+
+
 FPDevStat HubbardModelVMC::get_W_devstat() const
 {
   return W_devstat;

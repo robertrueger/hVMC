@@ -41,6 +41,9 @@ class Jastrow final
 
     std::vector<fptype> idxrel_expv;
 
+    unsigned int num_vpar;
+    std::vector<unsigned int> idxrel_vparnum;
+
   public:
 
     Jastrow(
@@ -53,6 +56,8 @@ class Jastrow final
     fptype exp_onsite() const;
     void set( unsigned int i, unsigned int j, fptype v_new  );
 
+    unsigned int get_num_vpar() const;
+    unsigned int get_vparnum( unsigned int irr_idxrel ) const;
 };
 
 #endif // JASTROW_H_INCLUDED

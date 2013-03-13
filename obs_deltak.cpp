@@ -30,7 +30,7 @@ ObservableDeltaK::ObservableDeltaK() : Observable( OBSERVABLE_DELTAK ) { }
 
 void ObservableDeltaK::measure( HubbardModelVMC& model )
 {
-
+  model.Delta_k();
 }
 
 
