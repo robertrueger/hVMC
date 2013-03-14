@@ -124,5 +124,11 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
     obscalc.push_back( unique_ptr<Observable>( new ObservableDeltaK() ) );
   }
 
+  if ( obs.count( OBSERVABLE_DELTAK_DELTAKPRIME ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDeltaKDeltaKPrime() )
+    );
+  }
+
   return obscalc;
 }
