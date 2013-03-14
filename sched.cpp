@@ -82,6 +82,7 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   cout << ":: Simulation results" << endl;
   cout << "       E = " << res.E->mean << endl;
   cout << " sigma_E = " << res.E->sigma << endl;
+  cout << " Delta_k = " << res.Deltak->transpose() << endl;
 
   // everything done, tell everyone to quit!
   schedmsg = SCHEDMSG_EXIT;

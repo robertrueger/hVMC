@@ -31,15 +31,13 @@ class ObservableDeltaKEnergy final : public Observable
 
 
 
-  protected:
-
-    void completebin();
-
   public:
 
     ObservableDeltaKEnergy();
 
     void measure( HubbardModelVMC& model );
+
+    void completebin();
 
     void collect_and_write_results(
       const boost::mpi::communicator& mpicomm,

@@ -22,6 +22,11 @@
 
 #include "obs.hpp"
 
+#include <vector>
+
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
+
 #include "fptype.hpp"
 
 
@@ -29,17 +34,18 @@ class ObservableDeltaK final : public Observable
 {
   private:
 
+    Eigen::VectorXfp Dk_sum;
+    unsigned int this_bin_num_measurements;
 
-
-  protected:
-
-    void completebin();
+    std::vector<Eigen::VectorXfp> Dk_binmeans;
 
   public:
 
     ObservableDeltaK();
 
     void measure( HubbardModelVMC& model );
+
+    void completebin();
 
     void collect_and_write_results(
       const boost::mpi::communicator& mpicomm,
