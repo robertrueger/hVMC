@@ -29,7 +29,10 @@ class ObservableDeltaKEnergy final : public Observable
 {
   private:
 
+    Eigen::VectorXfp DkE_sum;
+    unsigned int this_bin_num_measurements;
 
+    std::vector<Eigen::VectorXfp> DkE_binmeans;
 
   public:
 

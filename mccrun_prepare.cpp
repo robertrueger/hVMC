@@ -130,5 +130,11 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
     );
   }
 
+  if ( obs.count( OBSERVABLE_DELTAK_E ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDeltaKEnergy() )
+    );
+  }
+
   return obscalc;
 }

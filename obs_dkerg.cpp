@@ -19,25 +19,58 @@
 
 #include "obs_dkerg.hpp"
 
+#if VERBOSE >= 1
+# include <iostream>
+#endif
+
 #include <boost/mpi/collectives.hpp>
+
+#include "macros.h"
+#include "serialization_eigen.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;
 
 
 ObservableDeltaKEnergy::ObservableDeltaKEnergy()
-  : Observable( OBSERVABLE_DELTAK_E ) { }
+  : Observable( OBSERVABLE_DELTAK_E ),
+    this_bin_num_measurements( 0 ) { }
 
 
 void ObservableDeltaKEnergy::measure( HubbardModelVMC& model )
 {
+  const Eigen::VectorXfp& DkE_current = model.Delta_k() * model.E_l();
 
+  if ( DkE_sum.size() == 0 ) {
+    // first use of DkE_sum
+    DkE_sum.setZero( DkE_current.size() );
+  } else {
+    assert( DkE_sum.size() == DkE_current.size() );
+  }
+
+  DkE_sum += DkE_current;
+  ++this_bin_num_measurements;
+
+#if VERBOSE >= 1
+  cout << "ObservableDeltaKEnergy::measure() : DkE_sum = " << endl
+       << DkE_sum.transpose() << endl;
+#endif
 }
 
 
 void ObservableDeltaKEnergy::completebin()
 {
+  DkE_binmeans.push_back(
+    DkE_sum / static_cast<fptype>( this_bin_num_measurements )
+  );
 
+#if VERBOSE >= 1
+  cout << "ObservableDeltaKEnergy::completebin() : binmean = " << endl
+       << DkE_binmeans.rbegin()->transpose() << endl;
+#endif
+
+  DkE_sum.setZero();
+  this_bin_num_measurements = 0;
 }
 
 
@@ -46,7 +79,28 @@ void ObservableDeltaKEnergy::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
+  vector< vector<Eigen::VectorXfp> > binmeans_collector;
+  mpi::gather( mpicomm, DkE_binmeans, binmeans_collector, 0 );
 
+  vector< Eigen::VectorXfp > DkE_binmeans_all;
+  for ( auto it = binmeans_collector.begin();
+        it != binmeans_collector.end();
+        ++it ) {
+    DkE_binmeans_all.insert( DkE_binmeans_all.end(), it->begin(), it->end() );
+  }
+  assert( !DkE_binmeans_all.empty() );
+
+
+  Eigen::VectorXfp DkE_binmeans_all_sum;
+  DkE_binmeans_all_sum.setZero( DkE_binmeans_all[0].size() );
+  for ( auto it = DkE_binmeans_all.begin(); it != DkE_binmeans_all.end(); ++it ) {
+    DkE_binmeans_all_sum += *it;
+#if VERBOSE >= 2
+    cout << it->transpose() << endl;
+#endif
+  }
+  results.Deltak_E
+    = DkE_binmeans_all_sum / static_cast<fptype>( DkE_binmeans_all.size() );
 }
 
 
@@ -54,5 +108,5 @@ void ObservableDeltaKEnergy::send_results_to_master(
   const mpi::communicator& mpicomm ) const
 {
   assert( mpicomm.rank() != 0 );
-
+  mpi::gather( mpicomm, DkE_binmeans, 0 );
 }

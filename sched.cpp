@@ -62,6 +62,7 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   obs.insert( OBSERVABLE_E );
   obs.insert( OBSERVABLE_DELTAK );
   obs.insert( OBSERVABLE_DELTAK_DELTAKPRIME );
+  obs.insert( OBSERVABLE_DELTAK_E );
 
   // send the varparams and the set of observables to the slaves
   mpi::broadcast( mpicomm, vpar, 0 );
@@ -83,8 +84,9 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   cout << ":: Simulation results" << endl;
   cout << "       E = " << res.E->mean << endl;
   cout << " sigma_E = " << res.E->sigma << endl;
-  cout << " Delta_k = " << res.Deltak->transpose() << endl;
+  cout << " Delta_k = " << endl << res.Deltak->transpose() << endl;
   cout << "   DkDkp = " << endl << res.Deltak_Deltakprime.get() << endl;
+  cout << "    Dk_E = " << endl << res.Deltak_E->transpose() << endl;
 
   // everything done, tell everyone to quit!
   schedmsg = SCHEDMSG_EXIT;
