@@ -54,10 +54,6 @@ HubbardModelVMC prepare_model(
   }
 
   Jastrow v( lat, vpar );
-  // TODO: REMOVE (Robert Rueger, 2013-01-17 13:31)
-  // set some short range terms
-  v.set( 0, 0, -1.f );
-  v.set( 0, 1, -0.25f );
 
   return HubbardModelVMC(
     rng,
