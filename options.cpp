@@ -309,6 +309,10 @@ Options read_options( int argc, char* argv[], bool is_master )
     exit( 1 );
   }
 
+  if ( is_master ) {
+    cout << endl;
+  }
+
   return vm;
 }
 

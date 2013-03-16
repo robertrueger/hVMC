@@ -21,6 +21,8 @@
 
 #include <set>
 #include <chrono>
+#include <vector>
+#include <cmath>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -56,11 +58,33 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   obs.insert( OBSERVABLE_DELTAK_DELTAKPRIME );
   obs.insert( OBSERVABLE_DELTAK_E );
 
-  for ( unsigned int srit = 0; ; ++srit ) {
+  // create datastructures to store the history of E
+  // and the variational parameters during the optimization
+  vector<Eigen::VectorXfp> vpar_hist;
+  vpar_hist.push_back( vpar );
 
-    cout << endl;
-    cout << "====> STOCHASTIC RECONFIGURATION ITERATION " << srit << endl;
-    cout << endl;
+  // optimization settings
+  // TODO: make those as options (Robert Rueger, 2013-03-16 12:34)
+  unsigned int sr_bins_init = opts["sim.num-binmcs"].as<unsigned int>();
+  fptype       sr_dt_init = 1.f;
+  unsigned int sr_max_refinements = 2;
+  unsigned int sr_max_averaging_cycles = 10;
+
+  // helper variables
+  unsigned int sr_bins = sr_bins_init;
+  fptype       sr_dt = sr_dt_init;
+  unsigned int sr_cycles = 0;
+  unsigned int sr_refinements = 0;
+  unsigned int sr_cycles_since_refinement = 0;
+  unsigned int sr_num_vpar_converged = 0;
+  vector<unsigned int> sr_vpar_converged( vpar.size(), false );
+
+  unsigned int sr_averaged_cycles = 0;
+  vector<fptype> sr_E_measure;
+  vector<Eigen::VectorXfp> sr_vpar_measure;
+
+  bool finished = false;
+  while ( !finished ) {
 
     // start the stopwatch
     chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
@@ -74,23 +98,25 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
     mpi::broadcast( mpicomm, obs,  0 );
 
     // run master part of the Monte Carlo cycle
-    const MCCResults& res = mccrun_master( opts, vpar, obs, mpicomm );
+    const MCCResults& res = mccrun_master( opts, vpar, sr_bins, obs, mpicomm );
 
     // stop the stopwatch and calculate the elapsed time
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
     const double total_time = chrono::duration<double>( t2 - t1 ).count();
     const double time_per_mcs = total_time / static_cast<double>
                                 ( opts["sim.num-bins"].as<unsigned int>() *
-                                  opts["sim.num-binmcs"].as<unsigned int>() );
+                                  sr_bins );
     cout << ":: Simulation has finished in " << total_time << " sec" << endl;
     cout << "   Total performance = "
          << 1.0 / time_per_mcs << " effMCS/sec" << endl << endl;
 
+
+    // output the results
     cout << ":: Simulation results" << endl << endl;
     cout << "       E = " << res.E->mean << endl;
     cout << " sigma_E = " << res.E->sigma << endl << endl;
 
-    if ( opts.count("verbose") ) {
+    if ( opts.count( "verbose" ) ) {
       cout << "Delta_k = " << endl << res.Deltak->transpose() << endl << endl;
       cout << "DkDkp = " << endl << res.Deltak_Deltakprime.get() << endl << endl;
       cout << "Dk_E = " << endl << res.Deltak_E->transpose() << endl << endl;
@@ -106,20 +132,117 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
       .fullPivLu().solve( f );
 
     // update variational parameters
-    vpar += 0.1 * dvpar;
+    vpar += sr_dt * dvpar;
 
-    if ( opts.count("verbose") ) {
-      cout << ":: Stochastic reconfiguration objects" << endl << endl;
+    // save the new variational parameters for future reference
+    vpar_hist.push_back( vpar );
+
+    ++sr_cycles;
+    ++sr_cycles_since_refinement;
+    if ( sr_num_vpar_converged <= vpar.size() &&
+         sr_cycles_since_refinement >= 10 ) {
+      for ( unsigned int k = 0; k < vpar.size(); ++k ) {
+        // check if the variational parameter is still drifting
+        if ( !sr_vpar_converged.at( k ) ) { // ... if it is not converged already
+          // (it is considered converged if the sign of its change
+          // has been fluctuating during the last iterations)
+          int k_signsum = 0;
+          for ( auto it = vpar_hist.rbegin(); it != vpar_hist.rbegin() + 9; ++it ) {
+            k_signsum += ( *it )( k ) - ( *(it+1) )( k )  < 0.f ? -1 : +1;
+          }
+          if ( abs( k_signsum ) < 4 ) {
+            sr_vpar_converged.at( k ) = true;
+            ++sr_num_vpar_converged;
+          }
+        }
+      }
+    }
+
+    cout << ":: Stochastic reconfiguration" << endl
+         << endl;
+    if ( opts.count( "verbose" ) ) {
       cout << "S = " << endl << S << endl << endl;
       cout << "f = " << endl << f.transpose() << endl << endl;
       cout << "dvpar = " << endl << dvpar.transpose() << endl << endl;
       cout << "vpar' = " << endl << vpar.transpose() << endl << endl;
     }
+    cout << "    Iteration: " << sr_cycles
+         << " (" << sr_cycles_since_refinement  << ")" << endl;
+    cout << "   Refinement: " << sr_refinements << "/" << sr_max_refinements << endl;
+    cout << "    ConvVPars: " << sr_num_vpar_converged << "/" << vpar.size() << endl;
+    cout << " Measurements: " << sr_averaged_cycles << "/" << sr_max_averaging_cycles << endl;
+    cout << "       Status: ";
+
+    if ( sr_num_vpar_converged < vpar.size() ) {
+      // vpar not converged ... keep iterating!
+      cout << "iterating" << endl;
+    } else {
+      // all variational parameters converged!
+      if ( sr_refinements < sr_max_refinements ) {
+        // still some refinement to do ... refine!
+        sr_dt *= 0.25f;
+        sr_bins *= 4;
+        sr_vpar_converged = vector<unsigned int>( vpar.size(), false );
+        ++sr_refinements;
+        sr_cycles_since_refinement = 0;
+        sr_num_vpar_converged = 0;
+        cout << "refining & iterating" << endl;
+      } else {
+        // maximum refinement reached!
+        if ( sr_averaged_cycles < sr_max_averaging_cycles ) {
+          // measurements not done:
+          // iterate the SR while measuring energy and vpars
+          cout << "iterating & measuring" << endl;
+          sr_E_measure.push_back( res.E->mean );
+          sr_vpar_measure.push_back( vpar );
+          ++sr_averaged_cycles;
+        } else {
+          // measurements done ... we are finished here!
+          cout << "complete" << endl;
+          finished = true;
+        }
+      }
+    }
+
+    cout << endl;
   }
 
   // everything done, tell everyone to quit!
   schedmsg = SCHEDMSG_EXIT;
   mpi::broadcast( mpicomm, schedmsg, 0 );
+
+  // calculate average of the measured iterations
+
+  for ( unsigned int k = 0; k < vpar.size(); ++k ) {
+    vector<fptype> thisk_measure;
+    for ( const Eigen::VectorXfp& v  : sr_vpar_measure ) {
+      thisk_measure.push_back( v[k] );
+    }
+  }
+
+  // print optimization results
+
+  cout << "Evolution of the variational parameters:" << endl;
+  for ( unsigned int t = 0; t < vpar_hist.size(); ++t ) {
+    cout << t << " " << vpar_hist.at( t ).transpose() << endl;
+  }
+  cout << endl;
+
+  cout << "Averaged variational parameters:" << endl;
+  for ( unsigned int k = 0; k < vpar.size(); ++k ) {
+    vector<fptype> thisk_measure;
+    for ( const Eigen::VectorXfp& v  : sr_vpar_measure ) {
+      thisk_measure.push_back( v[k] );
+    }
+    UncertainQuantity<fptype> thisk_ucq( thisk_measure );
+    cout << thisk_ucq.mean << " +- " << thisk_ucq.sigma << endl;
+  }
+  cout << endl;
+
+  cout << "Final energy:" << endl;
+  UncertainQuantity<fptype> E( sr_E_measure );
+  cout << "       E = " << E.mean << endl;
+  cout << " sigma_E = " << E.sigma << endl << endl;
 }
 
 
