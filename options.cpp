@@ -23,7 +23,6 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
-#include <chrono>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -107,19 +106,29 @@ Options read_options( int argc, char* argv[], bool is_master )
     "number of Monte Carlo steps per bin" )
 
   ( "sim.rng-seed,S",
-    po::value<unsigned int>()->default_value(
-      chrono::system_clock::now().time_since_epoch().count()
-    ),
-    "random number generator seed" );
+    po::value<unsigned int>(),
+    "random number generator seed" )
+
+  ( "sim.sr-dt,d",
+    po::value<fptype>()->default_value( 1.f ),
+    "controls the SR convergence: vpar += dt * dvpar" )
+
+  ( "sim.sr-max-refinements,R",
+    po::value<unsigned int>()->default_value( 1 ),
+    "number of refinements during the SR cycle" )
+
+  ( "sim.sr-averaging-cycles,A",
+    po::value<unsigned int>()->default_value( 10 ),
+    "number of SR cycles to average the converged variational parameters" );
 
   po::options_description fpctrl( "floating point precision control" );
   fpctrl.add_options()
 
-  ( "fpctrl.W-deviation-target,W",
+  ( "fpctrl.W-deviation-target",
     po::value<fptype>()->default_value( 0.001f, "0.001" ),
     "deviation target for the matrix W" )
 
-  ( "fpctrl.W-updates-until-recalc,R",
+  ( "fpctrl.W-updates-until-recalc",
     po::value<unsigned int>()
 #ifdef USE_FP_DBLPREC
       ->default_value( 5000 ),
@@ -128,11 +137,11 @@ Options read_options( int argc, char* argv[], bool is_master )
 #endif
     "number of quick updates until recalculation of the matrix W" )
 
-  ( "fpctrl.T-deviation-target,T",
+  ( "fpctrl.T-deviation-target",
     po::value<fptype>()->default_value( 0.001f, "0.001" ),
     "deviation target for the vector T" )
 
-  ( "fpctrl.T-updates-until-recalc,r",
+  ( "fpctrl.T-updates-until-recalc",
     po::value<unsigned int>()
 #ifdef USE_FP_DBLPREC
       ->default_value( 500000 ),

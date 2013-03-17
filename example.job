@@ -34,10 +34,10 @@ onsite-energy = 4.0
 lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 576
+num-lattice-sites = 36
 
 # total number of electrons
-num-electrons = 562
+num-electrons = 26
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
@@ -55,7 +55,16 @@ num-bins = 50
 num-binmcs = 50
 
 # random number generator seed
-rng-seed = 1337133789
+# rng-seed = 1337133789
+
+# controls the SR convergence: vpar += dt * dvpar
+sr-dt = 2
+
+# number of refinements during the SR cycle
+sr-max-refinements = 2
+
+# number of SR cycles to average the converged variational parameters
+sr-averaging-cycles = 10
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################

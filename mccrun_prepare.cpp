@@ -20,6 +20,7 @@
 #include "mccrun_prepare.hpp"
 
 #include <vector>
+#include <chrono>
 
 #include "lattice_1dchain.hpp"
 #include "lattice_2dsquare.hpp"
@@ -75,7 +76,13 @@ HubbardModelVMC prepare_model(
 shared_ptr<mt19937> prepare_rng(
   const Options& opts, const mpi::communicator& mpicomm )
 {
-  unsigned int rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  unsigned int rngseed;
+  if ( opts.count("sim.rng-seed") ) {
+    rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  } else {
+    rngseed = chrono::system_clock::now().time_since_epoch().count();
+  }
+
   rngseed += rngseed / ( mpicomm.rank() + 1 );
   return make_shared<mt19937>( rngseed );
 }

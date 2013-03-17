@@ -21,6 +21,7 @@
 
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/filesystem.hpp>
 
 #include "macros.h"
 #include "options.hpp"
@@ -28,6 +29,7 @@
 
 using namespace std;
 namespace mpi = boost::mpi;
+namespace fs  = boost::filesystem;
 
 
 int main( int argc, char* argv[] )
@@ -47,6 +49,9 @@ int main( int argc, char* argv[] )
   // read options from the command line
   const Options& opts = read_options( argc, argv, mpicomm.rank() == 0 );
   // TODO: output all options if verbose (Robert Rueger, 2012-11-02 13:31)
+
+  // create output directory
+  fs::create_directory( opts["output-dir"].as<fs::path>() );
 
   if ( mpicomm.rank() == 0 ) { // this process is the master
     sched_master( opts, mpicomm );
