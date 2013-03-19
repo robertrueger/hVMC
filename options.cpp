@@ -84,7 +84,9 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.num-electrons,N",
     po::value<unsigned int>()->required(),
-    "total number of electrons" );
+    "total number of electrons" )
+
+  ( "phys.vpars,P", po::value<fs::path>(), "variational parameter file" );
 
   po::options_description simset( "simulation settings" );
   simset.add_options()

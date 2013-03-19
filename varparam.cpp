@@ -19,19 +19,42 @@
 
 #include "varparam.hpp"
 
+#include <iostream>
+#include <fstream>
 #include <set>
 
+#include <boost/filesystem/path.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
+#include "serialization_eigen.hpp"
 #include "mccrun_prepare.hpp"
 #include "lattice.hpp"
 
-
 using namespace std;
+namespace fs  = boost::filesystem;
+namespace ar  = boost::archive;
 
 
 Eigen::VectorXfp get_initial_varparam( const Options& opts )
 {
-  return
-    Eigen::VectorXfp::Zero(
-      prepare_lattice( opts )->irreducible_idxrel_list().size() - 1
-    );
+  // determine how many variational parameters there are
+  unsigned int num_vpars
+    = prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
+
+  if ( opts.count( "phys.vpars" ) ) {
+    // read the variational parameters from a file
+    ifstream vpar_file( opts["phys.vpars"].as<fs::path>().string() );
+    ar::text_iarchive vpar_archive( vpar_file );
+    Eigen::VectorXfp vpar;
+    vpar_archive >> vpar;
+    if ( vpar.size() != num_vpars ) {
+      cerr << "ERROR: variational parameter file does not have the right number "
+              "of variational parameters!" << endl;
+      exit( 1 );
+    }
+    return vpar;
+  } else {
+    // set all variational parameters to zero
+    return Eigen::VectorXfp::Zero( num_vpars );
+  }
 }

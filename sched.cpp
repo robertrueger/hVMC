@@ -31,6 +31,7 @@
 
 #include <boost/mpi/collectives.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/archive/text_oarchive.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include "serialization_eigen.hpp"
@@ -44,6 +45,7 @@
 using namespace std;
 namespace mpi = boost::mpi;
 namespace fs  = boost::filesystem;
+namespace ar  = boost::archive;
 
 
 void sched_master( const Options& opts, const mpi::communicator& mpicomm )
@@ -237,6 +239,13 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
   }
   cout << "Final variational parameters:" << endl;
   cout << vpar_avg.transpose() << endl;
+
+  // write the final variational parameters to a file
+  ofstream vpar_final_file((
+    opts["output-dir"].as<fs::path>() / "vpar_final.dat"
+  ).string());
+  ar::text_oarchive vpar_final_archive( vpar_final_file );
+  vpar_final_archive << vpar_avg;
 }
 
 
