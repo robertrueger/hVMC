@@ -114,7 +114,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     "controls the SR convergence: vpar += dt * dvpar" )
 
   ( "sim.sr-max-refinements,R",
-    po::value<unsigned int>()->default_value( 1 ),
+    po::value<unsigned int>()->default_value( 4 ),
     "number of refinements during the SR cycle" )
 
   ( "sim.sr-averaging-cycles,A",

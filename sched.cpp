@@ -194,8 +194,8 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
       // all variational parameters converged!
       if ( sr_refinements < sr_max_refinements ) {
         // still some refinement to do ... refine!
-        sr_dt *= 0.25f;
-        sr_bins *= 4;
+        sr_dt *= 0.5f;
+        sr_bins *= 2;
         sr_vpar_converged = vector<unsigned int>( vpar.size(), false );
         ++sr_refinements;
         sr_cycles_since_refinement = 0;

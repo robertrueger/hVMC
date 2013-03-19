@@ -48,6 +48,7 @@ MCCResults mccrun_master(
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
 
   vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  ObservableCache obscache;
 
   unsigned int finished_workers = 0;
   unsigned int scheduled_bins = 0;
@@ -123,8 +124,9 @@ MCCResults mccrun_master(
 
       // measure observables
       for ( const unique_ptr<Observable>& o : obscalc ) {
-        o->measure( model );
+        o->measure( model, obscache );
       }
+      obscache.clear();
     }
 
     // tell the observables that a bin has been completed
@@ -224,6 +226,7 @@ void mccrun_slave(
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
   vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  ObservableCache obscache;
 
   // equilibrate the system
 
@@ -267,8 +270,9 @@ void mccrun_slave(
 
      // measure observables
       for ( const unique_ptr<Observable>& o : obscalc ) {
-        o->measure( model );
+        o->measure( model, obscache );
       }
+      obscache.clear();
     }
 
     // tell the observables that a bin has been completed

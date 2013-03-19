@@ -43,7 +43,7 @@ class ObservableDeltaK final : public Observable
 
     ObservableDeltaK();
 
-    void measure( HubbardModelVMC& model );
+    void measure( HubbardModelVMC& model, ObservableCache& cache );
 
     void completebin();
 

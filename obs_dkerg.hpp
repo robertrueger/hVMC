@@ -38,7 +38,7 @@ class ObservableDeltaKEnergy final : public Observable
 
     ObservableDeltaKEnergy();
 
-    void measure( HubbardModelVMC& model );
+    void measure( HubbardModelVMC& model, ObservableCache& cache );
 
     void completebin();
 

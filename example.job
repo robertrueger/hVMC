@@ -34,10 +34,10 @@ onsite-energy = 4.0
 lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 36
+num-lattice-sites = 144
 
 # total number of electrons
-num-electrons = 26
+num-electrons = 138
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
@@ -58,10 +58,10 @@ num-binmcs = 50
 # rng-seed = 1337133789
 
 # controls the SR convergence: vpar += dt * dvpar
-sr-dt = 2
+sr-dt = 4
 
 # number of refinements during the SR cycle
-sr-max-refinements = 2
+sr-max-refinements = 4
 
 # number of SR cycles to average the converged variational parameters
 sr-averaging-cycles = 10

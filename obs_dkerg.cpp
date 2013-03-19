@@ -37,9 +37,17 @@ ObservableDeltaKEnergy::ObservableDeltaKEnergy()
     this_bin_num_measurements( 0 ) { }
 
 
-void ObservableDeltaKEnergy::measure( HubbardModelVMC& model )
+void ObservableDeltaKEnergy::measure(
+  HubbardModelVMC& model, ObservableCache& cache )
 {
-  const Eigen::VectorXfp& DkE_current = model.Delta_k() * model.E_l();
+  if ( !cache.DeltaK ) {
+    cache.DeltaK = model.Delta_k();
+  }
+  if ( !cache.E ) {
+    cache.E = model.E_l();
+  }
+
+  const Eigen::VectorXfp& DkE_current = cache.DeltaK.get() * cache.E.get();
 
   if ( DkE_sum.size() == 0 ) {
     // first use of DkE_sum

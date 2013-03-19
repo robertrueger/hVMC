@@ -37,9 +37,14 @@ ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime()
     this_bin_num_measurements( 0 ) { }
 
 
-void ObservableDeltaKDeltaKPrime::measure( HubbardModelVMC& model )
+void ObservableDeltaKDeltaKPrime::measure(
+  HubbardModelVMC& model, ObservableCache& cache )
 {
-  const Eigen::VectorXfp& Dk_current = model.Delta_k();
+  if ( !cache.DeltaK ) {
+    cache.DeltaK = model.Delta_k();
+  }
+
+  const Eigen::VectorXfp& Dk_current = cache.DeltaK.get();
 
   if ( DkDkp_sum.size() == 0 ) {
     // first use of DkDkp_sum
