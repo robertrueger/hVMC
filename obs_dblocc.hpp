@@ -17,13 +17,37 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBS_ALL_H_INCLUDED
-#define OBS_ALL_H_INCLUDED
+#ifndef OBS_DBLOCC_H_INCLUDED
+#define OBS_DBLOCC_H_INCLUDED
 
-#include "obs_energy.hpp"
-#include "obs_deltak.hpp"
-#include "obs_dkdkp.hpp"
-#include "obs_dkerg.hpp"
-#include "obs_dblocc.hpp"
+#include "obs.hpp"
 
-#endif // OBS_ALL_H_INCLUDED
+#include <vector>
+
+#include "fptype.hpp"
+
+
+class ObservableDoubleOccupancy final : public Observable
+{
+  private:
+
+    std::vector<fptype> dblocc_currentbin;
+    std::vector<fptype> dblocc_binmeans;
+
+  public:
+
+    ObservableDoubleOccupancy();
+
+    void measure( HubbardModelVMC& model, ObservableCache& cache );
+
+    void completebin();
+
+    void collect_and_write_results(
+      const boost::mpi::communicator& mpicomm,
+      MCCResults& results
+    ) const;
+
+    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
+};
+
+#endif // OBS_DBLOCC_H_INCLUDED

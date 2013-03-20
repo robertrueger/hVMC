@@ -51,6 +51,7 @@ observable = E
 #observable = Dk
 #observable = DkDkp
 #observable = DkE
+observable = dblocc
 
 # maximum hopping distance for electronic configuration updates
 update-hop-maxdistance = 2

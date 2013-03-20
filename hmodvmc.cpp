@@ -736,6 +736,15 @@ Eigen::VectorXfp HubbardModelVMC::Delta_k() const
 
 
 
+fptype HubbardModelVMC::dblocc_dens() const
+{
+  return
+    static_cast<fptype>( econf.get_num_dblocc() ) /
+    static_cast<fptype>( lat->L );
+}
+
+
+
 FPDevStat HubbardModelVMC::get_W_devstat() const
 {
   return W_devstat;
