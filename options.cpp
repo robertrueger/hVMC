@@ -27,6 +27,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include "obs.hpp"
 #include "fptype.hpp"
 #include "lattice.hpp"
 #include "utils.hpp"
@@ -90,6 +91,15 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   po::options_description simset( "simulation settings" );
   simset.add_options()
+
+  ( "sim.mode,m",
+    po::value<optsimmode_t>()->required(),
+    "simulation mode (single, sropt)" )
+
+  ( "sim.observable,O",
+    po::value< std::vector<observables_t> >(),
+    "measured observables in single run mode"
+    "(E, Dk, DkDkp, DkE )" )
 
   ( "sim.update-hop-maxdistance,H",
     po::value<unsigned int>()->default_value( 1 ),
@@ -233,11 +243,14 @@ Options read_options( int argc, char* argv[], bool is_master )
       cout << endl;
 
       cout
-          << "Copyright (C) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
+          << "Copyright (C) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>"
+          << endl
           << "License GPLv3+: GNU GPL version 3 or later"
           " <http://gnu.org/licenses/gpl.html>" << endl
-          << "This is free software: you are free to change and redistribute it." << endl
-          << "There is NO WARRANTY, to the extent permitted by law." << endl << endl;
+          << "This is free software: you are free to change and redistribute it."
+          << endl
+          << "There is NO WARRANTY, to the extent permitted by law."
+          << endl << endl;
     }
     exit( 0 );
   }
@@ -293,6 +306,24 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
+    if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
+         !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
+      throw logic_error( "the number of lattice sites must be a perfect square" );
+    }
+
+    // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
+
+  } catch ( const logic_error& e ) {
+    if ( is_master ) {
+      cerr << "Logical error in physical parameters: " << e.what() << endl;
+    }
+    exit( 1 );
+  }
+
+
+  // check for logical errors in the simulation settings
+  try {
+
     if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() == 0 ) {
       throw logic_error(
         "electronic configuration updates need at least nearest neighbor hopping"
@@ -306,16 +337,22 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
-    if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
-         !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
-      throw logic_error( "the number of lattice sites must be a perfect square" );
+    if ( vm["sim.mode"].as<optsimmode_t>()
+         == OPTION_SIMULATION_MODE_SR_OPTIMIZATION &&
+         vm.count( "sim.observable" ) ) {
+      cout << "Warning: specified observables are ignored in "
+           "stochastic reconfiguration mode" << endl;
     }
 
-    // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
+    if ( vm["sim.mode"].as<optsimmode_t>()
+         == OPTION_SIMULATION_MODE_SINGLERUN &&
+         vm.count( "sim.observable" ) == 0 ) {
+      throw logic_error( "you need to measure at least one observable" );
+    }
 
   } catch ( const logic_error& e ) {
     if ( is_master ) {
-      cerr << "Logical error in physical parameters: " << e.what() << endl;
+      cerr << "Logical error in simulation settings: " << e.what() << endl;
     }
     exit( 1 );
   }
@@ -336,6 +373,40 @@ istream& operator>>( std::istream& in, lattice_t& lat )
     lat = LATTICE_1DCHAIN;
   } else if ( token == "2dsquare" ) {
     lat = LATTICE_2DSQUARE;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
+
+
+istream& operator>>( std::istream& in, optsimmode_t& sm )
+{
+  string token;
+  in >> token;
+  if ( token == "single" ) {
+    sm = OPTION_SIMULATION_MODE_SINGLERUN;
+  } else if ( token == "sropt" ) {
+    sm = OPTION_SIMULATION_MODE_SR_OPTIMIZATION;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
+
+
+istream& operator>>( std::istream& in, observables_t& obs )
+{
+  string token;
+  in >> token;
+  if ( token == "E" ) {
+    obs = OBSERVABLE_E;
+  } else if ( token == "Dk" ) {
+    obs = OBSERVABLE_DELTAK;
+  } else if ( token == "DkDkp" ) {
+    obs = OBSERVABLE_DELTAK_DELTAKPRIME;
+  } else if ( token == "DkE" ) {
+    obs = OBSERVABLE_DELTAK_E;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

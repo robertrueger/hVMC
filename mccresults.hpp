@@ -22,8 +22,10 @@
 
 #include <vector>
 #include <numeric>
+#include <iosfwd>
 
 #include <boost/optional.hpp>
+#include <boost/filesystem/path.hpp>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -75,6 +77,9 @@ struct MCCResults {
   boost::optional< Eigen::VectorXfp > Deltak;
   boost::optional< Eigen::MatrixXfp > Deltak_Deltakprime;
   boost::optional< Eigen::VectorXfp > Deltak_E;
+
+  void write_to_files( const boost::filesystem::path& dir ) const;
 };
+std::ostream& operator<<( std::ostream& out, const MCCResults& res );
 
 #endif // MCCRESULTS_H_INCLUDED

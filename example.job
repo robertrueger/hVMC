@@ -34,13 +34,23 @@ onsite-energy = 4.0
 lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 144
+num-lattice-sites = 36
 
 # total number of electrons
-num-electrons = 138
+num-electrons = 26
 
 
 [sim] ####################### SIMULATION SETTINGS ##############################
+
+# simulation mode (single, sropt)
+#mode = sropt
+
+# measured observables in single run mode
+# available observables: E, Dk, DkDkp, DkE
+observable = E
+#observable = Dk
+#observable = DkDkp
+#observable = DkE
 
 # maximum hopping distance for electronic configuration updates
 update-hop-maxdistance = 2
@@ -58,7 +68,7 @@ num-binmcs = 50
 # rng-seed = 1337133789
 
 # controls the SR convergence: vpar += dt * dvpar
-sr-dt = 4
+sr-dt = 2
 
 # number of refinements during the SR cycle
 sr-max-refinements = 4
