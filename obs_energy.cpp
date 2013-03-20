@@ -30,9 +30,13 @@ namespace mpi = boost::mpi;
 ObservableEnergy::ObservableEnergy() : Observable( OBSERVABLE_E ) { }
 
 
-void ObservableEnergy::measure( HubbardModelVMC& model )
+void ObservableEnergy::measure( HubbardModelVMC& model, ObservableCache& cache )
 {
-  E_l_currentbin.push_back( model.E_l() );
+  if ( !cache.E ) {
+    cache.E = model.E_l();
+  }
+
+  E_l_currentbin.push_back( cache.E.get() );
 }
 
 

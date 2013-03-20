@@ -21,9 +21,13 @@
 #define OBSERVABLES_H_INCLUDED
 
 #include <boost/mpi/communicator.hpp>
+#include <boost/optional.hpp>
+
+#include <eigen3/Eigen/Core>
 
 #include "hmodvmc.hpp"
 #include "mccresults.hpp"
+#include "fptype.hpp"
 
 
 enum observables_t {
@@ -31,6 +35,18 @@ enum observables_t {
   OBSERVABLE_DELTAK,
   OBSERVABLE_DELTAK_DELTAKPRIME,
   OBSERVABLE_DELTAK_E
+};
+
+
+struct ObservableCache
+{
+  boost::optional<fptype> E;
+  boost::optional<Eigen::VectorXfp> DeltaK;
+
+  void clear() {
+    E = boost::none;
+    DeltaK = boost::none;
+  }
 };
 
 
@@ -43,7 +59,7 @@ class Observable
     Observable( observables_t type_init )
       : type( type_init ) { }
 
-    virtual void measure( HubbardModelVMC& model ) = 0;
+    virtual void measure( HubbardModelVMC& model, ObservableCache& cache ) = 0;
 
     virtual void completebin() = 0;
 

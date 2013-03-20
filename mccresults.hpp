@@ -22,8 +22,10 @@
 
 #include <vector>
 #include <numeric>
+#include <iosfwd>
 
 #include <boost/optional.hpp>
+#include <boost/filesystem/path.hpp>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -31,36 +33,38 @@
 #include "fptype.hpp"
 
 
-template<typename T>
+template <typename Ti>
 struct UncertainQuantity {
 
-  T mean, sigma;
+  Ti mean, sigma;
 
   UncertainQuantity() {}
 
-  UncertainQuantity( T mean_init, T sigma_init )
+  UncertainQuantity( Ti mean_init, Ti sigma_init )
     : mean( mean_init ), sigma( sigma_init ) { }
 
-  UncertainQuantity( const std::vector<T>& binmeans ) {
+  template< typename Te >
+  UncertainQuantity( const std::vector<Te>& binmeans ) {
     // calculate the average of the binmeans
     mean =
-      accumulate( binmeans.begin(), binmeans.end(), 0.f ) /
-      static_cast<fptype>( binmeans.size() );
+      static_cast<Ti>(
+        accumulate( binmeans.begin(), binmeans.end(), Te(0) )
+      ) / static_cast<Ti>( binmeans.size() );
 
     // calculate the variance of the binmeans
-    fptype binmeans_variance =
-      static_cast<fptype>( binmeans.size() ) /
-      static_cast<fptype>( binmeans.size() - 1 ) *
+    Ti binmeans_variance =
+      static_cast<Ti>( binmeans.size() ) /
+      static_cast<Ti>( binmeans.size() - 1 ) *
       (
-        accumulate(
-          binmeans.begin(), binmeans.end(), 0.f,
-          []( fptype sum, fptype m ) { return sum + m * m; }
-        ) / static_cast<fptype>( binmeans.size() )
+        static_cast<Ti>( accumulate(
+          binmeans.begin(), binmeans.end(), Te(0),
+          []( Te sum, Te m ) { return sum + m * m; }
+        ) ) / static_cast<Ti>( binmeans.size() )
         - mean * mean
       );
 
     // uncertainty of the mean is sqrt(variance / num_bins)
-    sigma = sqrt( binmeans_variance / static_cast<fptype>( binmeans.size() ) );
+    sigma = sqrt( binmeans_variance / static_cast<Ti>( binmeans.size() ) );
   }
 };
 
@@ -73,6 +77,9 @@ struct MCCResults {
   boost::optional< Eigen::VectorXfp > Deltak;
   boost::optional< Eigen::MatrixXfp > Deltak_Deltakprime;
   boost::optional< Eigen::VectorXfp > Deltak_E;
+
+  void write_to_files( const boost::filesystem::path& dir ) const;
 };
+std::ostream& operator<<( std::ostream& out, const MCCResults& res );
 
 #endif // MCCRESULTS_H_INCLUDED

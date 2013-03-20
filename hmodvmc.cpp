@@ -108,7 +108,7 @@ HubbardModelVMC::HubbardModelVMC(
     econf.distribute_random();
     enough_overlap = true; // assume until we are proven wrong
 
-#if VERBOSE >=1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::HubbardModelVMC() : checking newly generated "
          << "state for enough overlap" << endl;
 #endif
@@ -121,7 +121,7 @@ HubbardModelVMC::HubbardModelVMC(
       Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
       enough_overlap &= lu_decomp.isInvertible();
       if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
         cout << "HubbardModelVMC::HubbardModelVMC() : spin up part has no "
              << "overlap with the determinantal wavefunction" << endl;
 #endif
@@ -134,7 +134,7 @@ HubbardModelVMC::HubbardModelVMC(
         = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
       enough_overlap &= Wbu_avg < 100.f;
       if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
         cout << "HubbardModelVMC::HubbardModelVMC() : spin up part has too "
              << "little overlap with the determinantal wavefunction, "
              << "inverse overlap measure is: " << Wbu_avg << endl;
@@ -146,7 +146,7 @@ HubbardModelVMC::HubbardModelVMC(
       lu_decomp.compute( calc_Dd().transpose() );
       enough_overlap &= lu_decomp.isInvertible();
       if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
         cout << "HubbardModelVMC::HubbardModelVMC() : spin down part has no "
              << "overlap with the determinantal wavefunction" << endl;
 #endif
@@ -159,7 +159,7 @@ HubbardModelVMC::HubbardModelVMC(
         = Wd_active->squaredNorm()  / static_cast<fptype>( Wd_active->size() );
       enough_overlap &= Wd_avg < 100.f;
       if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
         cout << "HubbardModelVMC::HubbardModelVMC() : spin down part has too "
              << "little overlap with the determinantal wavefunction, "
              << "inverse overlap measure is: " << Wd_avg << endl;
@@ -173,7 +173,7 @@ HubbardModelVMC::HubbardModelVMC(
       Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db().transpose() );
       enough_overlap &= lu_decomp.isInvertible();
       if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
         cout << "HubbardModelVMC::HubbardModelVMC() : state has no "
              << "overlap with the determinantal wavefunction" << endl;
 #endif
@@ -186,7 +186,7 @@ HubbardModelVMC::HubbardModelVMC(
         = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
       enough_overlap &= Wbu_avg < 50.f;
       if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
         cout << "HubbardModelVMC::HubbardModelVMC() : state has too "
              << "little overlap with the determinantal wavefunction, "
              << "inverse overlap measure is: " << Wbu_avg << endl;
@@ -201,14 +201,14 @@ HubbardModelVMC::HubbardModelVMC(
     fptype T_avg = T.squaredNorm() / static_cast<fptype>( T.size() );
     enough_overlap &= T_avg < 100.f;
     if ( !enough_overlap ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
       cout << "HubbardModelVMC::HubbardModelVMC() : Jastrow ratios "
            << "are to small, inverse measure is: " << T_avg << endl;
 #endif
       continue;
     }
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
          << "overlap! inverse overlap measures are: "
          << Wbu_avg << " " << Wd_avg << " " << T_avg
@@ -217,7 +217,7 @@ HubbardModelVMC::HubbardModelVMC(
 
   } while ( !enough_overlap );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "HubbardModelVMC::HubbardModelVMC() : calculated initial matrix W ="
        << endl << *Wbu_active << endl;
   if ( detwf.ssym == true ) {
@@ -231,13 +231,13 @@ HubbardModelVMC::HubbardModelVMC(
 
 void HubbardModelVMC::mcs()
 {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "HubbardModelVMC::mcs() : starting new Monte Carlo step!" << endl;
 #endif
 
   // perform a number of metropolis steps equal to the number of electrons
   for ( unsigned int s = 0; s < lat->L; ++s ) {
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::mcs() : Metropolis step = " << s << endl;
 #endif
     metstep();
@@ -256,7 +256,7 @@ bool HubbardModelVMC::metstep()
   if ( phop.possible == false ) {
 
     // hop is not possible, rejected!
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::metstep() : hop impossible!" << endl;
 #endif
     return false;
@@ -272,7 +272,7 @@ bool HubbardModelVMC::metstep()
                        ( *Wbu_active )( phop.l, phop.k );
     const fptype accept_prob = R_j * R_j * R_s * R_s;
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::metstep() : hop possible -> "
          << "R_j = " << R_j
          << ", sdwf_ratio = " << R_s
@@ -282,7 +282,7 @@ bool HubbardModelVMC::metstep()
     if ( accept_prob >= 1.f ||
          uniform_real_distribution<fptype>( 0.f, 1.f )( *rng ) < accept_prob ) {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
       cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;
 #endif
 
@@ -295,7 +295,7 @@ bool HubbardModelVMC::metstep()
 
     } else { // hop possible but rejected!
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
       cout << "HubbardModelVMC::metstep() : hop rejected!" << endl;
 #endif
 
@@ -310,7 +310,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 {
   if ( updates_since_W_recalc >= updates_until_W_recalc ) {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_W_update() : recalculating W!" << endl;
 #endif
 
@@ -330,7 +330,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
     }
     W_devstat.add( dev );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_W_update() : recalculated W "
          << "with deviation = " << dev << endl;
 
@@ -354,7 +354,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
 
   } else {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_W_update() : "
          << "performing a quick update of W!" << endl;
 #endif
@@ -384,7 +384,7 @@ void HubbardModelVMC::perform_W_update( const ElectronHop& hop )
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }
 
-# if VERBOSE >= 1
+# if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_W_update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
@@ -419,7 +419,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Db() const
     Db.row( eid ) = detwf.M.row( econf.get_electron_pos( eid ) );
   }
 
-#if VERBOSE >= 2
+#if VERBOSE >= 3
   cout << "HubbardModelVMC::calc_Db() : Db = " << endl << Db << endl;
 #endif
 
@@ -437,7 +437,7 @@ Eigen::MatrixXfp HubbardModelVMC::calc_Du() const
     Du.row( eid ) = detwf.M.row( econf.get_electron_pos( eid ) );
   }
 
-#if VERBOSE >= 2
+#if VERBOSE >= 3
   cout << "HubbardModelVMC::calc_Du() : Du = " << endl << Du << endl;
 #endif
 
@@ -555,7 +555,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
 {
   if ( updates_since_T_recalc >= updates_until_T_recalc ) {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_T_update() : recalculating T!" << endl;
 #endif
 
@@ -567,7 +567,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
     fptype dev = calc_deviation( T_approx, T );
     T_devstat.add( dev );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_T_update() : recalculated T "
          << "with deviation = " << dev << endl;
 
@@ -585,7 +585,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
 
   } else {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_T_update() : "
          << "performing a quick update of T!" << endl;
 #endif
@@ -598,7 +598,7 @@ void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
     const Eigen::MatrixXfp& T_chk = calc_new_T();
     fptype dev = calc_deviation( T, T_chk );
 
-# if VERBOSE >= 1
+# if VERBOSE >= 2
     cout << "HubbardModelVMC::perform_T_update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
@@ -699,11 +699,39 @@ fptype HubbardModelVMC::E_l()
     ( E_l_kin + U * econf.get_num_dblocc() ) /
     static_cast<fptype>( lat->L );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "HubbardModelVMC::E_l() = " << E_l_result << endl;
 #endif
 
   return E_l_result;
+}
+
+
+
+Eigen::VectorXfp HubbardModelVMC::Delta_k() const
+{
+  Eigen::VectorXfp sum = Eigen::VectorXfp::Zero( v.get_num_vpar() );
+
+  for ( unsigned int i = 0; i < lat->L; ++i ) {
+    for ( unsigned int j = 0; j < lat->L; ++j ) {
+
+      unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
+
+      if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
+        unsigned int vparnum = v.get_vparnum( irr_idxrel );
+        sum( vparnum ) +=
+          ( econf.get_site_occ( i ) + econf.get_site_occ( i + lat->L ) ) *
+          ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) );
+      }
+    }
+  }
+
+#if VERBOSE >= 1
+  cout << "HubbardModelVMC::Delta_k() = " << endl
+       << 0.5f * sum.transpose() << endl;
+#endif
+
+  return 0.5f * sum;
 }
 
 

@@ -34,15 +34,25 @@ Jastrow::Jastrow(
   const shared_ptr<Lattice>& lat_init, const Eigen::VectorXfp& v_init )
   : lat( lat_init )
 {
-  const std::set<unsigned int>& irr_idxrels = lat->irreducible_idxrel_list();
+  std::set<unsigned int> irr_idxrels = lat->irreducible_idxrel_list();
   assert( !irr_idxrels.empty() );
 
   // find maximum j in v_0j
-  const unsigned int max_j =
+  const unsigned int max_j_expv =
     *( max_element( irr_idxrels.begin(), irr_idxrels.end() ) );
-
   // resize internal vector so that it can hold all needed Jastrows
-  idxrel_expv.resize( max_j + 1 );
+  idxrel_expv.resize( max_j_expv + 1 );
+
+  // delete irreducible index relation corresponding to the largest distance
+  irr_idxrels.erase( lat->irreducible_idxrel_maxdist() );
+
+  // find maximum j in v_0j if the largest distance v is missing
+  const unsigned int max_j_vparnum =
+    *( max_element( irr_idxrels.begin(), irr_idxrels.end() ) );
+  // resize vector: irreducible idxrel -> variational parameter number
+  idxrel_vparnum.resize( max_j_vparnum + 1 );
+  // save the total number of variational parameters
+  num_vpar = irr_idxrels.size();
 
   // write the variational parameters from v_init to the right elements of
   // idxrel_expv (make sure the total number is correct first)
@@ -51,10 +61,14 @@ Jastrow::Jastrow(
   for ( auto irr_idxrel_it = irr_idxrels.begin();
         irr_idxrel_it != irr_idxrels.end();
         ++irr_idxrel_it ) {
-    idxrel_expv.at( *irr_idxrel_it ) = std::exp( v_init( reader) );
+    idxrel_expv.at(    *irr_idxrel_it ) = std::exp( v_init( reader ) );
+    idxrel_vparnum.at( *irr_idxrel_it ) = reader;
     ++reader;
   }
   assert( reader == v_init.size() );
+
+  // set the parameter corresponding to the largest distance to 1
+  idxrel_expv.at( lat->irreducible_idxrel_maxdist() ) = 1.f;
 }
 
 
@@ -86,4 +100,19 @@ fptype Jastrow::exp_onsite() const
 void Jastrow::set( unsigned int i, unsigned int j, fptype v_new )
 {
   idxrel_expv.at( lat->reduce_idxrel( i, j ) ) = std::exp( v_new );
+}
+
+
+
+unsigned int Jastrow::get_num_vpar() const
+{
+  return num_vpar;
+}
+
+
+
+unsigned int Jastrow::get_vparnum( unsigned int irr_idxrel ) const
+{
+  assert( idxrel_vparnum.size() > irr_idxrel );
+  return idxrel_vparnum[ irr_idxrel ];
 }

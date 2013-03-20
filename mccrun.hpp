@@ -34,7 +34,7 @@
 
 
 MCCResults mccrun_master(
-  const Options& opts, const Eigen::VectorXfp& vpar,
+  const Options& opts, const Eigen::VectorXfp& vpar, unsigned int num_bins,
   const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
 );
 

@@ -46,7 +46,7 @@ SingleParticleOrbitals wf_tight_binding(
     }
   }
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "wf_tight_binding() : spinless Hamiltonian in single particle basis ="
        << endl << H_tb_nospin << endl;
 #endif
@@ -72,7 +72,7 @@ SingleParticleOrbitals wf_tight_binding(
   const Eigen::MatrixXfp& M
     = eigensolver.eigenvectors().topLeftCorner( lat->L, N / 2 );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "wf_tight_binding() : M = " << endl << M << endl
        << "wf_tight_binding() : slater determinant ground state energy = "
        << 2.f* eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;

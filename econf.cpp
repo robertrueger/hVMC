@@ -53,7 +53,7 @@ void ElectronConfiguration::reconstr_electron_pos()
   }
   assert( electron_pos.size() == electron_number );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "ElectronConfiguration::reconstr_electron_pos() : electron positions are"
        << endl;
   for ( auto it = electron_pos.begin(); it != electron_pos.end(); ++it ) {
@@ -84,7 +84,7 @@ void ElectronConfiguration::distribute_random()
               + lat->L ] = ELECTRON_OCCUPATION_FULL;
   }
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "ElectronConfiguration::distribute_random() : new config is" << endl;
   cout << site_occ.head( lat->L ).transpose() << endl
        << site_occ.tail( lat->L ).transpose() << endl;
@@ -109,7 +109,7 @@ ElectronHop ElectronConfiguration::propose_random_hop(
   // find the position of the xth electron
   const unsigned int k_pos = electron_pos[k];
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << site_occ.head( lat->L ).transpose() << endl
        << site_occ.tail( lat->L ).transpose() << endl;
   cout << "ElectronConfiguration::propose_random_hop() : proposing to hop "
@@ -153,7 +153,7 @@ ElectronHop ElectronConfiguration::propose_random_hop(
     }
   }
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "[?: ";
   for ( auto it = k_1nb.begin(); it != k_1nb.end(); ++it ) {
     cout << *it << " ";
@@ -194,7 +194,7 @@ void ElectronConfiguration::do_hop( const ElectronHop& hop )
 
   electron_pos[ hop.k ] = hop.l;
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
   cout << "ElectronConfiguration::do_hop() : hopping electron #"
        << hop.k << " from " << hop.k_pos << " to " << hop.l << endl;
   cout << site_occ.head( lat->L ).transpose() << endl

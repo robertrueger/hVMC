@@ -21,12 +21,15 @@
 
 #include <vector>
 
+#include <boost/chrono.hpp>
+
 #include "lattice_1dchain.hpp"
 #include "lattice_2dsquare.hpp"
 #include "obs_all.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;
+namespace chrono = boost::chrono;
 
 
 HubbardModelVMC prepare_model(
@@ -54,10 +57,6 @@ HubbardModelVMC prepare_model(
   }
 
   Jastrow v( lat, vpar );
-  // TODO: REMOVE (Robert Rueger, 2013-01-17 13:31)
-  // set some short range terms
-  v.set( 0, 0, -1.f );
-  v.set( 0, 1, -0.25f );
 
   return HubbardModelVMC(
     rng,
@@ -79,7 +78,13 @@ HubbardModelVMC prepare_model(
 shared_ptr<mt19937> prepare_rng(
   const Options& opts, const mpi::communicator& mpicomm )
 {
-  unsigned int rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  unsigned int rngseed;
+  if ( opts.count("sim.rng-seed") ) {
+    rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  } else {
+    rngseed = chrono::system_clock::now().time_since_epoch().count();
+  }
+
   rngseed += rngseed / ( mpicomm.rank() + 1 );
   return make_shared<mt19937>( rngseed );
 }
@@ -118,6 +123,22 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
 
   if ( obs.count( OBSERVABLE_E ) ) {
     obscalc.push_back( unique_ptr<Observable>( new ObservableEnergy() ) );
+  }
+
+  if ( obs.count( OBSERVABLE_DELTAK ) ) {
+    obscalc.push_back( unique_ptr<Observable>( new ObservableDeltaK() ) );
+  }
+
+  if ( obs.count( OBSERVABLE_DELTAK_DELTAKPRIME ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDeltaKDeltaKPrime() )
+    );
+  }
+
+  if ( obs.count( OBSERVABLE_DELTAK_E ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDeltaKEnergy() )
+    );
   }
 
   return obscalc;
