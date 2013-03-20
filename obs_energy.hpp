@@ -34,15 +34,13 @@ class ObservableEnergy final : public Observable
     std::vector<fptype> E_l_currentbin;
     std::vector<fptype> E_l_binmeans;
 
-  protected:
-
-    void completebin();
-
   public:
 
     ObservableEnergy();
 
-    void measure( HubbardModelVMC& model );
+    void measure( HubbardModelVMC& model, ObservableCache& cache );
+
+    void completebin();
 
     void collect_and_write_results(
       const boost::mpi::communicator& mpicomm,

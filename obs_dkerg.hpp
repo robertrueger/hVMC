@@ -29,17 +29,18 @@ class ObservableDeltaKEnergy final : public Observable
 {
   private:
 
+    Eigen::VectorXfp DkE_sum;
+    unsigned int this_bin_num_measurements;
 
-
-  protected:
-
-    void completebin();
+    std::vector<Eigen::VectorXfp> DkE_binmeans;
 
   public:
 
     ObservableDeltaKEnergy();
 
-    void measure( HubbardModelVMC& model );
+    void measure( HubbardModelVMC& model, ObservableCache& cache );
+
+    void completebin();
 
     void collect_and_write_results(
       const boost::mpi::communicator& mpicomm,

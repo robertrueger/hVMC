@@ -41,6 +41,7 @@ class Lattice1DChain final : public Lattice {
 
     unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<unsigned int> irreducible_idxrel_list() const;
+    unsigned int irreducible_idxrel_maxdist() const;
 };
 
 #endif // LATTICE_1DCHAIN_H_INCLUDED

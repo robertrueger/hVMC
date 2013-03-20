@@ -1,4 +1,4 @@
-   /*
+/*
  * Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
  *
  * This file is part of hVMC.
@@ -22,7 +22,11 @@
 
 #include <boost/program_options/variables_map.hpp>
 
-#include "macros.h"
+
+enum optsimmode_t {
+  OPTION_SIMULATION_MODE_SINGLERUN,
+  OPTION_SIMULATION_MODE_SR_OPTIMIZATION
+};
 
 typedef boost::program_options::variables_map Options;
 

@@ -39,19 +39,21 @@ namespace mpi = boost::mpi;
 
 
 MCCResults mccrun_master(
-  const Options& opts, const Eigen::VectorXfp& vpar,
+  const Options& opts, const Eigen::VectorXfp& vpar, unsigned int num_bins,
   const set<observables_t>& obs, const mpi::communicator& mpicomm )
 {
+  cout << "========== NEW MONTE CARLO CYCLE ==========" << endl;
   cout << ":: Preparing the simulation" << endl;
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
 
   vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  ObservableCache obscache;
 
   unsigned int finished_workers = 0;
   unsigned int scheduled_bins = 0;
   unsigned int completed_bins = 0;
-  unsigned int enqueued_bins  = opts["sim.num-bins"].as<unsigned int>();
+  unsigned int enqueued_bins  = num_bins;
 
   // define procedure to query the slaves for new work requests
   function<void()> mpiquery_work_requests( [&]() {
@@ -103,7 +105,7 @@ MCCResults mccrun_master(
   while ( enqueued_bins > 0 ) {
 
     cout << '\r' << "     Bin "
-         << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
+         << completed_bins << "/" << num_bins;
     cout.flush();
 
     --enqueued_bins;
@@ -122,8 +124,9 @@ MCCResults mccrun_master(
 
       // measure observables
       for ( const unique_ptr<Observable>& o : obscalc ) {
-        o->measure( model );
+        o->measure( model, obscache );
       }
+      obscache.clear();
     }
 
     // tell the observables that a bin has been completed
@@ -137,7 +140,7 @@ MCCResults mccrun_master(
   }
   ++finished_workers;
 
-  while ( completed_bins != opts["sim.num-bins"].as<unsigned int>() ||
+  while ( completed_bins != num_bins ||
           static_cast<int>( finished_workers ) < mpicomm.size() ) {
     if ( boost::optional<mpi::status> status
          = mpicomm.iprobe( mpi::any_source, MSGTAG_S_M_FINISHED_BINS ) ) {
@@ -145,8 +148,7 @@ MCCResults mccrun_master(
       --scheduled_bins;
       ++completed_bins;
 
-      cout << '\r' << "     Bin "
-           << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>();
+      cout << '\r' << "     Bin " << completed_bins << "/" << num_bins;
       cout.flush();
     }
 
@@ -162,9 +164,7 @@ MCCResults mccrun_master(
   assert( enqueued_bins == 0 );
   assert( scheduled_bins == 0 );
 
-  cout << '\r' << "     Bin "
-       << completed_bins << "/" << opts["sim.num-bins"].as<unsigned int>()
-       << endl;
+  cout << '\r' << "     Bin " << completed_bins << "/" << num_bins << endl;
   cout.flush();
 
   // check for floating point precision problems
@@ -226,6 +226,7 @@ void mccrun_slave(
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
   vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  ObservableCache obscache;
 
   // equilibrate the system
 
@@ -269,8 +270,9 @@ void mccrun_slave(
 
      // measure observables
       for ( const unique_ptr<Observable>& o : obscalc ) {
-        o->measure( model );
+        o->measure( model, obscache );
       }
+      obscache.clear();
     }
 
     // tell the observables that a bin has been completed

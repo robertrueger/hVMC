@@ -23,11 +23,11 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
-#include <chrono>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include "obs.hpp"
 #include "fptype.hpp"
 #include "lattice.hpp"
 #include "utils.hpp"
@@ -85,10 +85,21 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.num-electrons,N",
     po::value<unsigned int>()->required(),
-    "total number of electrons" );
+    "total number of electrons" )
+
+  ( "phys.vpars,P", po::value<fs::path>(), "variational parameter file" );
 
   po::options_description simset( "simulation settings" );
   simset.add_options()
+
+  ( "sim.mode,m",
+    po::value<optsimmode_t>()->required(),
+    "simulation mode (single, sropt)" )
+
+  ( "sim.observable,O",
+    po::value< std::vector<observables_t> >(),
+    "measured observables in single run mode"
+    "(E, Dk, DkDkp, DkE )" )
 
   ( "sim.update-hop-maxdistance,H",
     po::value<unsigned int>()->default_value( 1 ),
@@ -107,19 +118,29 @@ Options read_options( int argc, char* argv[], bool is_master )
     "number of Monte Carlo steps per bin" )
 
   ( "sim.rng-seed,S",
-    po::value<unsigned int>()->default_value(
-      chrono::system_clock::now().time_since_epoch().count()
-    ),
-    "random number generator seed" );
+    po::value<unsigned int>(),
+    "random number generator seed" )
+
+  ( "sim.sr-dt,d",
+    po::value<fptype>()->default_value( 1.f ),
+    "controls the SR convergence: vpar += dt * dvpar" )
+
+  ( "sim.sr-max-refinements,R",
+    po::value<unsigned int>()->default_value( 4 ),
+    "number of refinements during the SR cycle" )
+
+  ( "sim.sr-averaging-cycles,A",
+    po::value<unsigned int>()->default_value( 10 ),
+    "number of SR cycles to average the converged variational parameters" );
 
   po::options_description fpctrl( "floating point precision control" );
   fpctrl.add_options()
 
-  ( "fpctrl.W-deviation-target,W",
+  ( "fpctrl.W-deviation-target",
     po::value<fptype>()->default_value( 0.001f, "0.001" ),
     "deviation target for the matrix W" )
 
-  ( "fpctrl.W-updates-until-recalc,R",
+  ( "fpctrl.W-updates-until-recalc",
     po::value<unsigned int>()
 #ifdef USE_FP_DBLPREC
       ->default_value( 5000 ),
@@ -128,11 +149,11 @@ Options read_options( int argc, char* argv[], bool is_master )
 #endif
     "number of quick updates until recalculation of the matrix W" )
 
-  ( "fpctrl.T-deviation-target,T",
+  ( "fpctrl.T-deviation-target",
     po::value<fptype>()->default_value( 0.001f, "0.001" ),
     "deviation target for the vector T" )
 
-  ( "fpctrl.T-updates-until-recalc,r",
+  ( "fpctrl.T-updates-until-recalc",
     po::value<unsigned int>()
 #ifdef USE_FP_DBLPREC
       ->default_value( 500000 ),
@@ -222,11 +243,14 @@ Options read_options( int argc, char* argv[], bool is_master )
       cout << endl;
 
       cout
-          << "Copyright (C) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>" << endl
+          << "Copyright (C) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>"
+          << endl
           << "License GPLv3+: GNU GPL version 3 or later"
           " <http://gnu.org/licenses/gpl.html>" << endl
-          << "This is free software: you are free to change and redistribute it." << endl
-          << "There is NO WARRANTY, to the extent permitted by law." << endl << endl;
+          << "This is free software: you are free to change and redistribute it."
+          << endl
+          << "There is NO WARRANTY, to the extent permitted by law."
+          << endl << endl;
     }
     exit( 0 );
   }
@@ -282,19 +306,6 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
-    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() == 0 ) {
-      throw logic_error(
-        "electronic configuration updates need at least nearest neighbor hopping"
-      );
-    }
-
-    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() > 3 ) {
-      throw logic_error(
-        "electronic configuration updates with hopping > 3rd nearest neighbors"
-        "are not supported"
-      );
-    }
-
     if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
          !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
       throw logic_error( "the number of lattice sites must be a perfect square" );
@@ -309,6 +320,47 @@ Options read_options( int argc, char* argv[], bool is_master )
     exit( 1 );
   }
 
+
+  // check for logical errors in the simulation settings
+  try {
+
+    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() == 0 ) {
+      throw logic_error(
+        "electronic configuration updates need at least nearest neighbor hopping"
+      );
+    }
+
+    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() > 3 ) {
+      throw logic_error(
+        "electronic configuration updates with hopping > 3rd nearest neighbors"
+        "are not supported"
+      );
+    }
+
+    if ( vm["sim.mode"].as<optsimmode_t>()
+         == OPTION_SIMULATION_MODE_SR_OPTIMIZATION &&
+         vm.count( "sim.observable" ) ) {
+      cout << "Warning: specified observables are ignored in "
+           "stochastic reconfiguration mode" << endl;
+    }
+
+    if ( vm["sim.mode"].as<optsimmode_t>()
+         == OPTION_SIMULATION_MODE_SINGLERUN &&
+         vm.count( "sim.observable" ) == 0 ) {
+      throw logic_error( "you need to measure at least one observable" );
+    }
+
+  } catch ( const logic_error& e ) {
+    if ( is_master ) {
+      cerr << "Logical error in simulation settings: " << e.what() << endl;
+    }
+    exit( 1 );
+  }
+
+  if ( is_master ) {
+    cout << endl;
+  }
+
   return vm;
 }
 
@@ -321,6 +373,40 @@ istream& operator>>( std::istream& in, lattice_t& lat )
     lat = LATTICE_1DCHAIN;
   } else if ( token == "2dsquare" ) {
     lat = LATTICE_2DSQUARE;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
+
+
+istream& operator>>( std::istream& in, optsimmode_t& sm )
+{
+  string token;
+  in >> token;
+  if ( token == "single" ) {
+    sm = OPTION_SIMULATION_MODE_SINGLERUN;
+  } else if ( token == "sropt" ) {
+    sm = OPTION_SIMULATION_MODE_SR_OPTIMIZATION;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
+
+
+istream& operator>>( std::istream& in, observables_t& obs )
+{
+  string token;
+  in >> token;
+  if ( token == "E" ) {
+    obs = OBSERVABLE_E;
+  } else if ( token == "Dk" ) {
+    obs = OBSERVABLE_DELTAK;
+  } else if ( token == "DkDkp" ) {
+    obs = OBSERVABLE_DELTAK_DELTAKPRIME;
+  } else if ( token == "DkE" ) {
+    obs = OBSERVABLE_DELTAK_E;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }
