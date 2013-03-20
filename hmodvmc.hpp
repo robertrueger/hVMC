@@ -133,6 +133,7 @@ class HubbardModelVMC
     // observable measurements
     fptype E_l();
     Eigen::VectorXfp Delta_k() const;
+    fptype dblocc_dens() const;
 
     // floating point precision control
     FPDevStat get_W_devstat() const;

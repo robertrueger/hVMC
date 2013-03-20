@@ -52,6 +52,11 @@ void MCCResults::write_to_files( const fs::path& dir ) const
     ofstream DkE_file( ( dir / "res_DkE.txt" ).string() );
     DkE_file << Deltak_E->transpose() << endl;
   }
+
+  if ( dblocc ) {
+    ofstream dblocc_file( ( dir / "res_dblocc.txt" ).string() );
+    dblocc_file << dblocc->mean << " " << dblocc->sigma << endl;
+  }
 }
 
 
@@ -87,6 +92,12 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
     out << endl
         << "Dk_E = " << endl
         << res.Deltak_E->transpose() << endl;
+  }
+
+  if ( res.dblocc ) {
+    out << endl
+        << "      dblocc = " << res.dblocc->mean << endl
+        << "sigma_dblocc = " << res.dblocc->sigma << endl;
   }
 
   return out;

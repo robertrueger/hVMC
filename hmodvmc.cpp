@@ -713,13 +713,14 @@ Eigen::VectorXfp HubbardModelVMC::Delta_k() const
   Eigen::VectorXfp sum = Eigen::VectorXfp::Zero( v.get_num_vpar() );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
-    for ( unsigned int j = 0; j < lat->L; ++j ) {
+    for ( unsigned int j = i; j < lat->L; ++j ) {
 
       unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
+      fptype dblcount_correction = (j == i) ? .5f : 1.f;
 
       if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
         unsigned int vparnum = v.get_vparnum( irr_idxrel );
-        sum( vparnum ) +=
+        sum( vparnum ) += dblcount_correction *
           ( econf.get_site_occ( i ) + econf.get_site_occ( i + lat->L ) ) *
           ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) );
       }
@@ -727,11 +728,19 @@ Eigen::VectorXfp HubbardModelVMC::Delta_k() const
   }
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::Delta_k() = " << endl
-       << 0.5f * sum.transpose() << endl;
+  cout << "HubbardModelVMC::Delta_k() = " << endl << sum.transpose() << endl;
 #endif
 
-  return 0.5f * sum;
+  return sum;
+}
+
+
+
+fptype HubbardModelVMC::dblocc_dens() const
+{
+  return
+    static_cast<fptype>( econf.get_num_dblocc() ) /
+    static_cast<fptype>( lat->L );
 }
 
 

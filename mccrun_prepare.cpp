@@ -141,5 +141,11 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
     );
   }
 
+  if ( obs.count( OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDoubleOccupancy() )
+    );
+  }
+
   return obscalc;
 }
