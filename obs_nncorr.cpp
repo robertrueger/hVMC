@@ -73,7 +73,7 @@ void ObservableDensityDensityCorrelation::completebin()
 
 #if VERBOSE >= 1
   cout << "ObservableDensityDensityCorrelation::completebin() : binmean = " << endl
-       << nncorr_binmeans.rbegin() << endl;
+       << *( nncorr_binmeans.rbegin() ) << endl;
 #endif
 
   nncorr_sum.setZero();
