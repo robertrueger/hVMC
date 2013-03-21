@@ -35,7 +35,8 @@ enum observables_t {
   OBSERVABLE_DELTAK,
   OBSERVABLE_DELTAK_DELTAKPRIME,
   OBSERVABLE_DELTAK_E,
-  OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY
+  OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY,
+  OBSERVABLE_DENSITY_DENSITY_CORRELATION
 };
 
 
@@ -44,11 +45,13 @@ struct ObservableCache final
   boost::optional<fptype> E;
   boost::optional<Eigen::VectorXfp> DeltaK;
   boost::optional<fptype> dblocc;
+  boost::optional< Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> > n;
 
   void clear() {
     E = boost::none;
     DeltaK = boost::none;
     dblocc = boost::none;
+    n = boost::none;
   }
 };
 

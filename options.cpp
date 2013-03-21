@@ -99,7 +99,7 @@ Options read_options( int argc, char* argv[], bool is_master )
   ( "sim.observable,O",
     po::value< std::vector<observables_t> >(),
     "measured observables in single run mode"
-    "(E, Dk, DkDkp, DkE, dblocc)" )
+    "(E, Dk, DkDkp, DkE, dblocc, nncorr)" )
 
   ( "sim.update-hop-maxdistance,H",
     po::value<unsigned int>()->default_value( 1 ),
@@ -409,6 +409,8 @@ istream& operator>>( std::istream& in, observables_t& obs )
     obs = OBSERVABLE_DELTAK_E;
   } else if ( token == "dblocc" ) {
     obs = OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY;
+  } else if ( token == "nncorr" ) {
+    obs = OBSERVABLE_DENSITY_DENSITY_CORRELATION;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

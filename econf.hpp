@@ -90,7 +90,13 @@ class ElectronConfiguration final
 
     unsigned int get_electron_pos( unsigned int k ) const;
     unsigned int get_site_occ( unsigned int l ) const;
+
+    // ----- physical observables:
+    // total number of electrons
     unsigned int N() const;
+    // number of electrons per site
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
+    // total number of double occupancies
     unsigned int get_num_dblocc() const;
 
 };

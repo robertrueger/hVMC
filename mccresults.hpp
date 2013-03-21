@@ -78,6 +78,7 @@ struct MCCResults {
   boost::optional< Eigen::MatrixXfp > Deltak_Deltakprime;
   boost::optional< Eigen::VectorXfp > Deltak_E;
   boost::optional< UncertainQuantity<fptype> > dblocc;
+  boost::optional< Eigen::MatrixXfp > nncorr;
 
   void write_to_files( const boost::filesystem::path& dir ) const;
 };

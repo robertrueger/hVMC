@@ -17,8 +17,8 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBS_DELTAK_DELTAKPRIME_H_INCLUDED
-#define OBS_DELTAK_DELTAKPRIME_H_INCLUDED
+#ifndef OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
+#define OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
 
 #include "obs.hpp"
 
@@ -30,18 +30,18 @@
 #include "fptype.hpp"
 
 
-class ObservableDeltaKDeltaKPrime final : public Observable
+class ObservableDensityDensityCorrelation final : public Observable
 {
   private:
 
-    Eigen::MatrixXfp DkDkp_sum;
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> nncorr_sum;
     unsigned int this_bin_num_measurements;
 
-    std::vector<Eigen::MatrixXfp> DkDkp_binmeans;
+    std::vector<Eigen::MatrixXfp> nncorr_binmeans;
 
   public:
 
-    ObservableDeltaKDeltaKPrime();
+    ObservableDensityDensityCorrelation();
 
     void measure( HubbardModelVMC& model, ObservableCache& cache );
 
@@ -55,4 +55,4 @@ class ObservableDeltaKDeltaKPrime final : public Observable
     void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
 };
 
-#endif // OBS_DELTAK_DELTAKPRIME_H_INCLUDED
+#endif // OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED

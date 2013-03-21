@@ -72,7 +72,7 @@ void ObservableDeltaKDeltaKPrime::completebin()
 
 #if VERBOSE >= 1
   cout << "ObservableDeltaKDeltaKPrime::completebin() : binmean = " << endl
-       << DkDkp_binmeans.rbegin()->transpose() << endl;
+       << DkDkp_binmeans.rbegin() << endl;
 #endif
 
   DkDkp_sum.setZero();

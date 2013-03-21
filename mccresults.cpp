@@ -57,6 +57,11 @@ void MCCResults::write_to_files( const fs::path& dir ) const
     ofstream dblocc_file( ( dir / "res_dblocc.txt" ).string() );
     dblocc_file << dblocc->mean << " " << dblocc->sigma << endl;
   }
+
+  if ( nncorr ) {
+    ofstream nncorr_file( ( dir / "res_nncorr.txt" ).string() );
+    nncorr_file << nncorr.get() << endl;
+  }
 }
 
 
@@ -98,6 +103,12 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
     out << endl
         << "      dblocc = " << res.dblocc->mean << endl
         << "sigma_dblocc = " << res.dblocc->sigma << endl;
+  }
+
+  if ( res.nncorr ) {
+    out << endl
+        << "nncorr = " << endl
+        << res.nncorr.get() << endl;
   }
 
   return out;

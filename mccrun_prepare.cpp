@@ -145,5 +145,11 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
     );
   }
 
+  if ( obs.count( OBSERVABLE_DENSITY_DENSITY_CORRELATION ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDensityDensityCorrelation() )
+    );
+  }
+
   return obscalc;
 }

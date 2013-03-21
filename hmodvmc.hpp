@@ -134,6 +134,7 @@ class HubbardModelVMC final
     fptype E_l();
     Eigen::VectorXfp Delta_k() const;
     fptype dblocc_dens() const;
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
 
     // floating point precision control
     FPDevStat get_W_devstat() const;

@@ -235,6 +235,13 @@ unsigned int ElectronConfiguration::N() const
 
 
 
+Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ElectronConfiguration::n() const
+{
+  return ( site_occ.head( lat->L ) + site_occ.tail( lat->L ) );
+}
+
+
+
 unsigned int ElectronConfiguration::get_num_dblocc() const
 {
   return ( site_occ.head( lat->L ).array() * site_occ.tail( lat->L ).array() ).sum();
