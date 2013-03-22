@@ -263,3 +263,22 @@ unsigned int Lattice2DSquare::irreducible_idxrel_maxdist() const
     return L / 2;
   }
 }
+
+
+
+Eigen::VectorXfp Lattice2DSquare::r( unsigned int i, unsigned int j ) const
+{
+  assert( i < L );
+  assert( j < L );
+
+  // calculate the positions of i and j
+  const unsigned int x_i = i % S;
+  const unsigned int y_i = i / S;
+  const unsigned int x_j = j % S;
+  const unsigned int y_j = j / S;
+
+  Eigen::VectorXfp result = Eigen::VectorXfp::Zero( 2 );
+  result( 0 ) = static_cast<fptype>( x_j ) - static_cast<fptype>( x_i );
+  result( 1 ) = static_cast<fptype>( y_j ) - static_cast<fptype>( y_i );
+  return result;
+}

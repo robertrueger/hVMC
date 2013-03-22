@@ -23,6 +23,10 @@
 #include <vector>
 #include <set>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
+
+#include "fptype.hpp"
 #include "macros.h"
 
 
@@ -52,6 +56,8 @@ class Lattice {
     virtual unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const = 0;
     virtual std::set<unsigned int> irreducible_idxrel_list() const = 0;
     virtual unsigned int irreducible_idxrel_maxdist() const = 0;
+
+    virtual Eigen::VectorXfp r( unsigned int i, unsigned int j ) const = 0;
 
 };
 

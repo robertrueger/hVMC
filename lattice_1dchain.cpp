@@ -100,6 +100,19 @@ set<unsigned int> Lattice1DChain::irreducible_idxrel_list() const
 
 
 
-unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const {
+unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const
+{
   return L / 2;
 }
+
+
+
+Eigen::VectorXfp Lattice1DChain::r( unsigned int i, unsigned int j ) const
+{
+  assert( i < L );
+  assert( j < L );
+
+  Eigen::VectorXfp result = Eigen::VectorXfp::Zero( 1 );
+  result( 0 ) = static_cast<fptype>( j ) - static_cast<fptype>( i );
+  return result;
+};
