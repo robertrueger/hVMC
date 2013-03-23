@@ -34,6 +34,7 @@
 #include "lattice.hpp"
 #include "jastrow.hpp"
 #include "econf.hpp"
+#include "wmatrix.hpp"
 
 
 class HubbardModelVMC final
@@ -62,32 +63,17 @@ class HubbardModelVMC final
 
     ElectronConfiguration econf;
 
-    Eigen::MatrixXfp  Wbu_1;
-    Eigen::MatrixXfp  Wbu_2;
-    Eigen::MatrixXfp* Wbu_active;
-    Eigen::MatrixXfp* Wbu_inactive;
-
-    Eigen::MatrixXfp  Wd_1;
-    Eigen::MatrixXfp  Wd_2;
-    Eigen::MatrixXfp* Wd_active;
-    Eigen::MatrixXfp* Wd_inactive;
-
+    WMatrix W;
     Eigen::VectorXfp T;
-
-#ifdef USE_CBLAS
-    // a temporary vectors that are large enough to hold one row/col of Wbu
-    Eigen::VectorXfp tempWcol;
-    Eigen::VectorXfp tempWrow;
-#endif
 
     // buffer vector for X nearest neighbors
     // (in order to avoid allocating new ones all the time)
     std::vector<unsigned int> k_pos_Xnn;
 
     // floating point precision control
-    const unsigned int updates_until_W_recalc, updates_until_T_recalc;
-    unsigned int updates_since_W_recalc, updates_since_T_recalc;
-    FPDevStat W_devstat, T_devstat;
+    const unsigned int updates_until_T_recalc;
+    unsigned int updates_since_T_recalc;
+    FPDevStat T_devstat;
 
 
     // ----- internal helper functions -----
@@ -96,19 +82,12 @@ class HubbardModelVMC final
     bool metstep();
 
     // wrapper functions that updates/recalculates W/T after a successful hop
-    void perform_W_update( const ElectronHop& hop );
     void perform_T_update( const ElectronHop& hop );
 
     // update and recalc functions for the internal objects
-    void calc_new_W();
-    void calc_qupdated_W( const ElectronHop& hop );
     Eigen::VectorXfp calc_new_T() const;
     Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
 
-    // functions to calculate the matrix D
-    Eigen::MatrixXfp calc_Db() const;
-    Eigen::MatrixXfp calc_Du() const;
-    Eigen::MatrixXfp calc_Dd() const;
 
 
   public:
@@ -121,8 +100,8 @@ class HubbardModelVMC final
       unsigned int N_init,
       unsigned int update_hop_maxdist_init,
       const std::vector<fptype>& t_init, fptype U_init,
-      fptype W_deviation_target_init,
-      unsigned int updates_until_W_recalc_init,
+      fptype W_deviation_target,
+      unsigned int updates_until_W_recalc,
       fptype T_deviation_target_init,
       unsigned int updates_until_T_recalc_init
     );
