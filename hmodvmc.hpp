@@ -43,7 +43,7 @@ class HubbardModelVMC final
     // ----- independent objects -----
 
     // random number generator
-    const std::shared_ptr<std::mt19937> rng;
+    std::mt19937 rng;
 
     // the underlying lattice
     const std::shared_ptr<Lattice> lat;
@@ -114,7 +114,7 @@ class HubbardModelVMC final
   public:
 
     HubbardModelVMC(
-      const std::shared_ptr<std::mt19937>& rng_init,
+      const std::mt19937& rng_init,
       const std::shared_ptr<Lattice>& lat_init,
       const SingleParticleOrbitals& detwf_init,
       const Jastrow& v_init,

@@ -42,7 +42,7 @@ HubbardModelVMC prepare_model(
   const boost::mpi::communicator& mpicomm
 );
 
-std::shared_ptr<std::mt19937> prepare_rng(
+std::mt19937 prepare_rng(
   const Options& opts, const boost::mpi::communicator& mpicomm
 );
 

@@ -34,7 +34,7 @@ HubbardModelVMC prepare_model(
   const Options& opts, const Eigen::VectorXfp& vpar,
   const mpi::communicator& mpicomm )
 {
-  shared_ptr<mt19937> rng = prepare_rng( opts, mpicomm );
+  mt19937 rng = prepare_rng( opts, mpicomm );
   shared_ptr<Lattice> lat = prepare_lattice( opts );
 
   vector<fptype> t(3);
@@ -73,7 +73,7 @@ HubbardModelVMC prepare_model(
 }
 
 
-shared_ptr<mt19937> prepare_rng(
+mt19937 prepare_rng(
   const Options& opts, const mpi::communicator& mpicomm )
 {
   unsigned int rngseed;
@@ -84,7 +84,7 @@ shared_ptr<mt19937> prepare_rng(
   }
 
   rngseed += rngseed / ( mpicomm.rank() + 1 );
-  return make_shared<mt19937>( rngseed );
+  return mt19937( rngseed );
 }
 
 

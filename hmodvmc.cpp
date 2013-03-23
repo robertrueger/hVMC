@@ -40,7 +40,7 @@ using namespace std;
 
 
 HubbardModelVMC::HubbardModelVMC(
-  const shared_ptr<mt19937>& rng_init,
+  const mt19937& rng_init,
   const shared_ptr<Lattice>& lat_init,
   const SingleParticleOrbitals& detwf_init,
   const Jastrow& v_init,
@@ -280,7 +280,7 @@ bool HubbardModelVMC::metstep()
 #endif
 
     if ( accept_prob >= 1.f ||
-         uniform_real_distribution<fptype>( 0.f, 1.f )( *rng ) < accept_prob ) {
+         uniform_real_distribution<fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
 
 #if VERBOSE >= 2
       cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;

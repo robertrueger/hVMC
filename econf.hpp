@@ -68,7 +68,7 @@ class ElectronConfiguration final
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
     std::vector<unsigned int> electron_pos;
 
-    const std::shared_ptr<std::mt19937> rng;
+    std::mt19937& rng;
 
     // buffer vectors for nearest-neighbors
     // (in order to avoid allocating new ones all the time)
@@ -80,7 +80,7 @@ class ElectronConfiguration final
 
     ElectronConfiguration(
       const std::shared_ptr<Lattice>& lat_init, unsigned int N_init,
-      const std::shared_ptr<std::mt19937>& rng_init
+      std::mt19937& rng_init
     );
 
     void distribute_random();
