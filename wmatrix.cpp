@@ -34,7 +34,10 @@ extern "C" {
 }
 #endif
 
+#include "macros.h"
+
 using namespace std;
+
 
 
 WMatrix::WMatrix(
@@ -95,7 +98,7 @@ bool WMatrix::init_and_check()
 
     if ( lu_decomp.isInvertible() != true ) {
 #if VERBOSE >= 2
-      cout << "WMatrix::WMatrix() : spin up part has no "
+      cout << "WMatrix::check_and_init() : spin up part has no "
            << "overlap with the determinantal wavefunction" << endl;
 #endif
       return false;
@@ -107,7 +110,7 @@ bool WMatrix::init_and_check()
       = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
     if ( Wbu_avg > 100.f ) {
 #if VERBOSE >= 2
-      cout << "WMatrix::WMatrix() : spin up part has too "
+      cout << "WMatrix::check_and_init() : spin up part has too "
            << "little overlap with the determinantal wavefunction, "
            << "inverse overlap measure is: " << Wbu_avg << endl;
 #endif
@@ -118,7 +121,7 @@ bool WMatrix::init_and_check()
     lu_decomp.compute( calc_Dd().transpose() );
     if ( lu_decomp.isInvertible() != true ) {
 #if VERBOSE >= 2
-      cout << "WMatrix::WMatrix() : spin down part has no "
+      cout << "WMatrix::check_and_init() : spin down part has no "
            << "overlap with the determinantal wavefunction" << endl;
 #endif
       return false;
@@ -130,7 +133,7 @@ bool WMatrix::init_and_check()
       = Wd_active->squaredNorm()  / static_cast<fptype>( Wd_active->size() );
     if ( Wd_avg > 100.f ) {
 #if VERBOSE >= 2
-      cout << "WMatrix::WMatrix() : spin down part has too "
+      cout << "WMatrix::check_and_init() : spin down part has too "
            << "little overlap with the determinantal wavefunction, "
            << "inverse overlap measure is: " << Wd_avg << endl;
 #endif
@@ -143,7 +146,7 @@ bool WMatrix::init_and_check()
     Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db().transpose() );
     if ( lu_decomp.isInvertible() != true ) {
 #if VERBOSE >= 2
-      cout << "WMatrix::WMatrix() : state has no "
+      cout << "WMatrix::check_and_init() : state has no "
            << "overlap with the determinantal wavefunction" << endl;
 #endif
       return false;
@@ -155,7 +158,7 @@ bool WMatrix::init_and_check()
       = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
     if ( Wbu_avg > 50.f ) {
 #if VERBOSE >= 2
-      cout << "WMatrix::WMatrix() : state has too "
+      cout << "WMatrix::check_and_init() : state has too "
            << "little overlap with the determinantal wavefunction, "
            << "inverse overlap measure is: " << Wbu_avg << endl;
 #endif
@@ -199,7 +202,7 @@ void WMatrix::update( const ElectronHop& hop )
   if ( updates_since_recalc >= updates_until_recalc ) {
 
 #if VERBOSE >= 2
-    cout << "WMatrix::perform_W_update() : recalculating W!" << endl;
+    cout << "WMatrix::update() : recalculating W!" << endl;
 #endif
 
     updates_since_recalc = 0;
@@ -219,18 +222,18 @@ void WMatrix::update( const ElectronHop& hop )
     devstat.add( dev );
 
 #if VERBOSE >= 2
-    cout << "WMatrix::perform_W_update() : recalculated W "
+    cout << "WMatrix::update() : recalculated W "
          << "with deviation = " << dev << endl;
 
     if ( dev > devstat.target ) {
-      cout << "WMatrix::perform_W_update() : deviation goal for matrix "
+      cout << "WMatrix::update() : deviation goal for matrix "
            << "W not met!" << endl
-           << "WMatrix::perform_W_update() : approximate W =" << endl
+           << "WMatrix::update() : approximate W =" << endl
            << *Wbu_inactive << endl;
       if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_inactive << endl;
       }
-      cout << "WMatrix::perform_W_update() : exact W =" << endl
+      cout << "WMatrix::update() : exact W =" << endl
            << *Wbu_active << endl;
       if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_active << endl;
@@ -243,7 +246,7 @@ void WMatrix::update( const ElectronHop& hop )
   } else {
 
 #if VERBOSE >= 2
-    cout << "WMatrix::perform_W_update() : "
+    cout << "WMatrix::update() : "
          << "performing a quick update of W!" << endl;
 #endif
 
@@ -273,18 +276,18 @@ void WMatrix::update( const ElectronHop& hop )
     }
 
 # if VERBOSE >= 2
-    cout << "WMatrix::perform_W_update() : "
+    cout << "WMatrix::update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
     if ( dev > devstat.target ) {
-      cout << "WMatrix::perform_W_update() : deviation goal for matrix "
+      cout << "WMatrix::update() : deviation goal for matrix "
            << "W not met!" << endl
-           << "WMatrix::perform_W_update() : quickly updated W =" << endl
+           << "WMatrix::update() : quickly updated W =" << endl
            << *Wbu_active << endl;
       if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_active << endl;
       }
-      cout << "WMatrix::perform_W_update() : exact W =" << endl
+      cout << "WMatrix::update() : exact W =" << endl
            << *Wbu_inactive << endl;
       if ( detwf.ssym == true ) {
         cout << "----->" << endl << *Wd_inactive << endl;

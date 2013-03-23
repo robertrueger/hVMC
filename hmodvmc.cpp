@@ -23,18 +23,6 @@
 # include <iostream>
 #endif
 
-#include <cmath>
-#include <algorithm>
-
-#define EIGEN_NO_AUTOMATIC_RESIZING
-#include <eigen3/Eigen/LU>
-
-#ifdef USE_CBLAS
-extern "C" {
-# include <cblas.h>
-}
-#endif
-
 using namespace std;
 
 
@@ -50,8 +38,8 @@ HubbardModelVMC::HubbardModelVMC(
   fptype U_init,
   fptype W_deviation_target,
   unsigned int updates_until_W_recalc,
-  fptype T_deviation_target_init,
-  unsigned int updates_until_T_recalc_init )
+  fptype T_deviation_target,
+  unsigned int updates_until_T_recalc )
   : rng( rng_init ),
     lat( lat_init ), detwf( detwf_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
@@ -59,18 +47,12 @@ HubbardModelVMC::HubbardModelVMC(
     econf( ElectronConfiguration( lat, N_init, rng ) ),
     W( WMatrix( lat.get(), detwf, econf,
                 W_deviation_target, updates_until_W_recalc ) ),
-    T( Eigen::VectorXfp( lat->L ) ),
-    updates_until_T_recalc( updates_until_T_recalc_init ),
-    updates_since_T_recalc( 0 ),
-    T_devstat( FPDevStat( T_deviation_target_init ) )
+    T( TVector( lat.get(), v, econf,
+                T_deviation_target, updates_until_T_recalc ) )
 {
-
-  bool enough_overlap;
-
-  do {
+  while ( true ) {
 
     econf.distribute_random();
-    enough_overlap = true; // assume until we are proven wrong
 
 #if VERBOSE >= 2
     cout << "HubbardModelVMC::HubbardModelVMC() : checking newly generated "
@@ -78,30 +60,23 @@ HubbardModelVMC::HubbardModelVMC(
 #endif
 
     // check determinantal part
-    enough_overlap &= W.init_and_check();
-    if ( !enough_overlap ) {
+    if ( W.init_and_check() == false ) {
       continue;
     }
 
     // check Jastrow part
-    T = calc_new_T();
-    fptype T_avg = T.squaredNorm() / static_cast<fptype>( T.size() );
-    enough_overlap &= T_avg < 100.f;
-    if ( !enough_overlap ) {
-#if VERBOSE >= 2
-      cout << "HubbardModelVMC::HubbardModelVMC() : Jastrow ratios "
-           << "are to small, inverse measure is: " << T_avg << endl;
-#endif
+    if ( T.init_and_check() == false ) {
       continue;
     }
+
+    break;
+
+  }
 
 #if VERBOSE >= 2
     cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
          << "overlap! -> initial state selection completed!" << endl;
 #endif
-
-  } while ( !enough_overlap );
-
 }
 
 
@@ -165,7 +140,7 @@ bool HubbardModelVMC::metstep()
       econf.do_hop( phop );
 
       W.update( phop );
-      perform_T_update( phop );
+      T.update( phop );
 
       return true;
 
@@ -178,106 +153,6 @@ bool HubbardModelVMC::metstep()
       return false;
     }
   }
-}
-
-
-
-void HubbardModelVMC::perform_T_update( const ElectronHop& hop )
-{
-  if ( updates_since_T_recalc >= updates_until_T_recalc ) {
-
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_T_update() : recalculating T!" << endl;
-#endif
-
-    updates_since_T_recalc = 0;
-
-    const Eigen::MatrixXfp& T_approx = calc_qupdated_T( hop );
-    T = calc_new_T();
-
-    fptype dev = calc_deviation( T_approx, T );
-    T_devstat.add( dev );
-
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_T_update() : recalculated T "
-         << "with deviation = " << dev << endl;
-
-    if ( dev > T_devstat.target ) {
-      cout << "HubbardModelVMC::perform_T_update() : deviation goal for matrix "
-           << "T not met!" << endl
-           << "HubbardModelVMC::perform_T_update() : approximate T =" << endl
-           << T_approx.transpose() << endl
-           << "HubbardModelVMC::perform_T_update() : exact T =" << endl
-           << T.transpose() << endl;
-    }
-#endif
-
-    assert( dev < T_devstat.target );
-
-  } else {
-
-#if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_T_update() : "
-         << "performing a quick update of T!" << endl;
-#endif
-
-    ++updates_since_T_recalc;
-
-    T = calc_qupdated_T( hop );
-
-#ifndef NDEBUG
-    const Eigen::MatrixXfp& T_chk = calc_new_T();
-    fptype dev = calc_deviation( T, T_chk );
-
-# if VERBOSE >= 2
-    cout << "HubbardModelVMC::perform_T_update() : "
-         << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
-
-    if ( dev > T_devstat.target ) {
-      cout << "HubbardModelVMC::perform_T_update() : deviation goal for matrix "
-           << "T not met!" << endl
-           << "HubbardModelVMC::perform_T_update() : quickly updated T =" << endl
-           << T.transpose() << endl
-           << "HubbardModelVMC::perform_T_update() : exact T =" << endl
-           << T_chk.transpose() << endl;
-    }
-# endif
-#endif
-
-    assert( dev < T_devstat.target );
-  }
-}
-
-
-
-Eigen::VectorXfp HubbardModelVMC::calc_new_T() const
-{
-  Eigen::VectorXfp T_new( lat->L );
-
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
-    fptype sum = 0.f;
-    for ( unsigned int j = 0; j < lat->L; ++j ) {
-      sum += v( i, j ) * static_cast<fptype>(
-               ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
-    }
-    T_new( i ) = exp( sum );
-  }
-
-  return T_new;
-}
-
-
-
-Eigen::VectorXfp HubbardModelVMC::calc_qupdated_T( const ElectronHop& hop ) const
-{
-  Eigen::VectorXfp T_prime( lat->L );
-
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
-    T_prime( i ) = T( i ) * v.exp( i, lat->get_spinup_site( hop.l ) )
-                   / v.exp( i, lat->get_spinup_site( hop.k_pos ) );
-  }
-
-  return T_prime;
 }
 
 
@@ -385,5 +260,5 @@ FPDevStat HubbardModelVMC::get_W_devstat() const
 }
 FPDevStat HubbardModelVMC::get_T_devstat() const
 {
-  return T_devstat;
+  return T.get_devstat();
 }

@@ -35,6 +35,7 @@
 #include "jastrow.hpp"
 #include "econf.hpp"
 #include "wmatrix.hpp"
+#include "tvector.hpp"
 
 
 class HubbardModelVMC final
@@ -64,30 +65,17 @@ class HubbardModelVMC final
     ElectronConfiguration econf;
 
     WMatrix W;
-    Eigen::VectorXfp T;
+    TVector T;
 
     // buffer vector for X nearest neighbors
     // (in order to avoid allocating new ones all the time)
     std::vector<unsigned int> k_pos_Xnn;
-
-    // floating point precision control
-    const unsigned int updates_until_T_recalc;
-    unsigned int updates_since_T_recalc;
-    FPDevStat T_devstat;
 
 
     // ----- internal helper functions -----
 
     // function that performs a single Metropolis update
     bool metstep();
-
-    // wrapper functions that updates/recalculates W/T after a successful hop
-    void perform_T_update( const ElectronHop& hop );
-
-    // update and recalc functions for the internal objects
-    Eigen::VectorXfp calc_new_T() const;
-    Eigen::VectorXfp calc_qupdated_T( const ElectronHop& hop ) const;
-
 
 
   public:
@@ -102,8 +90,8 @@ class HubbardModelVMC final
       const std::vector<fptype>& t_init, fptype U_init,
       fptype W_deviation_target,
       unsigned int updates_until_W_recalc,
-      fptype T_deviation_target_init,
-      unsigned int updates_until_T_recalc_init
+      fptype T_deviation_target,
+      unsigned int updates_until_T_recalc
     );
 
     // Monte Carlo step
