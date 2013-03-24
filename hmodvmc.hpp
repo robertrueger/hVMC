@@ -69,7 +69,7 @@ class HubbardModelVMC final
 
     // buffer vector for X nearest neighbors
     // (in order to avoid allocating new ones all the time)
-    std::vector<unsigned int> k_pos_Xnn;
+    mutable std::vector<unsigned int> k_pos_Xnn;
 
 
     // ----- internal helper functions -----
@@ -98,7 +98,7 @@ class HubbardModelVMC final
     void mcs();
 
     // observable measurements
-    fptype E_l();
+    fptype E_l() const;
     Eigen::VectorXfp Delta_k() const;
     fptype dblocc_dens() const;
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;

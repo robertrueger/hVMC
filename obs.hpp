@@ -65,7 +65,10 @@ class Observable
     Observable( observables_t type_init )
       : type( type_init ) { }
 
-    virtual void measure( HubbardModelVMC& model, ObservableCache& cache ) = 0;
+    virtual void measure(
+      const HubbardModelVMC& model,
+      ObservableCache& cache
+    ) = 0;
 
     virtual void completebin() = 0;
 

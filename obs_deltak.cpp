@@ -37,7 +37,8 @@ ObservableDeltaK::ObservableDeltaK()
     this_bin_num_measurements( 0 ) { }
 
 
-void ObservableDeltaK::measure( HubbardModelVMC& model, ObservableCache& cache )
+void ObservableDeltaK::measure(
+  const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.DeltaK ) {
     cache.DeltaK = model.Delta_k();

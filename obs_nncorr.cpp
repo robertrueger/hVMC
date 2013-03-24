@@ -38,7 +38,7 @@ ObservableDensityDensityCorrelation::ObservableDensityDensityCorrelation()
 
 
 void ObservableDensityDensityCorrelation::measure(
-  HubbardModelVMC& model, ObservableCache& cache )
+  const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.n ) {
     cache.n = model.n();

@@ -72,7 +72,7 @@ class ElectronConfiguration final
 
     // buffer vectors for nearest-neighbors
     // (in order to avoid allocating new ones all the time)
-    std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
+    mutable std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
 
     void reconstr_electron_pos();
 
@@ -85,7 +85,7 @@ class ElectronConfiguration final
 
     void distribute_random();
 
-    ElectronHop propose_random_hop( unsigned int update_hop_maxdist );
+    ElectronHop propose_random_hop( unsigned int update_hop_maxdist ) const;
     void do_hop( const ElectronHop& hop );
 
     unsigned int get_electron_pos( unsigned int k ) const;

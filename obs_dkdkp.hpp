@@ -43,7 +43,7 @@ class ObservableDeltaKDeltaKPrime final : public Observable
 
     ObservableDeltaKDeltaKPrime();
 
-    void measure( HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const HubbardModelVMC& model, ObservableCache& cache );
 
     void completebin();
 

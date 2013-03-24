@@ -100,7 +100,7 @@ void ElectronConfiguration::distribute_random()
 
 
 ElectronHop ElectronConfiguration::propose_random_hop(
-  unsigned int update_hop_maxdist )
+  unsigned int update_hop_maxdist ) const
 {
   // hop the kth electron
   const unsigned int k

@@ -32,7 +32,7 @@ ObservableDoubleOccupancy::ObservableDoubleOccupancy()
 
 
 void ObservableDoubleOccupancy::measure(
-  HubbardModelVMC& model, ObservableCache& cache )
+  const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.dblocc ) {
     cache.dblocc = model.dblocc_dens();

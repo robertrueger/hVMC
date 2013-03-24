@@ -74,8 +74,8 @@ HubbardModelVMC::HubbardModelVMC(
   }
 
 #if VERBOSE >= 2
-    cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
-         << "overlap! -> initial state selection completed!" << endl;
+  cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
+       << "overlap! -> initial state selection completed!" << endl;
 #endif
 }
 
@@ -157,7 +157,7 @@ bool HubbardModelVMC::metstep()
 
 
 
-fptype HubbardModelVMC::E_l()
+fptype HubbardModelVMC::E_l() const
 {
   // calculate expectation value of the T part of H
   fptype E_l_kin = 0.f;
@@ -222,9 +222,10 @@ Eigen::VectorXfp HubbardModelVMC::Delta_k() const
 
       if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
         unsigned int vparnum = v.get_vparnum( irr_idxrel );
-        sum( vparnum ) += dblcount_correction *
-                          ( econf.get_site_occ( i ) + econf.get_site_occ( i + lat->L ) ) *
-                          ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) );
+        sum( vparnum )
+        += dblcount_correction *
+           ( econf.get_site_occ( i ) + econf.get_site_occ( i + lat->L ) ) *
+           ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) );
       }
     }
   }
@@ -249,7 +250,7 @@ fptype HubbardModelVMC::dblocc_dens() const
 
 Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
 {
-   return econf.n();
+  return econf.n();
 }
 
 
