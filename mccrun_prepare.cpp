@@ -62,7 +62,7 @@ HubbardModelVMC prepare_model(
     detwf,
     v,
     opts["phys.num-electrons"].as<unsigned int>(),
-    opts["sim.update-hop-maxdistance"].as<unsigned int>(),
+    opts["calc.update-hop-maxdistance"].as<unsigned int>(),
     t,
     opts["phys.onsite-energy"].as<fptype>(),
     opts["fpctrl.W-deviation-target"].as<fptype>(),
@@ -77,8 +77,8 @@ mt19937 prepare_rng(
   const Options& opts, const mpi::communicator& mpicomm )
 {
   unsigned int rngseed;
-  if ( opts.count("sim.rng-seed") ) {
-    rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  if ( opts.count("calc.rng-seed") ) {
+    rngseed = opts["calc.rng-seed"].as<unsigned int>();
   } else {
     rngseed = chrono::system_clock::now().time_since_epoch().count();
   }

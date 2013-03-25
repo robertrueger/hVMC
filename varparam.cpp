@@ -23,7 +23,7 @@
 #include <fstream>
 #include <set>
 
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/archive/text_iarchive.hpp>
 
 #include "serialization_eigen.hpp"
@@ -41,9 +41,15 @@ Eigen::VectorXfp get_initial_varparam( const Options& opts )
   unsigned int num_vpars
     = prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
 
-  if ( opts.count( "phys.vpars" ) ) {
+  if ( fs::exists(
+         opts["calc.working-dir"].as<fs::path>() /
+         "opt_vpar_final.dat" )
+      ) {
     // read the variational parameters from a file
-    ifstream vpar_file( opts["phys.vpars"].as<fs::path>().string() );
+    ifstream vpar_file( (
+      opts["calc.working-dir"].as<fs::path>() /
+       "opt_vpar_final.dat"
+    ).string() );
     ar::text_iarchive vpar_archive( vpar_file );
     Eigen::VectorXfp vpar;
     vpar_archive >> vpar;

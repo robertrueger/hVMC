@@ -48,8 +48,7 @@ Options read_options( int argc, char* argv[], bool is_master )
   ( "help,h", "print this help message and exit" )
   ( "version,V", "print hVMC's version and exit" )
   ( "verbose,v", "makes hVMC write additional information to stdout" )
-  ( "job-file,J", po::value<fs::path>(), "job file to execute" )
-  ( "output-dir,o", po::value<fs::path>()->default_value( "." ), "output directory" );
+  ( "job-file,J", po::value<fs::path>(), "job file to execute" );
   po::positional_options_description p;
   p.add( "job-file", -1 );
 
@@ -85,55 +84,65 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.num-electrons,N",
     po::value<unsigned int>()->required(),
-    "total number of electrons" )
+    "total number of electrons" );
 
-  ( "phys.vpars,P", po::value<fs::path>(), "variational parameter file" );
+  po::options_description calcset( "calculation settings" );
+  calcset.add_options()
 
-  po::options_description simset( "simulation settings" );
-  simset.add_options()
+  ( "calc.mode,m",
+    po::value<optmode_t>()->required(),
+    "mode (optimization, simulation, analysis)" )
 
-  ( "sim.mode,m",
-    po::value<optsimmode_t>()->required(),
-    "simulation mode (single, sropt)" )
+  ( "calc.working-dir,d",
+    po::value<fs::path>()->default_value( "." ),
+    "[opt+sim+ana]: input/output directory" )
 
-  ( "sim.observable,O",
+  ( "calc.observable,O",
     po::value< std::vector<observables_t> >(),
-    "measured observables in single run mode"
-    "(E, Dk, DkDkp, DkE, dblocc, nncorr)" )
+    "[sim]: "
+    "measured observables (E, Dk, DkDkp, DkE, dblocc, nncorr)" )
 
-  ( "sim.update-hop-maxdistance,H",
+  ( "calc.update-hop-maxdistance,H",
     po::value<unsigned int>()->default_value( 1 ),
+    "[opt+sim]: "
     "maximum hopping distance for electronic configuration updates" )
 
-  ( "sim.num-mcs-equil,E",
-    po::value<unsigned int>()->required(),
+  ( "calc.num-mcs-equil,E",
+    po::value<unsigned int>()->default_value( 100 ),
+    "[opt+sim]: "
     "number of Monte Carlo steps for equilibration" )
 
-  ( "sim.num-bins,B",
-    po::value<unsigned int>()->required(),
+  ( "calc.num-bins,B",
+    po::value<unsigned int>()->default_value( 50 ),
+    "[opt+sim]: "
     "number of measurement bins" )
 
-  ( "sim.num-binmcs,M",
-    po::value<unsigned int>()->required(),
+  ( "calc.num-binmcs,M",
+    po::value<unsigned int>()->default_value( 50 ),
+    "[opt+sim]: "
     "number of Monte Carlo steps per bin" )
 
-  ( "sim.rng-seed,S",
+  ( "calc.rng-seed,S",
     po::value<unsigned int>(),
+    "[opt+sim]: "
     "random number generator seed" )
 
-  ( "sim.sr-dt,d",
+  ( "calc.sr-dt,d",
     po::value<fptype>()->default_value( 1.f ),
+    "[opt]: "
     "controls the SR convergence: vpar += dt * dvpar" )
 
-  ( "sim.sr-max-refinements,R",
+  ( "calc.sr-max-refinements,R",
     po::value<unsigned int>()->default_value( 4 ),
+    "[opt]: "
     "number of refinements during the SR cycle" )
 
-  ( "sim.sr-averaging-cycles,A",
+  ( "calc.sr-averaging-cycles,A",
     po::value<unsigned int>()->default_value( 10 ),
+    "[opt]: "
     "number of SR cycles to average the converged variational parameters" );
 
-  po::options_description fpctrl( "floating point precision control" );
+  po::options_description fpctrl( "[opt+sim]: floating point precision control" );
   fpctrl.add_options()
 
   ( "fpctrl.W-deviation-target",
@@ -164,9 +173,9 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   // define option groups for cli and jobfile
   po::options_description cmdline_options;
-  cmdline_options.add( clionly ).add( physparam ).add( simset ).add( fpctrl );
+  cmdline_options.add( clionly ).add( physparam ).add( calcset ).add( fpctrl );
   po::options_description jobfile_options;
-  jobfile_options.add( physparam ).add( simset ).add( fpctrl );
+  jobfile_options.add( physparam ).add( calcset ).add( fpctrl );
 
 
 
@@ -321,38 +330,31 @@ Options read_options( int argc, char* argv[], bool is_master )
   }
 
 
-  // check for logical errors in the simulation settings
+  // check for logical errors in the calculation settings
   try {
 
-    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() == 0 ) {
+    if ( vm["calc.update-hop-maxdistance"].as<unsigned int>() == 0 ) {
       throw logic_error(
         "electronic configuration updates need at least nearest neighbor hopping"
       );
     }
 
-    if ( vm["sim.update-hop-maxdistance"].as<unsigned int>() > 3 ) {
+    if ( vm["calc.update-hop-maxdistance"].as<unsigned int>() > 3 ) {
       throw logic_error(
         "electronic configuration updates with hopping > 3rd nearest neighbors"
         "are not supported"
       );
     }
 
-    if ( vm["sim.mode"].as<optsimmode_t>()
-         == OPTION_SIMULATION_MODE_SR_OPTIMIZATION &&
-         vm.count( "sim.observable" ) ) {
-      cout << "Warning: specified observables are ignored in "
-           "stochastic reconfiguration mode" << endl;
-    }
-
-    if ( vm["sim.mode"].as<optsimmode_t>()
-         == OPTION_SIMULATION_MODE_SINGLERUN &&
-         vm.count( "sim.observable" ) == 0 ) {
+    if ( vm["calc.mode"].as<optmode_t>()
+         == OPTION_MODE_SIMULATION &&
+         vm.count( "calc.observable" ) == 0 ) {
       throw logic_error( "you need to measure at least one observable" );
     }
 
   } catch ( const logic_error& e ) {
     if ( is_master ) {
-      cerr << "Logical error in simulation settings: " << e.what() << endl;
+      cerr << "Logical error in calculation settings: " << e.what() << endl;
     }
     exit( 1 );
   }
@@ -380,14 +382,16 @@ istream& operator>>( std::istream& in, lattice_t& lat )
 }
 
 
-istream& operator>>( std::istream& in, optsimmode_t& sm )
+istream& operator>>( std::istream& in, optmode_t& m )
 {
   string token;
   in >> token;
-  if ( token == "single" ) {
-    sm = OPTION_SIMULATION_MODE_SINGLERUN;
-  } else if ( token == "sropt" ) {
-    sm = OPTION_SIMULATION_MODE_SR_OPTIMIZATION;
+  if ( token == "opt" || token == "optimization" ) {
+    m = OPTION_MODE_OPTIMIZATION;
+  } else if ( token == "sim" || token == "simulation" ) {
+    m = OPTION_MODE_SIMULATION;
+  } else if ( token == "ana" || token == "analysis" ) {
+    m = OPTION_MODE_ANALYSIS;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

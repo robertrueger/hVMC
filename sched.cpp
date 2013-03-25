@@ -48,86 +48,37 @@ namespace mpi = boost::mpi;
 namespace fs  = boost::filesystem;
 namespace ar  = boost::archive;
 
-void sched_master_single( const Options& opts, const mpi::communicator& mpicomm );
-void sched_master_sropt ( const Options& opts, const mpi::communicator& mpicomm );
+void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm );
+void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm );
+void sched_master_ana( const Options& opts, const mpi::communicator& mpicomm );
 
 
 
 void sched_master( const Options& opts, const mpi::communicator& mpicomm )
 {
-  if ( opts["sim.mode"].as<optsimmode_t>() == OPTION_SIMULATION_MODE_SINGLERUN ) {
-    sched_master_single( opts, mpicomm );
+  if ( opts["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION ) {
 
-  } else {
-    assert( opts["sim.mode"].as<optsimmode_t>()
-            == OPTION_SIMULATION_MODE_SR_OPTIMIZATION );
+    sched_master_opt( opts, mpicomm );
 
-    sched_master_sropt( opts, mpicomm );
+  } else if ( opts["calc.mode"].as<optmode_t>() == OPTION_MODE_SIMULATION ) {
+
+    sched_master_sim( opts, mpicomm );
+
+  } else if ( opts["calc.mode"].as<optmode_t>() == OPTION_MODE_ANALYSIS ) {
+
+    sched_master_ana( opts, mpicomm );
+
   }
-}
-
-
-
-void sched_master_single( const Options& opts, const mpi::communicator& mpicomm )
-{
-  schedmsg_t schedmsg;
-
-  // prepare the initial variational parameters
-  Eigen::VectorXfp vpar = get_initial_varparam( opts );
-
-  // add the observables you want to measure to the set
-  set<observables_t> obs;
-  obs.insert(
-    opts["sim.observable"].as< std::vector<observables_t> >().begin(),
-    opts["sim.observable"].as< std::vector<observables_t> >().end()
-  );
-
-  // start the stopwatch
-  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-
-  // tell everyone that we want to start a Monte Carlo cycle
-  schedmsg = SCHEDMSG_START_MCC;
-  mpi::broadcast( mpicomm, schedmsg, 0 );
-
-  // send the varparams and the set of observables to the slaves
-  mpi::broadcast( mpicomm, vpar, 0 );
-  mpi::broadcast( mpicomm, obs,  0 );
-
-  // run master part of the Monte Carlo cycle
-  const MCCResults& res = mccrun_master(
-    opts, vpar,
-    opts["sim.num-bins"].as<unsigned int>(),
-    obs, mpicomm
-  );
-
-  // stop the stopwatch and calculate the elapsed time
-  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-  const double total_time = chrono::duration<double>( t2 - t1 ).count();
-  const double time_per_mcs = total_time / static_cast<double>
-                              ( opts["sim.num-binmcs"].as<unsigned int>() *
-                                opts["sim.num-bins"].as<unsigned int>() );
-  cout << ":: Simulation has finished in " << total_time << " sec" << endl;
-  cout << "   Total performance = "
-       << 1.0 / time_per_mcs << " effMCS/sec" << endl << endl;
 
   // everything done, tell everyone to quit!
-  schedmsg = SCHEDMSG_EXIT;
+  schedmsg_t schedmsg = SCHEDMSG_EXIT;
   mpi::broadcast( mpicomm, schedmsg, 0 );
-
-  // output the results
-  cout << ":: Simulation results" << endl;
-  cout << res;
-
-  // write simulation results to file
-  res.write_to_files( opts["output-dir"].as<fs::path>() );
 }
 
 
 
-void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
+void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 {
-  schedmsg_t schedmsg;
-
   // prepare the initial variational parameters
   Eigen::VectorXfp vpar = get_initial_varparam( opts );
 
@@ -145,22 +96,21 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
 
   // open output files for the energy and the variational parameters
   ofstream vpar_hist_file( (
-    opts["output-dir"].as<fs::path>() / "vpar_hist.txt"
+    opts["calc.working-dir"].as<fs::path>() / "opt_vpar_hist.txt"
   ).string() );
 
   ofstream E_hist_file( (
-    opts["output-dir"].as<fs::path>() / "E_hist.txt"
+    opts["calc.working-dir"].as<fs::path>() / "opt_E_hist.txt"
   ).string() );
 
   // optimization settings
-  // TODO: make those as options (Robert Rueger, 2013-03-16 12:34)
-  unsigned int sr_bins_init = opts["sim.num-bins"].as<unsigned int>();
+  unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();
   fptype       sr_dt_init
-    = opts["sim.sr-dt"].as<fptype>();
+    = opts["calc.sr-dt"].as<fptype>();
   unsigned int sr_max_refinements
-    = opts["sim.sr-max-refinements"].as<unsigned int>();
+    = opts["calc.sr-max-refinements"].as<unsigned int>();
   unsigned int sr_averaging_cycles
-    = opts["sim.sr-averaging-cycles"].as<unsigned int>();
+    = opts["calc.sr-averaging-cycles"].as<unsigned int>();
 
   // helper variables
   unsigned int sr_bins = sr_bins_init;
@@ -179,6 +129,7 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
     // tell everyone that we want to start a Monte Carlo cycle
+    schedmsg_t schedmsg;
     schedmsg = SCHEDMSG_START_MCC;
     mpi::broadcast( mpicomm, schedmsg, 0 );
 
@@ -193,7 +144,7 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
     const double total_time = chrono::duration<double>( t2 - t1 ).count();
     const double time_per_mcs = total_time / static_cast<double>
-                                ( opts["sim.num-binmcs"].as<unsigned int>() *
+                                ( opts["calc.num-binmcs"].as<unsigned int>() *
                                   sr_bins );
     cout << ":: Simulation has finished in " << total_time << " sec" << endl;
     cout << "   Total performance = "
@@ -287,10 +238,6 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     cout << endl;
   }
 
-  // everything done, tell everyone to quit!
-  schedmsg = SCHEDMSG_EXIT;
-  mpi::broadcast( mpicomm, schedmsg, 0 );
-
   // calculate the average of the converged vpars
   const Eigen::VectorXfp vpar_avg =
     accumulate(
@@ -311,12 +258,69 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
 
   // write the final variational parameters to a file
   ofstream vpar_final_file( (
-    opts["output-dir"].as<fs::path>() / "vpar_final.dat"
+    opts["calc.working-dir"].as<fs::path>() / "opt_vpar_final.dat"
   ).string() );
   ar::text_oarchive vpar_final_archive( vpar_final_file );
   vpar_final_archive << vpar_avg;
 }
 
+
+
+void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
+{
+  schedmsg_t schedmsg;
+
+  // prepare the initial variational parameters
+  Eigen::VectorXfp vpar = get_initial_varparam( opts );
+
+  // add the observables you want to measure to the set
+  set<observables_t> obs;
+  obs.insert(
+    opts["calc.observable"].as< std::vector<observables_t> >().begin(),
+    opts["calc.observable"].as< std::vector<observables_t> >().end()
+  );
+
+  // start the stopwatch
+  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+
+  // tell everyone that we want to start a Monte Carlo cycle
+  schedmsg = SCHEDMSG_START_MCC;
+  mpi::broadcast( mpicomm, schedmsg, 0 );
+
+  // send the varparams and the set of observables to the slaves
+  mpi::broadcast( mpicomm, vpar, 0 );
+  mpi::broadcast( mpicomm, obs,  0 );
+
+  // run master part of the Monte Carlo cycle
+  const MCCResults& res = mccrun_master(
+    opts, vpar,
+    opts["calc.num-bins"].as<unsigned int>(),
+    obs, mpicomm
+  );
+
+  // stop the stopwatch and calculate the elapsed time
+  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+  const double total_time = chrono::duration<double>( t2 - t1 ).count();
+  const double time_per_mcs = total_time / static_cast<double>
+                              ( opts["calc.num-binmcs"].as<unsigned int>() *
+                                opts["calc.num-bins"].as<unsigned int>() );
+  cout << ":: Simulation has finished in " << total_time << " sec" << endl;
+  cout << "   Total performance = "
+       << 1.0 / time_per_mcs << " effMCS/sec" << endl << endl;
+
+  // output the results
+  cout << ":: Simulation results" << endl;
+  cout << res;
+
+  // write simulation results to file
+  res.write_to_files( opts["calc.working-dir"].as<fs::path>() );
+}
+
+
+
+void sched_master_ana( const Options& opts, const mpi::communicator& mpicomm )
+{
+}
 
 
 void sched_slave( const Options& opts, const mpi::communicator& mpicomm )

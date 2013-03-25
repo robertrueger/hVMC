@@ -86,7 +86,7 @@ MCCResults mccrun_master(
 
   for (
     unsigned int mcs = 0;
-    mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+    mcs < opts["calc.num-mcs-equil"].as<unsigned int>();
     ++mcs ) {
     // take care of the slaves
     mpiquery_finished_work();
@@ -113,7 +113,7 @@ MCCResults mccrun_master(
 
     for (
       unsigned int mcs = 0;
-      mcs < opts["sim.num-binmcs"].as<unsigned int>();
+      mcs < opts["calc.num-binmcs"].as<unsigned int>();
       ++mcs ) {
       // take care of the slaves
       mpiquery_finished_work();
@@ -232,7 +232,7 @@ void mccrun_slave(
 
   for (
     unsigned int mcs = 0;
-    mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+    mcs < opts["calc.num-mcs-equil"].as<unsigned int>();
     ++mcs )
   {
     model.mcs();
@@ -262,7 +262,7 @@ void mccrun_slave(
 
     for (
       unsigned int mcs = 0;
-      mcs < opts["sim.num-binmcs"].as<unsigned int>();
+      mcs < opts["calc.num-binmcs"].as<unsigned int>();
       ++mcs )
     {
       // perform a Monte Carlo step
