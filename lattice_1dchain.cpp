@@ -23,6 +23,8 @@
 # include <iostream>
 #endif
 
+#include <cmath>
+
 using namespace std;
 
 
@@ -116,3 +118,19 @@ Eigen::VectorXfp Lattice1DChain::r( unsigned int i, unsigned int j ) const
   result( 0 ) = static_cast<fptype>( j ) - static_cast<fptype>( i );
   return result;
 };
+
+
+
+vector<Eigen::VectorXfp> Lattice1DChain::get_qvectors() const
+{
+  vector<Eigen::VectorXfp> allq;
+  allq.reserve( L / 2 );
+
+  for ( unsigned int i = 1; i <= L / 2; ++i ) {
+    Eigen::VectorXfp q( 1 );
+    q[0] = i * 2.f * M_PI / static_cast<fptype>( L );
+    allq.push_back( q );
+  }
+
+  return allq;
+}

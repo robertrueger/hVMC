@@ -56,6 +56,7 @@ class Lattice2DSquare final : public Lattice {
     unsigned int irreducible_idxrel_maxdist() const;
 
     Eigen::VectorXfp r( unsigned int i, unsigned int j ) const;
+    std::vector<Eigen::VectorXfp> get_qvectors() const;
 };
 
 #endif // LATTICE_2DSQUARE_H_INCLUDED

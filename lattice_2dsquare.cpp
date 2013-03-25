@@ -282,3 +282,22 @@ Eigen::VectorXfp Lattice2DSquare::r( unsigned int i, unsigned int j ) const
   result( 1 ) = static_cast<fptype>( y_j ) - static_cast<fptype>( y_i );
   return result;
 }
+
+
+
+vector<Eigen::VectorXfp> Lattice2DSquare::get_qvectors() const
+{
+  vector<Eigen::VectorXfp> allq;
+  allq.reserve( S * S / 4 );
+
+  for ( unsigned int i = 1; i <= S / 2; ++i ) {
+    for ( unsigned int l = 1; l <= S / 2; ++l ) {
+      Eigen::VectorXfp q( 2 );
+      q[0] = i * 2.f * M_PI / static_cast<fptype>( S );
+      q[1] = l * 2.f * M_PI / static_cast<fptype>( S );
+      allq.push_back( q );
+    }
+  }
+
+  return allq;
+}

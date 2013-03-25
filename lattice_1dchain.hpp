@@ -48,6 +48,7 @@ class Lattice1DChain final : public Lattice {
     unsigned int irreducible_idxrel_maxdist() const;
 
     Eigen::VectorXfp r( unsigned int i, unsigned int j ) const;
+    std::vector<Eigen::VectorXfp> get_qvectors() const;
 };
 
 #endif // LATTICE_1DCHAIN_H_INCLUDED

@@ -58,7 +58,7 @@ class Lattice {
     virtual unsigned int irreducible_idxrel_maxdist() const = 0;
 
     virtual Eigen::VectorXfp r( unsigned int i, unsigned int j ) const = 0;
-
+    virtual std::vector<Eigen::VectorXfp> get_qvectors() const = 0;
 };
 
 #endif // LATTICE_H_INCLUDED
