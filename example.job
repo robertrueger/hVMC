@@ -46,7 +46,7 @@ num-electrons = 26
 #mode = opt
 
 # [opt+sim+ana]: input/output directory"
-working-dir = example
+working-dir = ./example/
 
 # [sim]: measured observables
 # available observables: E, Dk, DkDkp, DkE, dblocc, nncorr
@@ -58,8 +58,13 @@ observable = E
 observable = dblocc
 #observable = nncorr
 
+# [ana]: selected analysis modules
+# available modules: ssfac
+# (uncomment to activate)
+analysis = ssfac
+
 # [opt+sim]: maximum hopping distance for electronic configuration updates
-update-hop-maxdistance = 1
+update-hop-maxdistance = 2
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
 num-mcs-equil = 100

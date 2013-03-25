@@ -111,5 +111,7 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
         << res.nncorr.get() << endl;
   }
 
+  out << endl;
+
   return out;
 }

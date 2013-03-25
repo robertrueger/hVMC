@@ -56,5 +56,4 @@ std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
   const std::set<observables_t>& obs
 );
 
-
 #endif // MCCRUN_PREPARE_H_INCLUDED

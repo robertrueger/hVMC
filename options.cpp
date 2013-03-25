@@ -27,6 +27,7 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include "analysis.hpp"
 #include "obs.hpp"
 #include "fptype.hpp"
 #include "lattice.hpp"
@@ -99,48 +100,43 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "calc.observable,O",
     po::value< std::vector<observables_t> >(),
-    "[sim]: "
-    "measured observables (E, Dk, DkDkp, DkE, dblocc, nncorr)" )
+    "[sim]: measured observables (E, Dk, DkDkp, DkE, dblocc, nncorr)" )
+
+  ( "calc.analysis,A",
+    po::value< std::vector<analysis_t> >(),
+    "[ana]: selected analysis modules (ssfac)" )
 
   ( "calc.update-hop-maxdistance,H",
     po::value<unsigned int>()->default_value( 1 ),
-    "[opt+sim]: "
-    "maximum hopping distance for electronic configuration updates" )
+    "[opt+sim]: maximum hopping distance for electronic configuration updates" )
 
   ( "calc.num-mcs-equil,E",
     po::value<unsigned int>()->default_value( 100 ),
-    "[opt+sim]: "
-    "number of Monte Carlo steps for equilibration" )
+    "[opt+sim]: number of Monte Carlo steps for equilibration" )
 
   ( "calc.num-bins,B",
     po::value<unsigned int>()->default_value( 50 ),
-    "[opt+sim]: "
-    "number of measurement bins" )
+    "[opt+sim]: number of measurement bins" )
 
   ( "calc.num-binmcs,M",
     po::value<unsigned int>()->default_value( 50 ),
-    "[opt+sim]: "
-    "number of Monte Carlo steps per bin" )
+    "[opt+sim]: number of Monte Carlo steps per bin" )
 
   ( "calc.rng-seed,S",
     po::value<unsigned int>(),
-    "[opt+sim]: "
-    "random number generator seed" )
+    "[opt+sim]: random number generator seed" )
 
   ( "calc.sr-dt,d",
     po::value<fptype>()->default_value( 1.f ),
-    "[opt]: "
-    "controls the SR convergence: vpar += dt * dvpar" )
+    "[opt]: controls the SR convergence: vpar += dt * dvpar" )
 
   ( "calc.sr-max-refinements,R",
     po::value<unsigned int>()->default_value( 4 ),
-    "[opt]: "
-    "number of refinements during the SR cycle" )
+    "[opt]: number of refinements during the SR cycle" )
 
   ( "calc.sr-averaging-cycles,A",
     po::value<unsigned int>()->default_value( 10 ),
-    "[opt]: "
-    "number of SR cycles to average the converged variational parameters" );
+    "[opt]: number of SR cycles to average the converged variational parameters" );
 
   po::options_description fpctrl( "[opt+sim]: floating point precision control" );
   fpctrl.add_options()
@@ -346,10 +342,14 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
-    if ( vm["calc.mode"].as<optmode_t>()
-         == OPTION_MODE_SIMULATION &&
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_SIMULATION &&
          vm.count( "calc.observable" ) == 0 ) {
       throw logic_error( "you need to measure at least one observable" );
+    }
+
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_ANALYSIS &&
+         vm.count( "calc.analysis" ) == 0 ) {
+      throw logic_error( "you need to select at least one analysis module" );
     }
 
   } catch ( const logic_error& e ) {
@@ -398,6 +398,17 @@ istream& operator>>( std::istream& in, optmode_t& m )
   return in;
 }
 
+istream& operator>>( std::istream& in, analysis_t& a )
+{
+  string token;
+  in >> token;
+  if ( token == "ssfac" ) {
+    a = ANALYSIS_STATIC_STRUCTURE_FACTOR;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
 
 istream& operator>>( std::istream& in, observables_t& obs )
 {
