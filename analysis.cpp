@@ -50,7 +50,7 @@ void analysis_static_structure_factor(
             "was found in the result file" << endl;
     return;
   }
-  const Eigen::VectorXfp& nn = res.nncorr.get();
+  const Eigen::MatrixXfp& nn = res.nncorr.get();
 
   // make lattice and all the q vectors that we will use in the Fourier transform
   const shared_ptr<Lattice>& lat = prepare_lattice( opts );
@@ -61,6 +61,9 @@ void analysis_static_structure_factor(
     opts["calc.working-dir"].as<fs::path>() / "ana_ssfac.txt"
   ).string() );
 
+  // calculate the onsite part of the sum
+  const fptype Nq_onsite = nn.diagonal().sum() / static_cast<fptype>( lat->L );
+
   for ( auto q = allq.begin(); q != allq.end(); ++q ) {
     fptype sum = 0.f;
     for ( unsigned int l = 0; l < lat->L; ++l ) {
@@ -68,7 +71,7 @@ void analysis_static_structure_factor(
         sum += cos( q->dot( lat->r( 0, k ) - lat->r( 0, l ) ) ) * nn( l, k);
       }
     }
-    const fptype Nq = 2.f / static_cast<fptype>( lat->L ) * sum;
+    const fptype Nq = 2.f / static_cast<fptype>( lat->L ) * sum + Nq_onsite;
     ssfac_file << q->transpose() << " " << Nq << endl;
     if ( opts.count("verbose") ) {
       cout << q->transpose() << " " << Nq << endl;
