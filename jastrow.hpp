@@ -48,13 +48,13 @@ class Jastrow final
 
     Jastrow(
       const std::shared_ptr<Lattice>& lat_init,
-      const Eigen::VectorXfp& v_init
+      const Eigen::VectorXd& v_init
     );
 
     fptype operator()( unsigned int i, unsigned int j ) const;
     fptype exp( unsigned int i, unsigned int j ) const;
     fptype exp_onsite() const;
-    void set( unsigned int i, unsigned int j, fptype v_new  );
+    void set( unsigned int i, unsigned int j, double v_new  );
 
     unsigned int get_num_vpar() const;
     unsigned int get_vparnum( unsigned int irr_idxrel ) const;

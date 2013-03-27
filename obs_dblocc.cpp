@@ -45,8 +45,8 @@ void ObservableDoubleOccupancy::measure(
 void ObservableDoubleOccupancy::completebin()
 {
   dblocc_binmeans.push_back(
-    accumulate( dblocc_currentbin.begin(), dblocc_currentbin.end(), 0.f ) /
-    static_cast<fptype>( dblocc_currentbin.size() )
+    accumulate( dblocc_currentbin.begin(), dblocc_currentbin.end(), 0.0 ) /
+    static_cast<double>( dblocc_currentbin.size() )
   );
   dblocc_currentbin.clear();
 }
@@ -57,10 +57,10 @@ void ObservableDoubleOccupancy::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<fptype> > binmeans_collector;
+  vector< vector<double> > binmeans_collector;
   mpi::gather( mpicomm, dblocc_binmeans, binmeans_collector, 0 );
 
-  vector< fptype > dblocc_binmeans_all;
+  vector<double> dblocc_binmeans_all;
   for ( auto it = binmeans_collector.begin();
         it != binmeans_collector.end();
         ++it ) {
@@ -69,7 +69,7 @@ void ObservableDoubleOccupancy::collect_and_write_results(
     );
   }
 
-  results.dblocc = UncertainQuantity<fptype>( dblocc_binmeans_all );
+  results.dblocc = UncertainQuantity<double>( dblocc_binmeans_all );
 }
 
 

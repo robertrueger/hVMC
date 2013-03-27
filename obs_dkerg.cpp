@@ -47,7 +47,7 @@ void ObservableDeltaKEnergy::measure(
     cache.E = model.E_l();
   }
 
-  const Eigen::VectorXfp& DkE_current = cache.DeltaK.get() * cache.E.get();
+  const Eigen::VectorXd& DkE_current = cache.DeltaK.get() * cache.E.get();
 
   if ( DkE_sum.size() == 0 ) {
     // first use of DkE_sum
@@ -69,7 +69,7 @@ void ObservableDeltaKEnergy::measure(
 void ObservableDeltaKEnergy::completebin()
 {
   DkE_binmeans.push_back(
-    DkE_sum / static_cast<fptype>( this_bin_num_measurements )
+    DkE_sum / static_cast<double>( this_bin_num_measurements )
   );
 
 #if VERBOSE >= 1
@@ -87,10 +87,10 @@ void ObservableDeltaKEnergy::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<Eigen::VectorXfp> > binmeans_collector;
+  vector< vector<Eigen::VectorXd> > binmeans_collector;
   mpi::gather( mpicomm, DkE_binmeans, binmeans_collector, 0 );
 
-  vector< Eigen::VectorXfp > DkE_binmeans_all;
+  vector<Eigen::VectorXd> DkE_binmeans_all;
   for ( auto it = binmeans_collector.begin();
         it != binmeans_collector.end();
         ++it ) {
@@ -99,7 +99,7 @@ void ObservableDeltaKEnergy::collect_and_write_results(
   assert( !DkE_binmeans_all.empty() );
 
 
-  Eigen::VectorXfp DkE_binmeans_all_sum;
+  Eigen::VectorXd DkE_binmeans_all_sum;
   DkE_binmeans_all_sum.setZero( DkE_binmeans_all[0].size() );
   for ( auto it = DkE_binmeans_all.begin(); it != DkE_binmeans_all.end(); ++it ) {
     DkE_binmeans_all_sum += *it;
@@ -108,7 +108,7 @@ void ObservableDeltaKEnergy::collect_and_write_results(
 #endif
   }
   results.Deltak_E
-    = DkE_binmeans_all_sum / static_cast<fptype>( DkE_binmeans_all.size() );
+    = DkE_binmeans_all_sum / static_cast<double>( DkE_binmeans_all.size() );
 }
 
 

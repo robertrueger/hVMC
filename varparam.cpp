@@ -35,7 +35,7 @@ namespace fs  = boost::filesystem;
 namespace ar  = boost::archive;
 
 
-Eigen::VectorXfp get_initial_varparam( const Options& opts )
+Eigen::VectorXd get_initial_varparam( const Options& opts )
 {
   // determine how many variational parameters there are
   unsigned int num_vpars
@@ -51,7 +51,7 @@ Eigen::VectorXfp get_initial_varparam( const Options& opts )
        "opt_vpar_final.dat"
     ).string() );
     ar::text_iarchive vpar_archive( vpar_file );
-    Eigen::VectorXfp vpar;
+    Eigen::VectorXd vpar;
     vpar_archive >> vpar;
     if ( vpar.size() != num_vpars ) {
       cerr << "ERROR: variational parameter file does not have the right number "
@@ -61,6 +61,6 @@ Eigen::VectorXfp get_initial_varparam( const Options& opts )
     return vpar;
   } else {
     // set all variational parameters to zero
-    return Eigen::VectorXfp::Zero( num_vpars );
+    return Eigen::VectorXd::Zero( num_vpars );
   }
 }

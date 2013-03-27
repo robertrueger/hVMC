@@ -29,7 +29,6 @@
 
 #include "analysis.hpp"
 #include "obs.hpp"
-#include "fptype.hpp"
 #include "lattice.hpp"
 #include "utils.hpp"
 
@@ -60,19 +59,19 @@ Options read_options( int argc, char* argv[], bool is_master )
   physparam.add_options()
 
   ( "phys.nn-hopping,1",
-    po::value<fptype>()->required(),
+    po::value<double>()->required(),
     "nearest neighbor hopping matrix element t" )
 
   ( "phys.2nd-nn-hopping,2",
-    po::value<fptype>()->default_value( 0.f ),
+    po::value<double>()->default_value( 0.0 ),
     "2nd nearest neighbor hopping matrix element t'" )
 
   ( "phys.3rd-nn-hopping,3",
-    po::value<fptype>()->default_value( 0.f ),
+    po::value<double>()->default_value( 0.0 ),
     "3rd nearest neighbor hopping matrix element t''" )
 
   ( "phys.onsite-energy,U",
-    po::value<fptype>()->required(),
+    po::value<double>()->required(),
     "on-site energy U" )
 
   ( "phys.lattice,l",
@@ -127,7 +126,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     "[opt+sim]: random number generator seed" )
 
   ( "calc.sr-dt,d",
-    po::value<fptype>()->default_value( 1.f ),
+    po::value<double>()->default_value( 1.0 ),
     "[opt]: controls the SR convergence: vpar += dt * dvpar" )
 
   ( "calc.sr-max-refinements,R",
@@ -142,7 +141,7 @@ Options read_options( int argc, char* argv[], bool is_master )
   fpctrl.add_options()
 
   ( "fpctrl.W-deviation-target",
-    po::value<fptype>()->default_value( 0.001f, "0.001" ),
+    po::value<double>()->default_value( 0.001, "0.001" ),
     "deviation target for the matrix W" )
 
   ( "fpctrl.W-updates-until-recalc",
@@ -155,7 +154,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     "number of quick updates until recalculation of the matrix W" )
 
   ( "fpctrl.T-deviation-target",
-    po::value<fptype>()->default_value( 0.001f, "0.001" ),
+    po::value<double>()->default_value( 0.001, "0.001" ),
     "deviation target for the vector T" )
 
   ( "fpctrl.T-updates-until-recalc",

@@ -31,7 +31,7 @@ using namespace std;
 
 
 Jastrow::Jastrow(
-  const shared_ptr<Lattice>& lat_init, const Eigen::VectorXfp& v_init )
+  const shared_ptr<Lattice>& lat_init, const Eigen::VectorXd& v_init )
   : lat( lat_init )
 {
   std::set<unsigned int> irr_idxrels = lat->irreducible_idxrel_list();
@@ -97,7 +97,7 @@ fptype Jastrow::exp_onsite() const
 
 
 
-void Jastrow::set( unsigned int i, unsigned int j, fptype v_new )
+void Jastrow::set( unsigned int i, unsigned int j, double v_new )
 {
   idxrel_expv.at( lat->reduce_idxrel( i, j ) ) = std::exp( v_new );
 }

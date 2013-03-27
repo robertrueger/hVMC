@@ -27,7 +27,6 @@
 
 #include "hmodvmc.hpp"
 #include "mccresults.hpp"
-#include "fptype.hpp"
 
 
 enum observables_t {
@@ -42,9 +41,9 @@ enum observables_t {
 
 struct ObservableCache final
 {
-  boost::optional<fptype> E;
-  boost::optional<Eigen::VectorXfp> DeltaK;
-  boost::optional<fptype> dblocc;
+  boost::optional<double> E;
+  boost::optional<Eigen::VectorXd> DeltaK;
+  boost::optional<double> dblocc;
   boost::optional< Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> > n;
 
   void clear() {

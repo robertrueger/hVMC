@@ -31,14 +31,13 @@
 
 #include "hmodvmc.hpp"
 #include "lattice.hpp"
-#include "fptype.hpp"
 #include "options.hpp"
 #include "obs.hpp"
 #include "detwf.hpp"
 
 
 HubbardModelVMC prepare_model(
-  const Options& opts, const Eigen::VectorXfp& vpar,
+  const Options& opts, const Eigen::VectorXd& vpar,
   const boost::mpi::communicator& mpicomm
 );
 

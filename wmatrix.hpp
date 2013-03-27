@@ -72,7 +72,7 @@ class WMatrix final
       const Lattice* lat_init,
       const SingleParticleOrbitals& detwf_init,
       const ElectronConfiguration& econf_init,
-      fptype deviation_target,
+      double deviation_target,
       unsigned int updates_until_recalc_init
     );
 

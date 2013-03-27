@@ -32,7 +32,7 @@
 struct FPDevStat final {
 
   // the desired deviation
-  fptype target;
+  double target;
 
   // the number of recalculations
   unsigned int recalcs;
@@ -50,16 +50,16 @@ struct FPDevStat final {
   unsigned int mag1_hits;
 
   FPDevStat()
-    : target( 0.f ),
+    : target( 0.0 ),
       recalcs( 0 ), misses( 0 ), hits( 0 ),
       mag1_misses( 0 ), mag1_hits( 0 ) { }
 
-  FPDevStat( fptype target_init )
+  FPDevStat( double target_init )
     : target( target_init ),
       recalcs( 0 ), misses( 0 ), hits( 0 ),
       mag1_misses( 0 ), mag1_hits( 0 ) { }
 
-  void add( fptype dev );
+  void add( double dev );
 
   // make FPDevStat serializable
   friend class boost::serialization::access;
@@ -76,7 +76,7 @@ struct FPDevStat final {
 
 FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs );
 
-fptype calc_deviation(
+double calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact
 );
 

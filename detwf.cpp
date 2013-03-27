@@ -28,7 +28,7 @@ using namespace std;
 
 
 SingleParticleOrbitals wf_tight_binding(
-  const vector<fptype>& t,
+  const vector<double>& t,
   unsigned int N, const shared_ptr<Lattice>& lat )
 {
   // make sure we pass the right number of variational parameters
@@ -75,7 +75,7 @@ SingleParticleOrbitals wf_tight_binding(
 #if VERBOSE >= 2
   cout << "wf_tight_binding() : M = " << endl << M << endl
        << "wf_tight_binding() : slater determinant ground state energy = "
-       << 2.f* eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
+       << 2.f * eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
 #endif
 
   //return SingleParticleOrbitals( M, E, false );

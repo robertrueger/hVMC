@@ -24,15 +24,13 @@
 
 #include <vector>
 
-#include "fptype.hpp"
-
 
 class ObservableEnergy final : public Observable
 {
   private:
 
-    std::vector<fptype> E_l_currentbin;
-    std::vector<fptype> E_l_binmeans;
+    std::vector<double> E_l_currentbin;
+    std::vector<double> E_l_binmeans;
 
   public:
 

@@ -20,7 +20,7 @@
 #include "fpctrl.hpp"
 
 
-void FPDevStat::add( fptype dev )
+void FPDevStat::add( double dev )
 {
   ++recalcs;
   if ( dev < target ) {
@@ -28,9 +28,9 @@ void FPDevStat::add( fptype dev )
   } else {
     ++misses;
   }
-  if ( dev < .1f * target ) {
+  if ( dev < 0.1 * target ) {
     ++mag1_hits;
-  } else if ( dev > 10.f * target ) {
+  } else if ( dev > 10.0 * target ) {
     ++mag1_misses;
   }
 }
@@ -49,11 +49,11 @@ FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs )
 }
 
 
-fptype calc_deviation(
+double calc_deviation(
   const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact )
 {
   assert( approx.size() == exact.size() );
-  fptype exact_square_sum = exact.squaredNorm();
-  fptype  diff_square_sum = ( approx - exact ).squaredNorm();
+  double exact_square_sum = exact.squaredNorm();
+  double  diff_square_sum = ( approx - exact ).squaredNorm();
   return sqrt( diff_square_sum / exact_square_sum );
 }

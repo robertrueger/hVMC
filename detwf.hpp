@@ -51,7 +51,7 @@ struct SingleParticleOrbitals final {
 
 
 SingleParticleOrbitals wf_tight_binding(
-  const std::vector<fptype>& t,
+  const std::vector<double>& t,
   unsigned int N, const std::shared_ptr<Lattice>& lat
 );
 

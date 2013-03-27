@@ -44,7 +44,7 @@ void ObservableDeltaK::measure(
     cache.DeltaK = model.Delta_k();
   }
 
-  const Eigen::VectorXfp& Dk_current = cache.DeltaK.get();
+  const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
 
   if ( Dk_sum.size() == 0 ) {
     // first use of Dk_sum
@@ -66,7 +66,7 @@ void ObservableDeltaK::measure(
 void ObservableDeltaK::completebin()
 {
   Dk_binmeans.push_back(
-    Dk_sum / static_cast<fptype>( this_bin_num_measurements )
+    Dk_sum / static_cast<double>( this_bin_num_measurements )
   );
 
 #if VERBOSE >= 1
@@ -84,10 +84,10 @@ void ObservableDeltaK::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<Eigen::VectorXfp> > binmeans_collector;
+  vector< vector<Eigen::VectorXd> > binmeans_collector;
   mpi::gather( mpicomm, Dk_binmeans, binmeans_collector, 0 );
 
-  vector< Eigen::VectorXfp > Dk_binmeans_all;
+  vector< Eigen::VectorXd > Dk_binmeans_all;
   for ( auto it = binmeans_collector.begin();
         it != binmeans_collector.end();
         ++it ) {
@@ -96,7 +96,7 @@ void ObservableDeltaK::collect_and_write_results(
   assert( !Dk_binmeans_all.empty() );
 
 
-  Eigen::VectorXfp Dk_binmeans_all_sum;
+  Eigen::VectorXd Dk_binmeans_all_sum;
   Dk_binmeans_all_sum.setZero( Dk_binmeans_all[0].size() );
   for ( auto it = Dk_binmeans_all.begin(); it != Dk_binmeans_all.end(); ++it ) {
     Dk_binmeans_all_sum += *it;
@@ -105,7 +105,7 @@ void ObservableDeltaK::collect_and_write_results(
 #endif
   }
   results.Deltak
-    = Dk_binmeans_all_sum / static_cast<fptype>( Dk_binmeans_all.size() );
+    = Dk_binmeans_all_sum / static_cast<double>( Dk_binmeans_all.size() );
 }
 
 

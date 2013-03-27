@@ -28,7 +28,6 @@
 #include <eigen3/Eigen/Core>
 
 #include "macros.h"
-#include "fptype.hpp"
 #include "detwf.hpp"
 #include "fpctrl.hpp"
 #include "lattice.hpp"
@@ -56,8 +55,8 @@ class HubbardModelVMC final
 
     // Hubbard model parameters
     const unsigned int update_hop_maxdist;
-    const std::vector<fptype> t;
-    const fptype U;
+    const std::vector<double> t;
+    const double U;
 
 
     // ----- dependent and internal objects -----
@@ -87,10 +86,10 @@ class HubbardModelVMC final
       const Jastrow& v_init,
       unsigned int N_init,
       unsigned int update_hop_maxdist_init,
-      const std::vector<fptype>& t_init, fptype U_init,
-      fptype W_deviation_target,
+      const std::vector<double>& t_init, double U_init,
+      double W_deviation_target,
       unsigned int updates_until_W_recalc,
-      fptype T_deviation_target,
+      double T_deviation_target,
       unsigned int updates_until_T_recalc
     );
 
@@ -98,9 +97,9 @@ class HubbardModelVMC final
     void mcs();
 
     // observable measurements
-    fptype E_l() const;
-    Eigen::VectorXfp Delta_k() const;
-    fptype dblocc_dens() const;
+    double E_l() const;
+    Eigen::VectorXd Delta_k() const;
+    double dblocc_dens() const;
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
 
     // floating point precision control

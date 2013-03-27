@@ -53,7 +53,7 @@ class TVector final
       const Lattice* lat_init,
       const Jastrow& v_init,
       const ElectronConfiguration& econf_init,
-      fptype deviation_target,
+      double deviation_target,
       unsigned int updates_until_recalc_init
     );
 

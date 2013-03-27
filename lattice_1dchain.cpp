@@ -109,26 +109,26 @@ unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const
 
 
 
-Eigen::VectorXfp Lattice1DChain::r( unsigned int i, unsigned int j ) const
+Eigen::VectorXd Lattice1DChain::r( unsigned int i, unsigned int j ) const
 {
   assert( i < L );
   assert( j < L );
 
-  Eigen::VectorXfp result = Eigen::VectorXfp::Zero( 1 );
-  result( 0 ) = static_cast<fptype>( j ) - static_cast<fptype>( i );
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 1 );
+  result( 0 ) = static_cast<double>( j ) - static_cast<double>( i );
   return result;
 };
 
 
 
-vector<Eigen::VectorXfp> Lattice1DChain::get_qvectors() const
+vector<Eigen::VectorXd> Lattice1DChain::get_qvectors() const
 {
-  vector<Eigen::VectorXfp> allq;
+  vector<Eigen::VectorXd> allq;
   allq.reserve( L / 2 );
 
   for ( unsigned int i = 1; i <= L / 2; ++i ) {
-    Eigen::VectorXfp q( 1 );
-    q[0] = i * 2.f * M_PI / static_cast<fptype>( L );
+    Eigen::VectorXd q( 1 );
+    q[0] = i * 2.0 * M_PI / static_cast<double>( L );
     allq.push_back( q );
   }
 

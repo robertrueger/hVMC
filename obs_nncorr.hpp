@@ -27,8 +27,6 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
-
 
 class ObservableDensityDensityCorrelation final : public Observable
 {
@@ -37,7 +35,7 @@ class ObservableDensityDensityCorrelation final : public Observable
     Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> nncorr_sum;
     unsigned int this_bin_num_measurements;
 
-    std::vector<Eigen::MatrixXfp> nncorr_binmeans;
+    std::vector<Eigen::MatrixXd> nncorr_binmeans;
 
   public:
 

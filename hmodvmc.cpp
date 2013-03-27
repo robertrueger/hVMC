@@ -23,6 +23,8 @@
 # include <iostream>
 #endif
 
+#include "fptype.hpp"
+
 using namespace std;
 
 
@@ -34,11 +36,11 @@ HubbardModelVMC::HubbardModelVMC(
   const Jastrow& v_init,
   unsigned int N_init,
   unsigned int update_hop_maxdist_init,
-  const vector<fptype>& t_init,
-  fptype U_init,
-  fptype W_deviation_target,
+  const vector<double>& t_init,
+  double U_init,
+  double W_deviation_target,
   unsigned int updates_until_W_recalc,
-  fptype T_deviation_target,
+  double T_deviation_target,
   unsigned int updates_until_T_recalc )
   : rng( rng_init ),
     lat( lat_init ), detwf( detwf_init ), v( v_init ),
@@ -157,10 +159,10 @@ bool HubbardModelVMC::metstep()
 
 
 
-fptype HubbardModelVMC::E_l() const
+double HubbardModelVMC::E_l() const
 {
   // calculate expectation value of the T part of H
-  fptype E_l_kin = 0.f;
+  double E_l_kin = 0.0;
 
   // loop over different elektrons k
   for ( unsigned int k = 0; k < econf.N(); ++k ) {
@@ -170,16 +172,16 @@ fptype HubbardModelVMC::E_l() const
 
     // loop over different neighbor orders X
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
-      if ( t[X - 1] == 0.f ) {
+      if ( t[X - 1] == 0.0 ) {
         continue;
       }
 
-      fptype sum_Xnn = 0.f;
+      double sum_Xnn = 0.0;
       lat->get_Xnn( k_pos, X, &k_pos_Xnn );
 
       // calculate part of R_j that is constant for this X and k
       assert( k_pos_Xnn.size() != 0 );
-      const fptype R_j_constXk =
+      const double R_j_constXk =
         v.exp_onsite() / v.exp( k_pos_Xnn[0], k_pos )
         / T( lat->get_spinup_site( k_pos ) );
       // (it is possible to do the idxrel reduction only for one of the
@@ -188,7 +190,7 @@ fptype HubbardModelVMC::E_l() const
       // loop over different neighbours l of order X
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
         if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const fptype R_j = T( lat->get_spinup_site( *l_it ) ) * R_j_constXk;
+          const double R_j = T( lat->get_spinup_site( *l_it ) ) * R_j_constXk;
           sum_Xnn += R_j * W( *l_it, k );
         }
       }
@@ -197,9 +199,9 @@ fptype HubbardModelVMC::E_l() const
     }
   }
 
-  const fptype E_l_result =
+  const double E_l_result =
     ( E_l_kin + U * econf.get_num_dblocc() ) /
-    static_cast<fptype>( lat->L );
+    static_cast<double>( lat->L );
 
 #if VERBOSE >= 2
   cout << "HubbardModelVMC::E_l() = " << E_l_result << endl;
@@ -210,15 +212,15 @@ fptype HubbardModelVMC::E_l() const
 
 
 
-Eigen::VectorXfp HubbardModelVMC::Delta_k() const
+Eigen::VectorXd HubbardModelVMC::Delta_k() const
 {
-  Eigen::VectorXfp sum = Eigen::VectorXfp::Zero( v.get_num_vpar() );
+  Eigen::VectorXd sum = Eigen::VectorXd::Zero( v.get_num_vpar() );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
     for ( unsigned int j = i; j < lat->L; ++j ) {
 
       unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
-      fptype dblcount_correction = ( j == i ) ? .5f : 1.f;
+      double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
 
       if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
         unsigned int vparnum = v.get_vparnum( irr_idxrel );
@@ -239,11 +241,11 @@ Eigen::VectorXfp HubbardModelVMC::Delta_k() const
 
 
 
-fptype HubbardModelVMC::dblocc_dens() const
+double HubbardModelVMC::dblocc_dens() const
 {
   return
-    static_cast<fptype>( econf.get_num_dblocc() ) /
-    static_cast<fptype>( lat->L );
+    static_cast<double>( econf.get_num_dblocc() ) /
+    static_cast<double>( lat->L );
 }
 
 

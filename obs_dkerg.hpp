@@ -22,17 +22,15 @@
 
 #include "obs.hpp"
 
-#include "fptype.hpp"
-
 
 class ObservableDeltaKEnergy final : public Observable
 {
   private:
 
-    Eigen::VectorXfp DkE_sum;
+    Eigen::VectorXd DkE_sum;
     unsigned int this_bin_num_measurements;
 
-    std::vector<Eigen::VectorXfp> DkE_binmeans;
+    std::vector<Eigen::VectorXd> DkE_binmeans;
 
   public:
 

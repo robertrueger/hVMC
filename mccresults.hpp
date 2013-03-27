@@ -32,8 +32,6 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
-
 
 template <typename Ti>
 struct UncertainQuantity {
@@ -83,12 +81,12 @@ struct MCCResults {
 
   bool success;
 
-  boost::optional< UncertainQuantity<fptype> > E;
-  boost::optional< Eigen::VectorXfp > Deltak;
-  boost::optional< Eigen::MatrixXfp > Deltak_Deltakprime;
-  boost::optional< Eigen::VectorXfp > Deltak_E;
-  boost::optional< UncertainQuantity<fptype> > dblocc;
-  boost::optional< Eigen::MatrixXfp > nncorr;
+  boost::optional< UncertainQuantity<double> > E;
+  boost::optional< Eigen::VectorXd > Deltak;
+  boost::optional< Eigen::MatrixXd > Deltak_Deltakprime;
+  boost::optional< Eigen::VectorXd > Deltak_E;
+  boost::optional< UncertainQuantity<double> > dblocc;
+  boost::optional< Eigen::MatrixXd > nncorr;
 
   void write_to_files( const boost::filesystem::path& dir ) const;
 

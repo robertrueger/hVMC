@@ -30,7 +30,6 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
 #include "lattice.hpp"
 #include "mccrun_prepare.hpp"
 
@@ -50,11 +49,11 @@ void analysis_static_structure_factor(
             "was found in the result file" << endl;
     return;
   }
-  const Eigen::MatrixXfp& nn = res.nncorr.get();
+  const Eigen::MatrixXd& nn = res.nncorr.get();
 
   // make lattice and all the q vectors that we will use in the Fourier transform
   const shared_ptr<Lattice>& lat = prepare_lattice( opts );
-  const vector<Eigen::VectorXfp>& allq = lat->get_qvectors();
+  const vector<Eigen::VectorXd>& allq = lat->get_qvectors();
 
   // open a file to output our results to
   ofstream ssfac_file( (
@@ -62,16 +61,16 @@ void analysis_static_structure_factor(
   ).string() );
 
   // calculate the onsite part of the sum
-  const fptype Nq_onsite = nn.diagonal().sum() / static_cast<fptype>( lat->L );
+  const double Nq_onsite = nn.diagonal().sum() / static_cast<double>( lat->L );
 
   for ( auto q = allq.begin(); q != allq.end(); ++q ) {
-    fptype sum = 0.f;
+    double sum = 0.0;
     for ( unsigned int l = 0; l < lat->L; ++l ) {
       for ( unsigned int k = l + 1; k < lat->L; ++k ) {
         sum += cos( q->dot( lat->r( 0, k ) - lat->r( 0, l ) ) ) * nn( l, k);
       }
     }
-    const fptype Nq = 2.f / static_cast<fptype>( lat->L ) * sum + Nq_onsite;
+    const double Nq = 2.0 / static_cast<double>( lat->L ) * sum + Nq_onsite;
     ssfac_file << q->transpose() << " " << Nq << endl;
     if ( opts.count("verbose") ) {
       cout << q->transpose() << " " << Nq << endl;

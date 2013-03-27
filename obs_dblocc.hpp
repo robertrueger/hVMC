@@ -24,15 +24,13 @@
 
 #include <vector>
 
-#include "fptype.hpp"
-
 
 class ObservableDoubleOccupancy final : public Observable
 {
   private:
 
-    std::vector<fptype> dblocc_currentbin;
-    std::vector<fptype> dblocc_binmeans;
+    std::vector<double> dblocc_currentbin;
+    std::vector<double> dblocc_binmeans;
 
   public:
 

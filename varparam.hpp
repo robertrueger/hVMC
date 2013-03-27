@@ -23,9 +23,8 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
 #include "options.hpp"
 
-Eigen::VectorXfp get_initial_varparam( const Options& opts );
+Eigen::VectorXd get_initial_varparam( const Options& opts );
 
 #endif // VARPARAM_H_INCLUDED

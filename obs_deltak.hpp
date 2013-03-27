@@ -27,17 +27,15 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
-
 
 class ObservableDeltaK final : public Observable
 {
   private:
 
-    Eigen::VectorXfp Dk_sum;
+    Eigen::VectorXd Dk_sum;
     unsigned int this_bin_num_measurements;
 
-    std::vector<Eigen::VectorXfp> Dk_binmeans;
+    std::vector<Eigen::VectorXd> Dk_binmeans;
 
   public:
 

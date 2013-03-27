@@ -35,7 +35,7 @@ TVector::TVector(
   const Lattice* lat_init,
   const Jastrow& v_init,
   const ElectronConfiguration& econf_init,
-  fptype deviation_target,
+  double deviation_target,
   unsigned int updates_until_recalc_init )
   : lat( lat_init ), v( v_init ), econf( econf_init ),
     T( Eigen::VectorXfp( lat->L ) ),
@@ -83,7 +83,7 @@ void TVector::update( const ElectronHop& hop )
     const Eigen::MatrixXfp& T_approx = calc_qupdated( hop );
     T = calc_new();
 
-    fptype dev = calc_deviation( T_approx, T );
+    double dev = calc_deviation( T_approx, T );
     devstat.add( dev );
 
 #if VERBOSE >= 2
@@ -115,7 +115,7 @@ void TVector::update( const ElectronHop& hop )
 
 #ifndef NDEBUG
     const Eigen::MatrixXfp& T_chk = calc_new();
-    fptype dev = calc_deviation( T, T_chk );
+    double dev = calc_deviation( T, T_chk );
 
 # if VERBOSE >= 2
     cout << "TVector::update() : "
@@ -143,7 +143,7 @@ Eigen::VectorXfp TVector::calc_new() const
   Eigen::VectorXfp T_new( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
-    fptype sum = 0.f;
+    double sum = 0.0;
     for ( unsigned int j = 0; j < lat->L; ++j ) {
       sum += v( i, j ) * static_cast<fptype>(
                ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );

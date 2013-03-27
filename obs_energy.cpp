@@ -44,8 +44,8 @@ void ObservableEnergy::measure(
 void ObservableEnergy::completebin()
 {
   E_l_binmeans.push_back(
-    accumulate( E_l_currentbin.begin(), E_l_currentbin.end(), 0.f ) /
-    static_cast<fptype>( E_l_currentbin.size() )
+    accumulate( E_l_currentbin.begin(), E_l_currentbin.end(), 0.0 ) /
+    static_cast<double>( E_l_currentbin.size() )
   );
   E_l_currentbin.clear();
 }
@@ -56,17 +56,17 @@ void ObservableEnergy::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<fptype> > binmeans_collector;
+  vector< vector<double> > binmeans_collector;
   mpi::gather( mpicomm, E_l_binmeans, binmeans_collector, 0 );
 
-  vector< fptype > E_l_binmeans_all;
+  vector<double> E_l_binmeans_all;
   for ( auto it = binmeans_collector.begin();
         it != binmeans_collector.end();
         ++it ) {
     E_l_binmeans_all.insert( E_l_binmeans_all.end(), it->begin(), it->end() );
   }
 
-  results.E = UncertainQuantity<fptype>( E_l_binmeans_all );
+  results.E = UncertainQuantity<double>( E_l_binmeans_all );
 }
 
 

@@ -27,8 +27,6 @@
 # include <windows.h>
 #endif
 
-#include "fptype.hpp"
-
 using namespace std;
 namespace fs = boost::filesystem;
 
@@ -37,7 +35,7 @@ void ostream_setup( ostream& stream )
 {
   // stream << setiosflags( ios::scientific );
   stream.setf( ios::showpos );
-  stream.precision( numeric_limits<fptype>::digits10 + 1 );
+  stream.precision( numeric_limits<double>::digits10 + 1 );
 }
 
 

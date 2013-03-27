@@ -44,7 +44,7 @@ WMatrix::WMatrix(
   const Lattice* lat_init,
   const SingleParticleOrbitals& detwf_init,
   const ElectronConfiguration& econf_init,
-  fptype deviation_target,
+  double deviation_target,
   unsigned int updates_until_recalc_init )
   : lat( lat_init ), detwf( detwf_init ), econf( econf_init ),
     Wbu_1(
@@ -215,7 +215,7 @@ void WMatrix::update( const ElectronHop& hop )
     // (pushs updated W into the inactive buffers)
     calc_new();
 
-    fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
+    double dev = calc_deviation( *Wbu_inactive, *Wbu_active );
     if ( detwf.ssym == true ) {
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }
@@ -270,7 +270,7 @@ void WMatrix::update( const ElectronHop& hop )
     // updated W should now be in the active buffer
     // debug check recalc W should be in the inactive buffer
 
-    fptype dev = calc_deviation( *Wbu_inactive, *Wbu_active );
+    double dev = calc_deviation( *Wbu_inactive, *Wbu_active );
     if ( detwf.ssym == true ) {
       dev += calc_deviation( *Wd_inactive, *Wd_active );
     }

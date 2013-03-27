@@ -68,7 +68,7 @@ void ObservableDensityDensityCorrelation::measure(
 void ObservableDensityDensityCorrelation::completebin()
 {
   nncorr_binmeans.push_back(
-    nncorr_sum.cast<fptype>() / static_cast<fptype>( this_bin_num_measurements )
+    nncorr_sum.cast<double>() / static_cast<double>( this_bin_num_measurements )
   );
 
 #if VERBOSE >= 1
@@ -86,10 +86,10 @@ void ObservableDensityDensityCorrelation::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<Eigen::MatrixXfp> > binmeans_collector;
+  vector< vector<Eigen::MatrixXd> > binmeans_collector;
   mpi::gather( mpicomm, nncorr_binmeans, binmeans_collector, 0 );
 
-  vector< Eigen::MatrixXfp > nncorr_binmeans_all;
+  vector<Eigen::MatrixXd> nncorr_binmeans_all;
   for ( auto it = binmeans_collector.begin();
         it != binmeans_collector.end();
         ++it ) {
@@ -98,7 +98,7 @@ void ObservableDensityDensityCorrelation::collect_and_write_results(
   assert( !nncorr_binmeans_all.empty() );
 
 
-  Eigen::MatrixXfp nncorr_binmeans_all_sum;
+  Eigen::MatrixXd nncorr_binmeans_all_sum;
   nncorr_binmeans_all_sum.setZero(
     nncorr_binmeans_all[0].rows(),
     nncorr_binmeans_all[0].cols()
@@ -112,7 +112,7 @@ void ObservableDensityDensityCorrelation::collect_and_write_results(
 #endif
   }
   results.nncorr
-    = nncorr_binmeans_all_sum / static_cast<fptype>( nncorr_binmeans_all.size() );
+    = nncorr_binmeans_all_sum / static_cast<double>( nncorr_binmeans_all.size() );
 }
 
 

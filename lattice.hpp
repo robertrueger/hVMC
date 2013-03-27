@@ -26,7 +26,6 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
 #include "macros.h"
 
 
@@ -57,8 +56,8 @@ class Lattice {
     virtual std::set<unsigned int> irreducible_idxrel_list() const = 0;
     virtual unsigned int irreducible_idxrel_maxdist() const = 0;
 
-    virtual Eigen::VectorXfp r( unsigned int i, unsigned int j ) const = 0;
-    virtual std::vector<Eigen::VectorXfp> get_qvectors() const = 0;
+    virtual Eigen::VectorXd r( unsigned int i, unsigned int j ) const = 0;
+    virtual std::vector<Eigen::VectorXd> get_qvectors() const = 0;
 };
 
 #endif // LATTICE_H_INCLUDED

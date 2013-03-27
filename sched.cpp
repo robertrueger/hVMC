@@ -41,7 +41,6 @@
 #include "mccresults.hpp"
 #include "mccrun.hpp"
 #include "msgtags.hpp"
-#include "fptype.hpp"
 #include "obs.hpp"
 #include "varparam.hpp"
 
@@ -82,7 +81,7 @@ void sched_master( const Options& opts, const mpi::communicator& mpicomm )
 void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 {
   // prepare the initial variational parameters
-  Eigen::VectorXfp vpar = get_initial_varparam( opts );
+  Eigen::VectorXd vpar = get_initial_varparam( opts );
 
   // add the observables you want to measure to the set
   set<observables_t> obs;
@@ -93,22 +92,22 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 
   // create datastructures to store the history of E
   // and the variational parameters during the optimization
-  vector<Eigen::VectorXfp> vpar_hist;
+  vector<Eigen::VectorXd> vpar_hist;
   vpar_hist.push_back( vpar );
 
   // open output files for the energy and the variational parameters
   ofstream vpar_hist_file( (
     opts["calc.working-dir"].as<fs::path>() / "opt_vpar_hist.txt"
-  ).string() );
+  ).string(), ios::app );
 
   ofstream E_hist_file( (
     opts["calc.working-dir"].as<fs::path>() / "opt_E_hist.txt"
-  ).string() );
+  ).string(), ios::app );
 
   // optimization settings
   unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();
-  fptype       sr_dt_init
-    = opts["calc.sr-dt"].as<fptype>();
+  double       sr_dt_init
+    = opts["calc.sr-dt"].as<double>();
   unsigned int sr_max_refinements
     = opts["calc.sr-max-refinements"].as<unsigned int>();
   unsigned int sr_averaging_cycles
@@ -116,7 +115,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 
   // helper variables
   unsigned int sr_bins = sr_bins_init;
-  fptype       sr_dt = sr_dt_init;
+  double       sr_dt = sr_dt_init;
   unsigned int sr_cycles = 0;
   unsigned int sr_refinements = 0;
   unsigned int sr_cycles_since_refinement = 0;
@@ -159,12 +158,12 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     }
 
     // calculate SR matrix and forces
-    const Eigen::MatrixXfp S =
+    const Eigen::MatrixXd S =
       res.Deltak_Deltakprime.get() - res.Deltak.get() * res.Deltak->transpose();
-    const Eigen::VectorXfp f =
+    const Eigen::VectorXd f =
       res.Deltak.get() * res.E->mean - res.Deltak_E.get();
-    const Eigen::VectorXfp dvpar =
-      ( S + 0.01 * Eigen::MatrixXfp::Identity( S.rows(), S.cols() ) )
+    const Eigen::VectorXd dvpar =
+      ( S + 0.01 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
       .fullPivLu().solve( f );
 
     // update variational parameters
@@ -184,7 +183,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
           // has been fluctuating during the last iterations)
           int k_signsum = 0;
           for ( auto it = vpar_hist.rbegin(); it != vpar_hist.rbegin() + 9; ++it ) {
-            k_signsum += ( *it )( k ) - ( *( it + 1 ) )( k )  < 0.f ? -1 : +1;
+            k_signsum += ( *it )( k ) - ( *( it + 1 ) )( k )  < 0.0 ? -1 : +1;
           }
           if ( abs( k_signsum ) < 4 ) {
             sr_vpar_converged.at( k ) = true;
@@ -219,7 +218,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       // all variational parameters converged!
       if ( sr_refinements < sr_max_refinements ) {
         // still some refinement to do ... refine!
-        sr_dt *= 0.5f;
+        sr_dt *= 0.5;
         sr_bins *= 2;
         sr_vpar_converged = vector<unsigned int>( vpar.size(), false );
         ++sr_refinements;
@@ -242,11 +241,11 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   }
 
   // calculate the average of the converged vpars
-  const Eigen::VectorXfp vpar_avg =
+  const Eigen::VectorXd vpar_avg =
     accumulate(
       vpar_hist.rbegin() + 1, vpar_hist.rbegin() + sr_averaging_cycles,
       vpar_hist.back()
-    ) / static_cast<fptype>( sr_averaging_cycles );
+    ) / static_cast<double>( sr_averaging_cycles );
 
   // print optimization results
   if ( opts.count( "verbose" ) ) {
@@ -274,7 +273,7 @@ void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
   schedmsg_t schedmsg;
 
   // prepare the initial variational parameters
-  Eigen::VectorXfp vpar = get_initial_varparam( opts );
+  Eigen::VectorXd vpar = get_initial_varparam( opts );
 
   // add the observables you want to measure to the set
   set<observables_t> obs;
@@ -368,7 +367,7 @@ void sched_slave( const Options& opts, const mpi::communicator& mpicomm )
     if ( schedmsg == SCHEDMSG_START_MCC ) {
 
       // get variational parameters and set of observables from master
-      Eigen::VectorXfp vpar;
+      Eigen::VectorXd vpar;
       mpi::broadcast( mpicomm, vpar, 0 );
       set<observables_t> obs;
       mpi::broadcast( mpicomm, obs,  0 );
