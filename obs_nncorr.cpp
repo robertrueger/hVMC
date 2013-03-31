@@ -34,7 +34,7 @@ namespace mpi = boost::mpi;
 
 ObservableDensityDensityCorrelation::ObservableDensityDensityCorrelation()
   : Observable( OBSERVABLE_DENSITY_DENSITY_CORRELATION ),
-    this_bin_num_measurements( 0 ) { }
+    thisbin_count( 0 ), binmean_count( 0 ) { }
 
 
 void ObservableDensityDensityCorrelation::measure(
@@ -44,40 +44,44 @@ void ObservableDensityDensityCorrelation::measure(
     cache.n = model.n();
   }
 
-  const Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic>&
-    n_current = cache.n.get();
+  const Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>& n_current = cache.n.get();
 
-  if ( nncorr_sum.size() == 0 ) {
-    // first use of nncorr_sum
-    nncorr_sum.setZero( n_current.size(), n_current.size() );
+  if ( thisbin_nncorr_sum.size() == 0 ) {
+    // first use of thisbin_nncorr_sum
+    thisbin_nncorr_sum.setZero( n_current.size(), n_current.size() );
   } else {
-    assert( nncorr_sum.cols() == n_current.size() );
-    assert( nncorr_sum.rows() == n_current.size() );
+    assert( thisbin_nncorr_sum.cols() == n_current.size() );
+    assert( thisbin_nncorr_sum.rows() == n_current.size() );
   }
 
-  nncorr_sum += n_current * n_current.transpose();
-  ++this_bin_num_measurements;
+  thisbin_nncorr_sum += n_current * n_current.transpose();
+  ++thisbin_count;
 
 #if VERBOSE >= 1
-  cout << "ObservableDensityDensityCorrelation::measure() : nncorr_sum = " << endl
-       << nncorr_sum << endl;
+  cout << "ObservableDensityDensityCorrelation::measure() : thisbin_nncorr_sum = "
+       << endl << thisbin_nncorr_sum << endl;
 #endif
 }
 
 
 void ObservableDensityDensityCorrelation::completebin()
 {
-  nncorr_binmeans.push_back(
-    nncorr_sum.cast<double>() / static_cast<double>( this_bin_num_measurements )
-  );
+  if ( binmean_nncorr_sum.size() == 0 ) {
+    // first use of binmean_nncorr_sum
+    binmean_nncorr_sum.setZero(
+      thisbin_nncorr_sum.rows(), thisbin_nncorr_sum.cols()
+    );
+  } else {
+    assert( binmean_nncorr_sum.rows() == thisbin_nncorr_sum.rows() );
+    assert( binmean_nncorr_sum.cols() == thisbin_nncorr_sum.cols() );
+  }
 
-#if VERBOSE >= 1
-  cout << "ObservableDensityDensityCorrelation::completebin() : binmean = " << endl
-       << *( nncorr_binmeans.rbegin() ) << endl;
-#endif
+  binmean_nncorr_sum
+    += thisbin_nncorr_sum.cast<double>() / static_cast<double>( thisbin_count );
+  ++binmean_count;
 
-  nncorr_sum.setZero();
-  this_bin_num_measurements = 0;
+  thisbin_nncorr_sum.setZero();
+  thisbin_count = 0;
 }
 
 
@@ -86,33 +90,24 @@ void ObservableDensityDensityCorrelation::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<Eigen::MatrixXd> > binmeans_collector;
-  mpi::gather( mpicomm, nncorr_binmeans, binmeans_collector, 0 );
 
-  vector<Eigen::MatrixXd> nncorr_binmeans_all;
-  for ( auto it = binmeans_collector.begin();
-        it != binmeans_collector.end();
-        ++it ) {
-    nncorr_binmeans_all.insert( nncorr_binmeans_all.end(), it->begin(), it->end() );
-  }
-  assert( !nncorr_binmeans_all.empty() );
+  vector<Eigen::MatrixXd> binmeans_collector;
+  mpi::gather( mpicomm, binmean_nncorr_sum, binmeans_collector, 0 );
+  vector<unsigned int> binmeans_collector_count;
+  mpi::gather( mpicomm, binmean_count, binmeans_collector_count, 0 );
 
-
-  Eigen::MatrixXd nncorr_binmeans_all_sum;
-  nncorr_binmeans_all_sum.setZero(
-    nncorr_binmeans_all[0].rows(),
-    nncorr_binmeans_all[0].cols()
-  );
-  for ( auto it = nncorr_binmeans_all.begin();
-        it != nncorr_binmeans_all.end();
-        ++it ) {
-    nncorr_binmeans_all_sum += *it;
-#if VERBOSE >= 2
-    cout << it->transpose() << endl;
-#endif
-  }
   results.nncorr
-    = nncorr_binmeans_all_sum / static_cast<double>( nncorr_binmeans_all.size() );
+    = accumulate(
+        binmeans_collector.begin() + 1,
+        binmeans_collector.end(),
+        binmeans_collector.front()
+      ) / static_cast<double>(
+        accumulate(
+          binmeans_collector_count.begin(),
+          binmeans_collector_count.end(),
+          0
+        )
+      );
 }
 
 
@@ -120,5 +115,7 @@ void ObservableDensityDensityCorrelation::send_results_to_master(
   const mpi::communicator& mpicomm ) const
 {
   assert( mpicomm.rank() != 0 );
-  mpi::gather( mpicomm, nncorr_binmeans, 0 );
+
+  mpi::gather( mpicomm, binmean_nncorr_sum, 0 );
+  mpi::gather( mpicomm, binmean_count, 0 );
 }

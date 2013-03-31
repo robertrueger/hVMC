@@ -32,10 +32,11 @@ class ObservableDeltaKDeltaKPrime final : public Observable
 {
   private:
 
-    Eigen::MatrixXd DkDkp_sum;
-    unsigned int this_bin_num_measurements;
+    Eigen::MatrixXd thisbin_DkDkp_sum;
+    unsigned int thisbin_count;
 
-    std::vector<Eigen::MatrixXd> DkDkp_binmeans;
+    Eigen::MatrixXd binmean_DkDkp_sum;
+    unsigned int binmean_count;
 
   public:
 

@@ -34,7 +34,7 @@ namespace mpi = boost::mpi;
 
 ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime()
   : Observable( OBSERVABLE_DELTAK_DELTAKPRIME ),
-    this_bin_num_measurements( 0 ) { }
+    thisbin_count( 0 ), binmean_count( 0 ) { }
 
 
 void ObservableDeltaKDeltaKPrime::measure(
@@ -46,37 +46,39 @@ void ObservableDeltaKDeltaKPrime::measure(
 
   const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
 
-  if ( DkDkp_sum.size() == 0 ) {
-    // first use of DkDkp_sum
-    DkDkp_sum.setZero( Dk_current.size(), Dk_current.size() );
+  if ( thisbin_DkDkp_sum.size() == 0 ) {
+    // first use of thisbin_DkDkp_sum
+    thisbin_DkDkp_sum.setZero( Dk_current.size(), Dk_current.size() );
   } else {
-    assert( DkDkp_sum.cols() == Dk_current.size() );
-    assert( DkDkp_sum.rows() == Dk_current.size() );
+    assert( thisbin_DkDkp_sum.cols() == Dk_current.size() );
+    assert( thisbin_DkDkp_sum.rows() == Dk_current.size() );
   }
 
-  DkDkp_sum += Dk_current * Dk_current.transpose();
-  ++this_bin_num_measurements;
+  thisbin_DkDkp_sum += Dk_current * Dk_current.transpose();
+  ++thisbin_count;
 
 #if VERBOSE >= 1
-  cout << "ObservableDeltaKDeltaKPrime::measure() : DkDkp_sum = " << endl
-       << DkDkp_sum << endl;
+  cout << "ObservableDeltaKDeltaKPrime::measure() : thisbin_DkDkp_sum = " << endl
+       << thisbin_DkDkp_sum << endl;
 #endif
 }
 
 
 void ObservableDeltaKDeltaKPrime::completebin()
 {
-  DkDkp_binmeans.push_back(
-    DkDkp_sum / static_cast<double>( this_bin_num_measurements )
-  );
+  if ( binmean_DkDkp_sum.size() == 0 ) {
+    // first use of binmean_DkDkp_sum
+    binmean_DkDkp_sum.setZero( thisbin_DkDkp_sum.rows(), thisbin_DkDkp_sum.cols() );
+  } else {
+    assert( binmean_DkDkp_sum.rows() == thisbin_DkDkp_sum.rows() );
+    assert( binmean_DkDkp_sum.cols() == thisbin_DkDkp_sum.cols() );
+  }
 
-#if VERBOSE >= 1
-  cout << "ObservableDeltaKDeltaKPrime::completebin() : binmean = " << endl
-       << *( DkDkp_binmeans.rbegin() ) << endl;
-#endif
+  binmean_DkDkp_sum += thisbin_DkDkp_sum / static_cast<double>( thisbin_count );
+  ++binmean_count;
 
-  DkDkp_sum.setZero();
-  this_bin_num_measurements = 0;
+  thisbin_DkDkp_sum.setZero();
+  thisbin_count = 0;
 }
 
 
@@ -85,33 +87,24 @@ void ObservableDeltaKDeltaKPrime::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<Eigen::MatrixXd> > binmeans_collector;
-  mpi::gather( mpicomm, DkDkp_binmeans, binmeans_collector, 0 );
 
-  vector<Eigen::MatrixXd> DkDkp_binmeans_all;
-  for ( auto it = binmeans_collector.begin();
-        it != binmeans_collector.end();
-        ++it ) {
-    DkDkp_binmeans_all.insert( DkDkp_binmeans_all.end(), it->begin(), it->end() );
-  }
-  assert( !DkDkp_binmeans_all.empty() );
+  vector<Eigen::MatrixXd> binmeans_collector;
+  mpi::gather( mpicomm, binmean_DkDkp_sum, binmeans_collector, 0 );
+  vector<unsigned int> binmeans_collector_count;
+  mpi::gather( mpicomm, binmean_count, binmeans_collector_count, 0 );
 
-
-  Eigen::MatrixXd DkDkp_binmeans_all_sum;
-  DkDkp_binmeans_all_sum.setZero(
-    DkDkp_binmeans_all[0].rows(),
-    DkDkp_binmeans_all[0].cols()
-  );
-  for ( auto it = DkDkp_binmeans_all.begin();
-        it != DkDkp_binmeans_all.end();
-        ++it ) {
-    DkDkp_binmeans_all_sum += *it;
-#if VERBOSE >= 2
-    cout << it->transpose() << endl;
-#endif
-  }
   results.Deltak_Deltakprime
-    = DkDkp_binmeans_all_sum / static_cast<double>( DkDkp_binmeans_all.size() );
+    = accumulate(
+        binmeans_collector.begin() + 1,
+        binmeans_collector.end(),
+        binmeans_collector.front()
+      ) / static_cast<double>(
+        accumulate(
+          binmeans_collector_count.begin(),
+          binmeans_collector_count.end(),
+          0
+        )
+      );
 }
 
 
@@ -119,5 +112,7 @@ void ObservableDeltaKDeltaKPrime::send_results_to_master(
   const mpi::communicator& mpicomm ) const
 {
   assert( mpicomm.rank() != 0 );
-  mpi::gather( mpicomm, DkDkp_binmeans, 0 );
+
+  mpi::gather( mpicomm, binmean_DkDkp_sum, 0 );
+  mpi::gather( mpicomm, binmean_count, 0 );
 }

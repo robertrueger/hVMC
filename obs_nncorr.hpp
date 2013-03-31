@@ -32,10 +32,11 @@ class ObservableDensityDensityCorrelation final : public Observable
 {
   private:
 
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> nncorr_sum;
-    unsigned int this_bin_num_measurements;
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> thisbin_nncorr_sum;
+    unsigned int thisbin_count;
 
-    std::vector<Eigen::MatrixXd> nncorr_binmeans;
+    Eigen::MatrixXd binmean_nncorr_sum;
+    unsigned int binmean_count;
 
   public:
 

@@ -32,10 +32,11 @@ class ObservableDeltaK final : public Observable
 {
   private:
 
-    Eigen::VectorXd Dk_sum;
-    unsigned int this_bin_num_measurements;
+    Eigen::VectorXd thisbin_Dk_sum;
+    unsigned int thisbin_count;
 
-    std::vector<Eigen::VectorXd> Dk_binmeans;
+    Eigen::VectorXd binmean_Dk_sum;
+    unsigned int binmean_count;
 
   public:
 
