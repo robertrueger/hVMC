@@ -22,22 +22,22 @@
 nn-hopping = 1.0
 
 # 2nd nearest-neighbor hopping matrix element t'
-2nd-nn-hopping = 0.5
+2nd-nn-hopping = -0.75
 
 # 3rd nearest-neighbor hopping matrix element t''
 3rd-nn-hopping = 0.0
 
 # on-site energy U
-onsite-energy = 4.0
+onsite-energy = 1.0
 
 # lattice type
-lattice = 2dsquare
+lattice = 1dchain
 
 # number of lattice sites
-num-lattice-sites = 36
+num-lattice-sites = 120
 
 # total number of electrons
-num-electrons = 26
+num-electrons = 120
 
 
 [calc] ####################### SIMULATION SETTINGS ##############################
@@ -70,22 +70,25 @@ update-hop-maxdistance = 2
 num-mcs-equil = 100
 
 # [opt+sim]: number of measurement bins
-num-bins = 50
+num-bins = 100
 
 # [opt+sim]: number of Monte Carlo steps per bin
-num-binmcs = 50
+num-binmcs = 100
 
 # [opt+sim]: random number generator seed
 # rng-seed = 1337133789
 
-# [opt] controls the SR convergence: vpar += dt * dvpar
-sr-dt = 2
+# [opt]: controls the SR convergence: vpar += dt * dvpar
+sr-dt = 20
 
-# [opt] number of refinements during the SR cycle
-sr-max-refinements = 4
+# [opt]: Mann-Kendall threshold for convergence detection
+sr-mkthreshold = 0.5
 
-# [opt] number of SR cycles to average the converged variational parameters
-sr-averaging-cycles = 10
+# [opt]: number of refinements during the SR cycle
+sr-max-refinements = 1
+
+# [opt]: number of SR cycles to average the converged variational parameters
+sr-averaging-cycles = 50
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################

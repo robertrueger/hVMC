@@ -129,6 +129,10 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<double>()->default_value( 1.0 ),
     "[opt]: controls the SR convergence: vpar += dt * dvpar" )
 
+  ( "calc.sr-mkthreshold,T",
+    po::value<double>()->default_value( 0.5 ),
+    "[opt]: Mann-Kendall threshold for convergence detection" )
+
   ( "calc.sr-max-refinements,R",
     po::value<unsigned int>()->default_value( 4 ),
     "[opt]: number of refinements during the SR cycle" )

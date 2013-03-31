@@ -23,7 +23,10 @@
 #include <chrono>
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include <fstream>
+#include <algorithm>
+#include <iterator>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -43,6 +46,7 @@
 #include "msgtags.hpp"
 #include "obs.hpp"
 #include "varparam.hpp"
+#include "mktest.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;
@@ -105,13 +109,13 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   ).string(), ios::app );
 
   // optimization settings
-  unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();
-  double       sr_dt_init
-    = opts["calc.sr-dt"].as<double>();
-  unsigned int sr_max_refinements
+  const unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();
+  const double       sr_dt_init   = opts["calc.sr-dt"].as<double>();
+  const unsigned int sr_max_refinements
     = opts["calc.sr-max-refinements"].as<unsigned int>();
-  unsigned int sr_averaging_cycles
+  const unsigned int sr_averaging_cycles
     = opts["calc.sr-averaging-cycles"].as<unsigned int>();
+  const double sr_nodrift_threshold = opts["calc.sr-mkthreshold"].as<double>();
 
   // helper variables
   unsigned int sr_bins = sr_bins_init;
@@ -119,9 +123,9 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   unsigned int sr_cycles = 0;
   unsigned int sr_refinements = 0;
   unsigned int sr_cycles_since_refinement = 0;
-  unsigned int sr_num_vpar_converged = 0;
-  vector<unsigned int> sr_vpar_converged( vpar.size(), false );
+  bool         sr_all_converged = false;
   unsigned int sr_fullconv_cycles = 0;
+  vector<double> sr_vpar_mkresult( vpar.size() );
 
   bool finished = false;
   while ( !finished ) {
@@ -174,23 +178,24 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 
     ++sr_cycles;
     ++sr_cycles_since_refinement;
-    if ( sr_num_vpar_converged <= vpar.size() &&
-         sr_cycles_since_refinement >= 10 ) {
+    unsigned int sr_num_vpar_converged = 0;
+    if ( sr_cycles_since_refinement >= 20 ) {
       for ( unsigned int k = 0; k < vpar.size(); ++k ) {
-        // check if the variational parameter is still drifting
-        if ( !sr_vpar_converged.at( k ) ) { // ... if it is not converged already
-          // (it is considered converged if the sign of its change
-          // has been fluctuating during the last iterations)
-          int k_signsum = 0;
-          for ( auto it = vpar_hist.rbegin(); it != vpar_hist.rbegin() + 9; ++it ) {
-            k_signsum += ( *it )( k ) - ( *( it + 1 ) )( k )  < 0.0 ? -1 : +1;
-          }
-          if ( abs( k_signsum ) < 4 ) {
-            sr_vpar_converged.at( k ) = true;
-            ++sr_num_vpar_converged;
-          }
+        // perform a Mann-Kendall test on the evolution of the vpar
+        vector<double> vpar_k_hist_sinceref;
+        for ( auto it = vpar_hist.end() - 1 - sr_cycles_since_refinement / 2;
+              it != vpar_hist.end();
+              ++it ) {
+          vpar_k_hist_sinceref.push_back( ( *it )[k] );
+        }
+        sr_vpar_mkresult[k] = mktest( vpar_k_hist_sinceref );
+        if ( sr_vpar_mkresult[k] <= sr_nodrift_threshold ) {
+          ++sr_num_vpar_converged;
         }
       }
+    }
+    if ( sr_num_vpar_converged == vpar.size() ) {
+      sr_all_converged = true;
     }
 
     // output the vpars and the energy to their files
@@ -204,6 +209,12 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       cout << "f = " << endl << f.transpose() << endl << endl;
       cout << "dvpar = " << endl << dvpar.transpose() << endl << endl;
       cout << "vpar' = " << endl << vpar.transpose() << endl << endl;
+      if ( sr_cycles_since_refinement >= 20 ) {
+        cout << "pdrift = " << endl;
+        copy( sr_vpar_mkresult.begin(), sr_vpar_mkresult.end(),
+              ostream_iterator<double>( cout, " " ) );
+        cout << endl << endl;
+      }
     }
     cout << " Iteration: " << sr_cycles
          << " (" << sr_cycles_since_refinement  << ")" << endl;
@@ -211,7 +222,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     cout << " ConvVPars: " << sr_num_vpar_converged << "/" << vpar.size() << endl;
     cout << "    Status: ";
 
-    if ( sr_num_vpar_converged < vpar.size() ) {
+    if ( !sr_all_converged ) {
       // vpar not converged ... keep iterating!
       cout << "iterating" << endl;
     } else {
@@ -220,10 +231,9 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
         // still some refinement to do ... refine!
         sr_dt *= 0.5;
         sr_bins *= 2;
-        sr_vpar_converged = vector<unsigned int>( vpar.size(), false );
         ++sr_refinements;
         sr_cycles_since_refinement = 0;
-        sr_num_vpar_converged = 0;
+        sr_all_converged = false;
         cout << "refining & iterating" << endl;
       } else {
         // maximum refinement reached and all vpars fully converged
@@ -295,10 +305,10 @@ void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
 
   // run master part of the Monte Carlo cycle
   const MCCResults& res = mccrun_master(
-    opts, vpar,
-    opts["calc.num-bins"].as<unsigned int>(),
-    obs, mpicomm
-  );
+                            opts, vpar,
+                            opts["calc.num-bins"].as<unsigned int>(),
+                            obs, mpicomm
+                          );
 
   // stop the stopwatch and calculate the elapsed time
   chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
