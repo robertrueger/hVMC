@@ -210,7 +210,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       cout << "dvpar = " << endl << dvpar.transpose() << endl << endl;
       cout << "vpar' = " << endl << vpar.transpose() << endl << endl;
       if ( sr_cycles_since_refinement >= 20 ) {
-        cout << "pdrift = " << endl;
+        cout << "mktest = " << endl;
         copy( sr_vpar_mkresult.begin(), sr_vpar_mkresult.end(),
               ostream_iterator<double>( cout, " " ) );
         cout << endl << endl;

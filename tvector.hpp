@@ -57,7 +57,7 @@ class TVector final
       unsigned int updates_until_recalc_init
     );
 
-    bool init_and_check();
+    void init();
     void update( const ElectronHop& hop );
 
     fptype operator()( unsigned int i ) const;

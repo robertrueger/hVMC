@@ -61,19 +61,15 @@ HubbardModelVMC::HubbardModelVMC(
          << "state for enough overlap" << endl;
 #endif
 
-    // check determinantal part
+    // check determinantal part for enough overlap
     if ( W.init_and_check() == false ) {
       continue;
+    } else {
+      break;
     }
-
-    // check Jastrow part
-    if ( T.init_and_check() == false ) {
-      continue;
-    }
-
-    break;
-
   }
+
+  T.init();
 
 #if VERBOSE >= 2
   cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "

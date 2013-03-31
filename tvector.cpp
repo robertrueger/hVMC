@@ -45,19 +45,9 @@ TVector::TVector(
 
 
 
-bool TVector::init_and_check()
+void TVector::init()
 {
   T = calc_new();
-  fptype T_avg = T.squaredNorm() / static_cast<fptype>( T.size() );
-  if ( T_avg > 100.f ) {
-#if VERBOSE >= 2
-    cout << "TMatrix::init_and_check() : Jastrow ratios "
-         << "are to small, inverse measure is: " << T_avg << endl;
-#endif
-    return false;
-  } else {
-    return true;
-  }
 }
 
 
