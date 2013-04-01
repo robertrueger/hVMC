@@ -63,6 +63,7 @@ class Observable
 
     Observable( observables_t type_init )
       : type( type_init ) { }
+    virtual ~Observable() { };
 
     virtual void measure(
       const HubbardModelVMC& model,
