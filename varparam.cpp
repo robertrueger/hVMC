@@ -41,15 +41,9 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
   unsigned int num_vpars
     = prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
 
-  if ( fs::exists(
-         opts["calc.working-dir"].as<fs::path>() /
-         "opt_vpar_final.dat" )
-      ) {
+  if ( fs::exists( opts["phys.vpar-file"].as<fs::path>() ) ) {
     // read the variational parameters from a file
-    ifstream vpar_file( (
-      opts["calc.working-dir"].as<fs::path>() /
-       "opt_vpar_final.dat"
-    ).string() );
+    ifstream vpar_file( ( opts["phys.vpar-file"].as<fs::path>() ).string() );
     ar::text_iarchive vpar_archive( vpar_file );
     Eigen::VectorXd vpar;
     vpar_archive >> vpar;

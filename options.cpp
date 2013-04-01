@@ -84,7 +84,11 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.num-electrons,N",
     po::value<unsigned int>()->required(),
-    "total number of electrons" );
+    "total number of electrons" )
+
+  ( "phys.vpar-file,P",
+    po::value<fs::path>(),
+    "file to load the variational parameters from" );
 
   po::options_description calcset( "calculation settings" );
   calcset.add_options()
@@ -298,6 +302,20 @@ Options read_options( int argc, char* argv[], bool is_master )
     }
     exit( 1 );
   }
+
+
+  // manual modifications of the options
+
+  // set phys.vpar-file to working dir / opt_vpar_final.dat
+  vm.insert(
+    make_pair(
+      "phys.vpar-file",
+      po::variable_value(
+        vm["calc.working-dir"].as<fs::path>() / "opt_vpar_final.dat",
+        true
+      )
+    )
+  );
 
 
   // check for logical errors in the physical parameters

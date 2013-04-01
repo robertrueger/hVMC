@@ -39,6 +39,9 @@ num-lattice-sites = 120
 # total number of electrons
 num-electrons = 120
 
+# file to load the variational parameters from
+#vpar-file =
+
 
 [calc] ####################### SIMULATION SETTINGS ##############################
 
