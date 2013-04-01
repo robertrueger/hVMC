@@ -38,7 +38,7 @@ TVector::TVector(
   double deviation_target,
   unsigned int updates_until_recalc_init )
   : lat( lat_init ), v( v_init ), econf( econf_init ),
-    T( Eigen::VectorXfp( lat->L ) ),
+    T( Eigen::VectorXd( lat->L ) ),
     updates_until_recalc( updates_until_recalc_init ),
     updates_since_recalc( 0 ),
     devstat( FPDevStat( deviation_target ) ) { }
@@ -52,7 +52,7 @@ void TVector::init()
 
 
 
-fptype TVector::operator()( unsigned int i ) const
+double TVector::operator()( unsigned int i ) const
 {
   assert( i < lat->L );
   return T( i );
@@ -70,7 +70,7 @@ void TVector::update( const ElectronHop& hop )
 
     updates_since_recalc = 0;
 
-    const Eigen::MatrixXfp& T_approx = calc_qupdated( hop );
+    const Eigen::VectorXd& T_approx = calc_qupdated( hop );
     T = calc_new();
 
     double dev = calc_deviation( T_approx, T );
@@ -104,7 +104,7 @@ void TVector::update( const ElectronHop& hop )
     T = calc_qupdated( hop );
 
 #ifndef NDEBUG
-    const Eigen::MatrixXfp& T_chk = calc_new();
+    const Eigen::VectorXd& T_chk = calc_new();
     double dev = calc_deviation( T, T_chk );
 
 # if VERBOSE >= 2
@@ -128,14 +128,14 @@ void TVector::update( const ElectronHop& hop )
 
 
 
-Eigen::VectorXfp TVector::calc_new() const
+Eigen::VectorXd TVector::calc_new() const
 {
-  Eigen::VectorXfp T_new( lat->L );
+  Eigen::VectorXd T_new( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
     double sum = 0.0;
     for ( unsigned int j = 0; j < lat->L; ++j ) {
-      sum += v( i, j ) * static_cast<fptype>(
+      sum += v( i, j ) * static_cast<double>(
                ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
     }
     T_new( i ) = exp( sum );
@@ -146,9 +146,9 @@ Eigen::VectorXfp TVector::calc_new() const
 
 
 
-Eigen::VectorXfp TVector::calc_qupdated( const ElectronHop& hop ) const
+Eigen::VectorXd TVector::calc_qupdated( const ElectronHop& hop ) const
 {
-  Eigen::VectorXfp T_prime( lat->L );
+  Eigen::VectorXd T_prime( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
     T_prime( i ) = T( i ) * v.exp( i, lat->get_spinup_site( hop.l ) )

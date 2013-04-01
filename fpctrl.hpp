@@ -76,8 +76,16 @@ struct FPDevStat final {
 
 FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs );
 
+
+template <typename _Scalar, int _Rows, int _Cols>
 double calc_deviation(
-  const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact
-);
+  const Eigen::Matrix<_Scalar, _Rows, _Cols>& approx,
+  const Eigen::Matrix<_Scalar, _Rows, _Cols>& exact )
+{
+  assert( approx.size() == exact.size() );
+  double exact_square_sum = exact.squaredNorm();
+  double  diff_square_sum = ( approx - exact ).squaredNorm();
+  return sqrt( diff_square_sum / exact_square_sum );
+}
 
 #endif // FPCTRL_H_INCLUDED

@@ -27,7 +27,6 @@
 #include <eigen3/Eigen/Core>
 
 #include "macros.h"
-#include "fptype.hpp"
 #include "lattice.hpp"
 #include "varparam.hpp"
 
@@ -39,7 +38,7 @@ class Jastrow final
 
     const std::shared_ptr<Lattice> lat;
 
-    std::vector<fptype> idxrel_expv;
+    std::vector<double> idxrel_expv;
 
     unsigned int num_vpar;
     std::vector<unsigned int> idxrel_vparnum;
@@ -51,9 +50,9 @@ class Jastrow final
       const Eigen::VectorXd& v_init
     );
 
-    fptype operator()( unsigned int i, unsigned int j ) const;
-    fptype exp( unsigned int i, unsigned int j ) const;
-    fptype exp_onsite() const;
+    double operator()( unsigned int i, unsigned int j ) const;
+    double exp( unsigned int i, unsigned int j ) const;
+    double exp_onsite() const;
     void set( unsigned int i, unsigned int j, double v_new  );
 
     unsigned int get_num_vpar() const;

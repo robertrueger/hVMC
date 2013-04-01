@@ -166,12 +166,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     "deviation target for the vector T" )
 
   ( "fpctrl.T-updates-until-recalc",
-    po::value<unsigned int>()
-#ifdef USE_FP_DBLPREC
-      ->default_value( 500000 ),
-#else
-      ->default_value( 50000 ),
-#endif
+    po::value<unsigned int>()->default_value( 500000 ),
     "number of quick updates until recalculation of the vector T" );
 
   // define option groups for cli and jobfile

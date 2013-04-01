@@ -23,7 +23,6 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
 #include "lattice.hpp"
 #include "econf.hpp"
 #include "jastrow.hpp"
@@ -38,14 +37,14 @@ class TVector final
     const Jastrow& v;
     const ElectronConfiguration& econf;
 
-    Eigen::VectorXfp T;
+    Eigen::VectorXd T;
 
     const unsigned int updates_until_recalc;
     unsigned int updates_since_recalc;
     FPDevStat devstat;
 
-    Eigen::VectorXfp calc_new() const;
-    Eigen::VectorXfp calc_qupdated( const ElectronHop& hop ) const;
+    Eigen::VectorXd calc_new() const;
+    Eigen::VectorXd calc_qupdated( const ElectronHop& hop ) const;
 
   public:
 
@@ -60,7 +59,7 @@ class TVector final
     void init();
     void update( const ElectronHop& hop );
 
-    fptype operator()( unsigned int i ) const;
+    double operator()( unsigned int i ) const;
 
     FPDevStat get_devstat() const;
 

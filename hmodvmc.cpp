@@ -23,8 +23,6 @@
 # include <iostream>
 #endif
 
-#include "fptype.hpp"
-
 using namespace std;
 
 
@@ -113,13 +111,13 @@ bool HubbardModelVMC::metstep()
 
   } else { // hop possible!
 
-    const fptype R_j = T( lat->get_spinup_site( phop.l ) )
+    const double R_j = T( lat->get_spinup_site( phop.l ) )
                        / T( lat->get_spinup_site( phop.k_pos ) )
                        * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
 
-    const fptype R_s = W( phop.l, phop.k );
+    const double R_s = W( phop.l, phop.k );
 
-    const fptype accept_prob = R_j * R_j * R_s * R_s;
+    const double accept_prob = R_j * R_j * R_s * R_s;
 
 #if VERBOSE >= 2
     cout << "HubbardModelVMC::metstep() : hop possible -> "
@@ -128,8 +126,8 @@ bool HubbardModelVMC::metstep()
          << ", accept_prob = " << accept_prob << endl;
 #endif
 
-    if ( accept_prob >= 1.f ||
-         uniform_real_distribution<fptype>( 0.f, 1.f )( rng ) < accept_prob ) {
+    if ( accept_prob >= 1.0 ||
+         uniform_real_distribution<double>( 0.0, 1.0 )( rng ) < accept_prob ) {
 
 #if VERBOSE >= 2
       cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;

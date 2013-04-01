@@ -47,13 +47,3 @@ FPDevStat operator+( const FPDevStat& lhs, const FPDevStat& rhs )
   result.mag1_hits   = lhs.mag1_hits + rhs.mag1_hits;
   return result;
 }
-
-
-double calc_deviation(
-  const Eigen::MatrixXfp& approx, const Eigen::MatrixXfp& exact )
-{
-  assert( approx.size() == exact.size() );
-  double exact_square_sum = exact.squaredNorm();
-  double  diff_square_sum = ( approx - exact ).squaredNorm();
-  return sqrt( diff_square_sum / exact_square_sum );
-}
