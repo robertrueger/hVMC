@@ -93,7 +93,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<optmode_t>()->required(),
     "mode (optimization, simulation, analysis)" )
 
-  ( "calc.working-dir,d",
+  ( "calc.working-dir,D",
     po::value<fs::path>()->default_value( "." ),
     "[opt+sim+ana]: input/output directory" )
 
