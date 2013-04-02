@@ -31,7 +31,7 @@ using namespace std;
 
 
 Jastrow::Jastrow(
-  const shared_ptr<Lattice>& lat_init, const Eigen::VectorXfp& v_init )
+  const shared_ptr<Lattice>& lat_init, const Eigen::VectorXd& v_init )
   : lat( lat_init )
 {
   std::set<unsigned int> irr_idxrels = lat->irreducible_idxrel_list();
@@ -68,12 +68,12 @@ Jastrow::Jastrow(
   assert( reader == v_init.size() );
 
   // set the parameter corresponding to the largest distance to 1
-  idxrel_expv.at( lat->irreducible_idxrel_maxdist() ) = 1.f;
+  idxrel_expv.at( lat->irreducible_idxrel_maxdist() ) = 1.0;
 }
 
 
 
-fptype Jastrow::operator()( unsigned int i, unsigned int j ) const
+double Jastrow::operator()( unsigned int i, unsigned int j ) const
 {
   assert( idxrel_expv.size() > lat->reduce_idxrel( i, j ) );
   return std::log( idxrel_expv[ lat->reduce_idxrel( i, j ) ] );
@@ -81,7 +81,7 @@ fptype Jastrow::operator()( unsigned int i, unsigned int j ) const
 
 
 
-fptype Jastrow::exp( unsigned int i, unsigned int j ) const
+double Jastrow::exp( unsigned int i, unsigned int j ) const
 {
   assert( idxrel_expv.size() > lat->reduce_idxrel( i, j ) );
   return idxrel_expv[ lat->reduce_idxrel( i, j ) ];
@@ -89,7 +89,7 @@ fptype Jastrow::exp( unsigned int i, unsigned int j ) const
 
 
 
-fptype Jastrow::exp_onsite() const
+double Jastrow::exp_onsite() const
 {
   assert( idxrel_expv.size() > 0 );
   return idxrel_expv[0];
@@ -97,7 +97,7 @@ fptype Jastrow::exp_onsite() const
 
 
 
-void Jastrow::set( unsigned int i, unsigned int j, fptype v_new )
+void Jastrow::set( unsigned int i, unsigned int j, double v_new )
 {
   idxrel_expv.at( lat->reduce_idxrel( i, j ) ) = std::exp( v_new );
 }

@@ -17,29 +17,20 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MCCRUN_H_INCLUDED
-#define MCCRUN_H_INCLUDED
-
-#include <set>
-
-#include <boost/mpi/communicator.hpp>
-
-#define EIGEN_NO_AUTOMATIC_RESIZING
-#include <eigen3/Eigen/Core>
+#ifndef ANALYSIS_H_INCLUDED
+#define ANALYSIS_H_INCLUDED
 
 #include "options.hpp"
 #include "mccresults.hpp"
-#include "obs.hpp"
 
 
-MCCResults mccrun_master(
-  const Options& opts, const Eigen::VectorXd& vpar, unsigned int num_bins,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
+enum analysis_t {
+  ANALYSIS_STATIC_STRUCTURE_FACTOR
+};
+
+
+void analysis_static_structure_factor(
+  const Options& opts, const MCCResults& res
 );
 
-void mccrun_slave(
-  const Options& opts, const Eigen::VectorXd& vpar,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
-);
-
-#endif // MCCRUN_H_INCLUDED
+#endif // ANALYSIS_H_INCLUDED

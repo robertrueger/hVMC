@@ -24,21 +24,19 @@
 
 #include <vector>
 
-#include "fptype.hpp"
 
-
-class ObservableDoubleOccupancy final : public Observable
+class ObservableDoubleOccupancy : public Observable
 {
   private:
 
-    std::vector<fptype> dblocc_currentbin;
-    std::vector<fptype> dblocc_binmeans;
+    std::vector<double> dblocc_currentbin;
+    std::vector<double> dblocc_binmeans;
 
   public:
 
     ObservableDoubleOccupancy();
 
-    void measure( HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const HubbardModelVMC& model, ObservableCache& cache );
 
     void completebin();
 

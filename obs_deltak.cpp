@@ -34,47 +34,49 @@ namespace mpi = boost::mpi;
 
 ObservableDeltaK::ObservableDeltaK()
   : Observable( OBSERVABLE_DELTAK ),
-    this_bin_num_measurements( 0 ) { }
+    thisbin_count( 0 ), binmean_count( 0 ) { }
 
 
-void ObservableDeltaK::measure( HubbardModelVMC& model, ObservableCache& cache )
+void ObservableDeltaK::measure(
+  const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.DeltaK ) {
     cache.DeltaK = model.Delta_k();
   }
 
-  const Eigen::VectorXfp& Dk_current = cache.DeltaK.get();
+  const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
 
-  if ( Dk_sum.size() == 0 ) {
-    // first use of Dk_sum
-    Dk_sum.setZero( Dk_current.size() );
+  if ( thisbin_Dk_sum.size() == 0 ) {
+    // first use of thisbin_Dk_sum
+    thisbin_Dk_sum.setZero( Dk_current.size() );
   } else {
-    assert( Dk_sum.size() == Dk_current.size() );
+    assert( thisbin_Dk_sum.size() == Dk_current.size() );
   }
 
-  Dk_sum += Dk_current;
-  ++this_bin_num_measurements;
+  thisbin_Dk_sum += Dk_current;
+  ++thisbin_count;
 
 #if VERBOSE >= 1
-  cout << "ObservableDeltaK::measure() : Dk_sum = " << endl
-       << Dk_sum.transpose() << endl;
+  cout << "ObservableDeltaK::measure() : thisbin_Dk_sum = " << endl
+       << thisbin_Dk_sum.transpose() << endl;
 #endif
 }
 
 
 void ObservableDeltaK::completebin()
 {
-  Dk_binmeans.push_back(
-    Dk_sum / static_cast<fptype>( this_bin_num_measurements )
-  );
+  if ( binmean_Dk_sum.size() == 0 ) {
+    // first use of binmean_Dk_sum
+    binmean_Dk_sum.setZero( thisbin_Dk_sum.size() );
+  } else {
+    assert( binmean_Dk_sum.size() == thisbin_Dk_sum.size() );
+  }
 
-#if VERBOSE >= 1
-  cout << "ObservableDeltaK::completebin() : binmean = " << endl
-       << Dk_binmeans.rbegin()->transpose() << endl;
-#endif
+  binmean_Dk_sum += thisbin_Dk_sum / static_cast<double>( thisbin_count );
+  ++binmean_count;
 
-  Dk_sum.setZero();
-  this_bin_num_measurements = 0;
+  thisbin_Dk_sum.setZero();
+  thisbin_count = 0;
 }
 
 
@@ -83,28 +85,24 @@ void ObservableDeltaK::collect_and_write_results(
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
-  vector< vector<Eigen::VectorXfp> > binmeans_collector;
-  mpi::gather( mpicomm, Dk_binmeans, binmeans_collector, 0 );
 
-  vector< Eigen::VectorXfp > Dk_binmeans_all;
-  for ( auto it = binmeans_collector.begin();
-        it != binmeans_collector.end();
-        ++it ) {
-    Dk_binmeans_all.insert( Dk_binmeans_all.end(), it->begin(), it->end() );
-  }
-  assert( !Dk_binmeans_all.empty() );
+  vector<Eigen::VectorXd> binmeans_collector;
+  mpi::gather( mpicomm, binmean_Dk_sum, binmeans_collector, 0 );
+  vector<unsigned int> binmeans_collector_count;
+  mpi::gather( mpicomm, binmean_count, binmeans_collector_count, 0 );
 
-
-  Eigen::VectorXfp Dk_binmeans_all_sum;
-  Dk_binmeans_all_sum.setZero( Dk_binmeans_all[0].size() );
-  for ( auto it = Dk_binmeans_all.begin(); it != Dk_binmeans_all.end(); ++it ) {
-    Dk_binmeans_all_sum += *it;
-#if VERBOSE >= 2
-    cout << it->transpose() << endl;
-#endif
-  }
   results.Deltak
-    = Dk_binmeans_all_sum / static_cast<fptype>( Dk_binmeans_all.size() );
+    = accumulate(
+        binmeans_collector.begin() + 1,
+        binmeans_collector.end(),
+        binmeans_collector.front()
+      ) / static_cast<double>(
+        accumulate(
+          binmeans_collector_count.begin(),
+          binmeans_collector_count.end(),
+          0
+        )
+      );
 }
 
 
@@ -112,5 +110,7 @@ void ObservableDeltaK::send_results_to_master(
   const mpi::communicator& mpicomm ) const
 {
   assert( mpicomm.rank() != 0 );
-  mpi::gather( mpicomm, Dk_binmeans, 0 );
+
+  mpi::gather( mpicomm, binmean_Dk_sum, 0 );
+  mpi::gather( mpicomm, binmean_count, 0 );
 }

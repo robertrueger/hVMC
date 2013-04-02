@@ -25,5 +25,6 @@
 #include "obs_dkdkp.hpp"
 #include "obs_dkerg.hpp"
 #include "obs_dblocc.hpp"
+#include "obs_nncorr.hpp"
 
 #endif // OBS_ALL_H_INCLUDED

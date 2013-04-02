@@ -17,29 +17,29 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MCCRUN_H_INCLUDED
-#define MCCRUN_H_INCLUDED
+#ifndef MANN_KENDALL_TEST_H_INCLUDED
+#define MANN_KENDALL_TEST_H_INCLUDED
 
-#include <set>
+#include <vector>
+#include <cmath>
 
-#include <boost/mpi/communicator.hpp>
-
-#define EIGEN_NO_AUTOMATIC_RESIZING
-#include <eigen3/Eigen/Core>
-
-#include "options.hpp"
-#include "mccresults.hpp"
-#include "obs.hpp"
+#include <boost/math/special_functions/sign.hpp>
 
 
-MCCResults mccrun_master(
-  const Options& opts, const Eigen::VectorXd& vpar, unsigned int num_bins,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
-);
+template <typename T>
+double mktest( const std::vector<T>& data )
+{
+  int S = 0;
+  const unsigned int n = data.size();
+  for ( unsigned int i = 0; i < n - 1; ++i ) {
+    for ( unsigned int j = i + 1; j < n; ++j ) {
+      S += boost::math::sign( data[j] - data[i] );
+    }
+  }
 
-void mccrun_slave(
-  const Options& opts, const Eigen::VectorXd& vpar,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
-);
+  const double relS = std::abs( S / ( static_cast<double>( n * ( n - 1 ) / 2 ) ) );
 
-#endif // MCCRUN_H_INCLUDED
+  return relS;
+}
+
+#endif // MANN_KENDALL_TEST_H_INCLUDED

@@ -26,11 +26,11 @@
 
 #include <boost/optional.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/optional.hpp>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
-
-#include "fptype.hpp"
 
 
 template <typename Ti>
@@ -66,6 +66,14 @@ struct UncertainQuantity {
     // uncertainty of the mean is sqrt(variance / num_bins)
     sigma = sqrt( binmeans_variance / static_cast<Ti>( binmeans.size() ) );
   }
+
+  // make UncertainQuantity serializable
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize( Archive& ar, const unsigned int ) {
+    ar & mean;
+    ar & sigma;
+  }
 };
 
 
@@ -73,13 +81,27 @@ struct MCCResults {
 
   bool success;
 
-  boost::optional< UncertainQuantity<fptype> > E;
-  boost::optional< Eigen::VectorXfp > Deltak;
-  boost::optional< Eigen::MatrixXfp > Deltak_Deltakprime;
-  boost::optional< Eigen::VectorXfp > Deltak_E;
-  boost::optional< UncertainQuantity<fptype> > dblocc;
+  boost::optional< UncertainQuantity<double> > E;
+  boost::optional< Eigen::VectorXd > Deltak;
+  boost::optional< Eigen::MatrixXd > Deltak_Deltakprime;
+  boost::optional< Eigen::VectorXd > Deltak_E;
+  boost::optional< UncertainQuantity<double> > dblocc;
+  boost::optional< Eigen::MatrixXd > nncorr;
 
   void write_to_files( const boost::filesystem::path& dir ) const;
+
+  // make MCCResults serializable
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize( Archive& ar, const unsigned int ) {
+    ar & success;
+    ar & E;
+    ar & Deltak;
+    ar & Deltak_Deltakprime;
+    ar & Deltak_E;
+    ar & dblocc;
+    ar & nncorr;
+  }
 };
 std::ostream& operator<<( std::ostream& out, const MCCResults& res );
 

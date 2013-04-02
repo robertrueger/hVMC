@@ -23,6 +23,9 @@
 #include <vector>
 #include <set>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
+
 #include "macros.h"
 #include "lattice.hpp"
 
@@ -49,6 +52,9 @@ class Lattice2DSquare : public Lattice {
     unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
     std::set<unsigned int> irreducible_idxrel_list() const;
     unsigned int irreducible_idxrel_maxdist() const;
+
+    Eigen::VectorXd r( unsigned int i, unsigned int j ) const;
+    std::vector<Eigen::VectorXd> get_qvectors() const;
 };
 
 #endif // LATTICE_2DSQUARE_H_INCLUDED

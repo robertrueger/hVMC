@@ -263,3 +263,41 @@ unsigned int Lattice2DSquare::irreducible_idxrel_maxdist() const
     return L / 2;
   }
 }
+
+
+
+Eigen::VectorXd Lattice2DSquare::r( unsigned int i, unsigned int j ) const
+{
+  assert( i < L );
+  assert( j < L );
+
+  // calculate the positions of i and j
+  const unsigned int x_i = i % S;
+  const unsigned int y_i = i / S;
+  const unsigned int x_j = j % S;
+  const unsigned int y_j = j / S;
+
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 2 );
+  result( 0 ) = static_cast<double>( x_j ) - static_cast<double>( x_i );
+  result( 1 ) = static_cast<double>( y_j ) - static_cast<double>( y_i );
+  return result;
+}
+
+
+
+vector<Eigen::VectorXd> Lattice2DSquare::get_qvectors() const
+{
+  vector<Eigen::VectorXd> allq;
+  allq.reserve( S * S / 4 );
+
+  for ( unsigned int i = 1; i <= S / 2; ++i ) {
+    for ( unsigned int l = 1; l <= S / 2; ++l ) {
+      Eigen::VectorXd q( 2 );
+      q[0] = i * 2.0 * M_PI / static_cast<double>( S );
+      q[1] = l * 2.0 * M_PI / static_cast<double>( S );
+      allq.push_back( q );
+    }
+  }
+
+  return allq;
+}

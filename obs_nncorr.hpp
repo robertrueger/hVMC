@@ -17,25 +17,30 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBS_DELTAK_ENERGY_H_INCLUDED
-#define OBS_DELTAK_ENERGY_H_INCLUDED
+#ifndef OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
+#define OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
 
 #include "obs.hpp"
 
+#include <vector>
 
-class ObservableDeltaKEnergy : public Observable
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
+
+
+class ObservableDensityDensityCorrelation : public Observable
 {
   private:
 
-    Eigen::VectorXd thisbin_DkE_sum;
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> thisbin_nncorr_sum;
     unsigned int thisbin_count;
 
-    Eigen::VectorXd binmean_DkE_sum;
+    Eigen::MatrixXd binmean_nncorr_sum;
     unsigned int binmean_count;
 
   public:
 
-    ObservableDeltaKEnergy();
+    ObservableDensityDensityCorrelation();
 
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 
@@ -49,4 +54,4 @@ class ObservableDeltaKEnergy : public Observable
     void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
 };
 
-#endif // OBS_DELTAK_ENERGY_H_INCLUDED
+#endif // OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED

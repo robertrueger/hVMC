@@ -30,7 +30,7 @@ using namespace std;
 ElectronConfiguration::ElectronConfiguration(
   const shared_ptr<Lattice>& lat_init,
   unsigned int electron_number_init,
-  const shared_ptr<mt19937>& rng_init )
+  mt19937& rng_init )
   : lat( lat_init ), electron_number( electron_number_init ),
     site_occ(
       Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat_init->L )
@@ -76,11 +76,11 @@ void ElectronConfiguration::distribute_random()
 
   // randomly distribute L/2 electrons per spin direction
   while ( site_occ.head( lat->L ).sum() < electron_number / 2 ) {
-    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( *rng ) ]
+    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng ) ]
       = ELECTRON_OCCUPATION_FULL;
   }
   while ( site_occ.tail( lat->L ).sum() < electron_number / 2 ) {
-    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( *rng )
+    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng )
               + lat->L ] = ELECTRON_OCCUPATION_FULL;
   }
 
@@ -100,11 +100,11 @@ void ElectronConfiguration::distribute_random()
 
 
 ElectronHop ElectronConfiguration::propose_random_hop(
-  unsigned int update_hop_maxdist )
+  unsigned int update_hop_maxdist ) const
 {
   // hop the kth electron
   const unsigned int k
-    = uniform_int_distribution<unsigned int>( 0, electron_number - 1 )( *rng );
+    = uniform_int_distribution<unsigned int>( 0, electron_number - 1 )( rng );
 
   // find the position of the xth electron
   const unsigned int k_pos = electron_pos[k];
@@ -134,9 +134,7 @@ ElectronHop ElectronConfiguration::propose_random_hop(
 
   const unsigned int nb_number
     = uniform_int_distribution<unsigned int>
-      ( 0,
-        k_1nb.size() + k_2nb.size() + k_3nb.size() - 1
-      )( *rng );
+      ( 0, k_1nb.size() + k_2nb.size() + k_3nb.size() - 1 )( rng );
 
   unsigned int l;
   if ( nb_number < k_1nb.size() ) {
@@ -231,6 +229,13 @@ unsigned int ElectronConfiguration::get_site_occ( unsigned int l ) const
 unsigned int ElectronConfiguration::N() const
 {
   return electron_number;
+}
+
+
+
+Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ElectronConfiguration::n() const
+{
+  return ( site_occ.head( lat->L ) + site_occ.tail( lat->L ) );
 }
 
 

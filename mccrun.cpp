@@ -31,7 +31,6 @@
 #include "hmodvmc.hpp"
 #include "obs_all.hpp"
 #include "msgtags.hpp"
-#include "fpctrl.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;
@@ -39,7 +38,7 @@ namespace mpi = boost::mpi;
 
 
 MCCResults mccrun_master(
-  const Options& opts, const Eigen::VectorXfp& vpar, unsigned int num_bins,
+  const Options& opts, const Eigen::VectorXd& vpar, unsigned int num_bins,
   const set<observables_t>& obs, const mpi::communicator& mpicomm )
 {
   cout << "========== NEW MONTE CARLO CYCLE ==========" << endl;
@@ -86,7 +85,7 @@ MCCResults mccrun_master(
 
   for (
     unsigned int mcs = 0;
-    mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+    mcs < opts["calc.num-mcs-equil"].as<unsigned int>();
     ++mcs ) {
     // take care of the slaves
     mpiquery_finished_work();
@@ -113,7 +112,7 @@ MCCResults mccrun_master(
 
     for (
       unsigned int mcs = 0;
-      mcs < opts["sim.num-binmcs"].as<unsigned int>();
+      mcs < opts["calc.num-binmcs"].as<unsigned int>();
       ++mcs ) {
       // take care of the slaves
       mpiquery_finished_work();
@@ -178,7 +177,7 @@ MCCResults mccrun_master(
   FPDevStat W_devstat_combined =
     accumulate(
       W_devstats.begin(), W_devstats.end(),
-      FPDevStat( opts["fpctrl.W-deviation-target"].as<fptype>() )
+      FPDevStat( opts["fpctrl.W-deviation-target"].as<double>() )
     );
   cout << "     W: " << W_devstat_combined.recalcs
        << "/" << W_devstat_combined.misses
@@ -190,7 +189,7 @@ MCCResults mccrun_master(
   FPDevStat T_devstat_combined =
     accumulate(
       T_devstats.begin(), T_devstats.end(),
-      FPDevStat( opts["fpctrl.T-deviation-target"].as<fptype>() )
+      FPDevStat( opts["fpctrl.T-deviation-target"].as<double>() )
     );
   cout << "     T: " << T_devstat_combined.recalcs
        << "/" << T_devstat_combined.misses
@@ -219,7 +218,7 @@ MCCResults mccrun_master(
 
 
 void mccrun_slave(
-  const Options& opts, const Eigen::VectorXfp& vpar,
+  const Options& opts, const Eigen::VectorXd& vpar,
   const set<observables_t>& obs, const mpi::communicator& mpicomm )
 {
   // prepare the simulation
@@ -232,7 +231,7 @@ void mccrun_slave(
 
   for (
     unsigned int mcs = 0;
-    mcs < opts["sim.num-mcs-equil"].as<unsigned int>();
+    mcs < opts["calc.num-mcs-equil"].as<unsigned int>();
     ++mcs )
   {
     model.mcs();
@@ -262,7 +261,7 @@ void mccrun_slave(
 
     for (
       unsigned int mcs = 0;
-      mcs < opts["sim.num-binmcs"].as<unsigned int>();
+      mcs < opts["calc.num-binmcs"].as<unsigned int>();
       ++mcs )
     {
       // perform a Monte Carlo step

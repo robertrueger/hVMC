@@ -33,19 +33,19 @@ namespace chrono = boost::chrono;
 
 
 HubbardModelVMC prepare_model(
-  const Options& opts, const Eigen::VectorXfp& vpar,
+  const Options& opts, const Eigen::VectorXd& vpar,
   const mpi::communicator& mpicomm )
 {
-  shared_ptr<mt19937> rng = prepare_rng( opts, mpicomm );
+  mt19937 rng = prepare_rng( opts, mpicomm );
   shared_ptr<Lattice> lat = prepare_lattice( opts );
 
-  vector<fptype> t(3);
-  t[0] = opts["phys.nn-hopping"].as<fptype>();
-  t[1] = opts["phys.2nd-nn-hopping"].as<fptype>();
-  t[2] = opts["phys.3rd-nn-hopping"].as<fptype>();
+  vector<double> t(3);
+  t[0] = opts["phys.nn-hopping"].as<double>();
+  t[1] = opts["phys.2nd-nn-hopping"].as<double>();
+  t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
   SingleParticleOrbitals detwf = prepare_detwf( lat, opts );
-  if ( detwf.E( detwf.M.cols() ) - detwf.E( detwf.M.cols() - 1 ) < 0.00001 ) {
+  if ( detwf.E( detwf.M.cols() ) - detwf.E( detwf.M.cols() - 1 ) < 0.00001f ) {
     if ( mpicomm.rank() == 0 ) {
       cout << endl;
       cout << "   WARNING: Open shell detected!" << endl;
@@ -64,29 +64,29 @@ HubbardModelVMC prepare_model(
     detwf,
     v,
     opts["phys.num-electrons"].as<unsigned int>(),
-    opts["sim.update-hop-maxdistance"].as<unsigned int>(),
+    opts["calc.update-hop-maxdistance"].as<unsigned int>(),
     t,
-    opts["phys.onsite-energy"].as<fptype>(),
-    opts["fpctrl.W-deviation-target"].as<fptype>(),
+    opts["phys.onsite-energy"].as<double>(),
+    opts["fpctrl.W-deviation-target"].as<double>(),
     opts["fpctrl.W-updates-until-recalc"].as<unsigned int>(),
-    opts["fpctrl.T-deviation-target"].as<fptype>(),
+    opts["fpctrl.T-deviation-target"].as<double>(),
     opts["fpctrl.T-updates-until-recalc"].as<unsigned int>()
   );
 }
 
 
-shared_ptr<mt19937> prepare_rng(
+mt19937 prepare_rng(
   const Options& opts, const mpi::communicator& mpicomm )
 {
   unsigned int rngseed;
-  if ( opts.count("sim.rng-seed") ) {
-    rngseed = opts["sim.rng-seed"].as<unsigned int>();
+  if ( opts.count("calc.rng-seed") ) {
+    rngseed = opts["calc.rng-seed"].as<unsigned int>();
   } else {
     rngseed = chrono::system_clock::now().time_since_epoch().count();
   }
 
   rngseed += rngseed / ( mpicomm.rank() + 1 );
-  return make_shared<mt19937>( rngseed );
+  return mt19937( rngseed );
 }
 
 
@@ -107,10 +107,10 @@ shared_ptr<Lattice> prepare_lattice( const Options& opts )
 SingleParticleOrbitals prepare_detwf(
   const shared_ptr<Lattice>& lat, const Options& opts )
 {
-  vector<fptype> t(3);
-  t[0] = opts["phys.nn-hopping"].as<fptype>();
-  t[1] = opts["phys.2nd-nn-hopping"].as<fptype>();
-  t[2] = opts["phys.3rd-nn-hopping"].as<fptype>();
+  vector<double> t(3);
+  t[0] = opts["phys.nn-hopping"].as<double>();
+  t[1] = opts["phys.2nd-nn-hopping"].as<double>();
+  t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
   return
     wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
@@ -144,6 +144,12 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
   if ( obs.count( OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY ) ) {
     obscalc.push_back(
       unique_ptr<Observable>( new ObservableDoubleOccupancy() )
+    );
+  }
+
+  if ( obs.count( OBSERVABLE_DENSITY_DENSITY_CORRELATION ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableDensityDensityCorrelation() )
     );
   }
 

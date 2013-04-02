@@ -22,7 +22,10 @@
 #include <set>
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include <fstream>
+#include <algorithm>
+#include <iterator>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -31,17 +34,19 @@
 #include <boost/chrono.hpp>
 #include <boost/mpi/collectives.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 
+#include "analysis.hpp"
 #include "macros.h"
 #include "serialization_eigen.hpp"
 #include "mccresults.hpp"
 #include "mccrun.hpp"
 #include "msgtags.hpp"
-#include "fptype.hpp"
 #include "obs.hpp"
 #include "varparam.hpp"
+#include "mktest.hpp"
 
 using namespace std;
 namespace mpi = boost::mpi;
@@ -49,88 +54,39 @@ namespace chrono = boost::chrono;
 namespace fs  = boost::filesystem;
 namespace ar  = boost::archive;
 
-void sched_master_single( const Options& opts, const mpi::communicator& mpicomm );
-void sched_master_sropt ( const Options& opts, const mpi::communicator& mpicomm );
+void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm );
+void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm );
+void sched_master_ana( const Options& opts );
 
 
 
 void sched_master( const Options& opts, const mpi::communicator& mpicomm )
 {
-  if ( opts["sim.mode"].as<optsimmode_t>() == OPTION_SIMULATION_MODE_SINGLERUN ) {
-    sched_master_single( opts, mpicomm );
+  if ( opts["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION ) {
 
-  } else {
-    assert( opts["sim.mode"].as<optsimmode_t>()
-            == OPTION_SIMULATION_MODE_SR_OPTIMIZATION );
+    sched_master_opt( opts, mpicomm );
 
-    sched_master_sropt( opts, mpicomm );
+  } else if ( opts["calc.mode"].as<optmode_t>() == OPTION_MODE_SIMULATION ) {
+
+    sched_master_sim( opts, mpicomm );
+
+  } else if ( opts["calc.mode"].as<optmode_t>() == OPTION_MODE_ANALYSIS ) {
+
+    sched_master_ana( opts );
+
   }
-}
-
-
-
-void sched_master_single( const Options& opts, const mpi::communicator& mpicomm )
-{
-  schedmsg_t schedmsg;
-
-  // prepare the initial variational parameters
-  Eigen::VectorXfp vpar = get_initial_varparam( opts );
-
-  // add the observables you want to measure to the set
-  set<observables_t> obs;
-  obs.insert(
-    opts["sim.observable"].as< std::vector<observables_t> >().begin(),
-    opts["sim.observable"].as< std::vector<observables_t> >().end()
-  );
-
-  // start the stopwatch
-  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-
-  // tell everyone that we want to start a Monte Carlo cycle
-  schedmsg = SCHEDMSG_START_MCC;
-  mpi::broadcast( mpicomm, schedmsg, 0 );
-
-  // send the varparams and the set of observables to the slaves
-  mpi::broadcast( mpicomm, vpar, 0 );
-  mpi::broadcast( mpicomm, obs,  0 );
-
-  // run master part of the Monte Carlo cycle
-  const MCCResults& res = mccrun_master(
-    opts, vpar,
-    opts["sim.num-bins"].as<unsigned int>(),
-    obs, mpicomm
-  );
-
-  // stop the stopwatch and calculate the elapsed time
-  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-  const double total_time = chrono::duration<double>( t2 - t1 ).count();
-  const double time_per_mcs = total_time / static_cast<double>
-                              ( opts["sim.num-binmcs"].as<unsigned int>() *
-                                opts["sim.num-bins"].as<unsigned int>() );
-  cout << ":: Simulation has finished in " << total_time << " sec" << endl;
-  cout << "   Total performance = "
-       << 1.0 / time_per_mcs << " effMCS/sec" << endl << endl;
 
   // everything done, tell everyone to quit!
-  schedmsg = SCHEDMSG_EXIT;
+  schedmsg_t schedmsg = SCHEDMSG_EXIT;
   mpi::broadcast( mpicomm, schedmsg, 0 );
-
-  // output the results
-  cout << ":: Simulation results" << endl;
-  cout << res;
-
-  // write simulation results to file
-  res.write_to_files( opts["output-dir"].as<fs::path>() );
 }
 
 
 
-void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
+void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 {
-  schedmsg_t schedmsg;
-
   // prepare the initial variational parameters
-  Eigen::VectorXfp vpar = get_initial_varparam( opts );
+  Eigen::VectorXd vpar = get_initial_varparam( opts );
 
   // add the observables you want to measure to the set
   set<observables_t> obs;
@@ -141,37 +97,36 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
 
   // create datastructures to store the history of E
   // and the variational parameters during the optimization
-  vector<Eigen::VectorXfp> vpar_hist;
+  vector<Eigen::VectorXd> vpar_hist;
   vpar_hist.push_back( vpar );
 
   // open output files for the energy and the variational parameters
   ofstream vpar_hist_file( (
-    opts["output-dir"].as<fs::path>() / "vpar_hist.txt"
-  ).string() );
+    opts["calc.working-dir"].as<fs::path>() / "opt_vpar_hist.txt"
+  ).string(), ios::app );
 
   ofstream E_hist_file( (
-    opts["output-dir"].as<fs::path>() / "E_hist.txt"
-  ).string() );
+    opts["calc.working-dir"].as<fs::path>() / "opt_E_hist.txt"
+  ).string(), ios::app );
 
   // optimization settings
-  // TODO: make those as options (Robert Rueger, 2013-03-16 12:34)
-  unsigned int sr_bins_init = opts["sim.num-bins"].as<unsigned int>();
-  fptype       sr_dt_init
-    = opts["sim.sr-dt"].as<fptype>();
-  unsigned int sr_max_refinements
-    = opts["sim.sr-max-refinements"].as<unsigned int>();
-  unsigned int sr_averaging_cycles
-    = opts["sim.sr-averaging-cycles"].as<unsigned int>();
+  const unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();
+  const double       sr_dt_init   = opts["calc.sr-dt"].as<double>();
+  const unsigned int sr_max_refinements
+    = opts["calc.sr-max-refinements"].as<unsigned int>();
+  const unsigned int sr_averaging_cycles
+    = opts["calc.sr-averaging-cycles"].as<unsigned int>();
+  const double sr_nodrift_threshold = opts["calc.sr-mkthreshold"].as<double>();
 
   // helper variables
   unsigned int sr_bins = sr_bins_init;
-  fptype       sr_dt = sr_dt_init;
+  double       sr_dt = sr_dt_init;
   unsigned int sr_cycles = 0;
   unsigned int sr_refinements = 0;
   unsigned int sr_cycles_since_refinement = 0;
-  unsigned int sr_num_vpar_converged = 0;
-  vector<unsigned int> sr_vpar_converged( vpar.size(), false );
+  bool         sr_all_converged = false;
   unsigned int sr_fullconv_cycles = 0;
+  vector<double> sr_vpar_mkresult( vpar.size() );
 
   bool finished = false;
   while ( !finished ) {
@@ -180,6 +135,7 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
 
     // tell everyone that we want to start a Monte Carlo cycle
+    schedmsg_t schedmsg;
     schedmsg = SCHEDMSG_START_MCC;
     mpi::broadcast( mpicomm, schedmsg, 0 );
 
@@ -194,24 +150,25 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
     const double total_time = chrono::duration<double>( t2 - t1 ).count();
     const double time_per_mcs = total_time / static_cast<double>
-                                ( opts["sim.num-binmcs"].as<unsigned int>() *
+                                ( opts["calc.num-binmcs"].as<unsigned int>() *
                                   sr_bins );
     cout << ":: Simulation has finished in " << total_time << " sec" << endl;
     cout << "   Total performance = "
          << 1.0 / time_per_mcs << " effMCS/sec" << endl << endl;
 
-
     // output the results
-    cout << ":: Simulation results" << endl << endl;
-    cout << res;
+    if ( opts.count( "verbose" ) ) {
+      cout << ":: Simulation results" << endl;
+      cout << res;
+    }
 
     // calculate SR matrix and forces
-    const Eigen::MatrixXfp S =
+    const Eigen::MatrixXd S =
       res.Deltak_Deltakprime.get() - res.Deltak.get() * res.Deltak->transpose();
-    const Eigen::VectorXfp f =
+    const Eigen::VectorXd f =
       res.Deltak.get() * res.E->mean - res.Deltak_E.get();
-    const Eigen::VectorXfp dvpar =
-      ( S + 0.01 * Eigen::MatrixXfp::Identity( S.rows(), S.cols() ) )
+    const Eigen::VectorXd dvpar =
+      ( S + 0.01 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
       .fullPivLu().solve( f );
 
     // update variational parameters
@@ -222,23 +179,24 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
 
     ++sr_cycles;
     ++sr_cycles_since_refinement;
-    if ( sr_num_vpar_converged <= vpar.size() &&
-         sr_cycles_since_refinement >= 10 ) {
+    unsigned int sr_num_vpar_converged = 0;
+    if ( sr_cycles_since_refinement >= 20 ) {
       for ( unsigned int k = 0; k < vpar.size(); ++k ) {
-        // check if the variational parameter is still drifting
-        if ( !sr_vpar_converged.at( k ) ) { // ... if it is not converged already
-          // (it is considered converged if the sign of its change
-          // has been fluctuating during the last iterations)
-          int k_signsum = 0;
-          for ( auto it = vpar_hist.rbegin(); it != vpar_hist.rbegin() + 9; ++it ) {
-            k_signsum += ( *it )( k ) - ( *( it + 1 ) )( k )  < 0.f ? -1 : +1;
-          }
-          if ( abs( k_signsum ) < 4 ) {
-            sr_vpar_converged.at( k ) = true;
-            ++sr_num_vpar_converged;
-          }
+        // perform a Mann-Kendall test on the evolution of the vpar
+        vector<double> vpar_k_hist_sinceref;
+        for ( auto it = vpar_hist.end() - 1 - sr_cycles_since_refinement / 2;
+              it != vpar_hist.end();
+              ++it ) {
+          vpar_k_hist_sinceref.push_back( ( *it )[k] );
+        }
+        sr_vpar_mkresult[k] = mktest( vpar_k_hist_sinceref );
+        if ( sr_vpar_mkresult[k] <= sr_nodrift_threshold ) {
+          ++sr_num_vpar_converged;
         }
       }
+    }
+    if ( sr_num_vpar_converged == vpar.size() ) {
+      sr_all_converged = true;
     }
 
     // output the vpars and the energy to their files
@@ -252,6 +210,12 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
       cout << "f = " << endl << f.transpose() << endl << endl;
       cout << "dvpar = " << endl << dvpar.transpose() << endl << endl;
       cout << "vpar' = " << endl << vpar.transpose() << endl << endl;
+      if ( sr_cycles_since_refinement >= 20 ) {
+        cout << "mktest = " << endl;
+        copy( sr_vpar_mkresult.begin(), sr_vpar_mkresult.end(),
+              ostream_iterator<double>( cout, " " ) );
+        cout << endl << endl;
+      }
     }
     cout << " Iteration: " << sr_cycles
          << " (" << sr_cycles_since_refinement  << ")" << endl;
@@ -259,19 +223,18 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     cout << " ConvVPars: " << sr_num_vpar_converged << "/" << vpar.size() << endl;
     cout << "    Status: ";
 
-    if ( sr_num_vpar_converged < vpar.size() ) {
+    if ( !sr_all_converged ) {
       // vpar not converged ... keep iterating!
       cout << "iterating" << endl;
     } else {
       // all variational parameters converged!
       if ( sr_refinements < sr_max_refinements ) {
         // still some refinement to do ... refine!
-        sr_dt *= 0.5f;
+        sr_dt *= 0.5;
         sr_bins *= 2;
-        sr_vpar_converged = vector<unsigned int>( vpar.size(), false );
         ++sr_refinements;
         sr_cycles_since_refinement = 0;
-        sr_num_vpar_converged = 0;
+        sr_all_converged = false;
         cout << "refining & iterating" << endl;
       } else {
         // maximum refinement reached and all vpars fully converged
@@ -288,16 +251,12 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
     cout << endl;
   }
 
-  // everything done, tell everyone to quit!
-  schedmsg = SCHEDMSG_EXIT;
-  mpi::broadcast( mpicomm, schedmsg, 0 );
-
   // calculate the average of the converged vpars
-  const Eigen::VectorXfp vpar_avg =
+  const Eigen::VectorXd vpar_avg =
     accumulate(
       vpar_hist.rbegin() + 1, vpar_hist.rbegin() + sr_averaging_cycles,
       vpar_hist.back()
-    ) / static_cast<fptype>( sr_averaging_cycles );
+    ) / static_cast<double>( sr_averaging_cycles );
 
   // print optimization results
   if ( opts.count( "verbose" ) ) {
@@ -312,10 +271,100 @@ void sched_master_sropt( const Options& opts, const mpi::communicator& mpicomm )
 
   // write the final variational parameters to a file
   ofstream vpar_final_file( (
-    opts["output-dir"].as<fs::path>() / "vpar_final.dat"
+    opts["calc.working-dir"].as<fs::path>() / "opt_vpar_final.dat"
   ).string() );
   ar::text_oarchive vpar_final_archive( vpar_final_file );
   vpar_final_archive << vpar_avg;
+}
+
+
+
+void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
+{
+  schedmsg_t schedmsg;
+
+  // prepare the initial variational parameters
+  Eigen::VectorXd vpar = get_initial_varparam( opts );
+
+  // add the observables you want to measure to the set
+  set<observables_t> obs;
+  obs.insert(
+    opts["calc.observable"].as< std::vector<observables_t> >().begin(),
+    opts["calc.observable"].as< std::vector<observables_t> >().end()
+  );
+
+  // start the stopwatch
+  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+
+  // tell everyone that we want to start a Monte Carlo cycle
+  schedmsg = SCHEDMSG_START_MCC;
+  mpi::broadcast( mpicomm, schedmsg, 0 );
+
+  // send the varparams and the set of observables to the slaves
+  mpi::broadcast( mpicomm, vpar, 0 );
+  mpi::broadcast( mpicomm, obs,  0 );
+
+  // run master part of the Monte Carlo cycle
+  const MCCResults& res = mccrun_master(
+                            opts, vpar,
+                            opts["calc.num-bins"].as<unsigned int>(),
+                            obs, mpicomm
+                          );
+
+  // stop the stopwatch and calculate the elapsed time
+  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
+  const double total_time = chrono::duration<double>( t2 - t1 ).count();
+  const double time_per_mcs = total_time / static_cast<double>
+                              ( opts["calc.num-binmcs"].as<unsigned int>() *
+                                opts["calc.num-bins"].as<unsigned int>() );
+  cout << ":: Simulation has finished in " << total_time << " sec" << endl;
+  cout << "   Total performance = "
+       << 1.0 / time_per_mcs << " effMCS/sec" << endl << endl;
+
+  // output the results
+  if ( opts.count( "verbose" ) ) {
+    cout << ":: Simulation results" << endl;
+    cout << res;
+  }
+
+  // write simulation results to human readable files
+  res.write_to_files( opts["calc.working-dir"].as<fs::path>() );
+
+  // write results to a machine readable file
+  ofstream res_file( (
+    opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
+  ).string() );
+  ar::text_oarchive res_archive( res_file );
+  res_archive << res;
+}
+
+
+
+void sched_master_ana( const Options& opts )
+{
+  // read the old MCCResults from disk
+  if ( fs::exists(
+         opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
+       ) == false ) {
+    cout << "ERROR: no simulation result file found" << endl;
+    return;
+  }
+  ifstream res_file( (
+    opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
+  ).string() );
+  ar::text_iarchive res_archive( res_file );
+  MCCResults res;
+  res_archive >> res;
+
+  // figure out the analysis we want to perform ...
+  const vector<analysis_t>& anamod_v
+    = opts["calc.analysis"].as< vector<analysis_t> >();
+  const set<analysis_t> anamod( anamod_v.begin(), anamod_v.end() );
+
+  // ... and finally perform the analysis
+  if ( anamod.count( ANALYSIS_STATIC_STRUCTURE_FACTOR ) ) {
+    analysis_static_structure_factor( opts, res );
+  }
 }
 
 
@@ -329,7 +378,7 @@ void sched_slave( const Options& opts, const mpi::communicator& mpicomm )
     if ( schedmsg == SCHEDMSG_START_MCC ) {
 
       // get variational parameters and set of observables from master
-      Eigen::VectorXfp vpar;
+      Eigen::VectorXd vpar;
       mpi::broadcast( mpicomm, vpar, 0 );
       set<observables_t> obs;
       mpi::broadcast( mpicomm, obs,  0 );

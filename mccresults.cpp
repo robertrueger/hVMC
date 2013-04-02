@@ -29,33 +29,38 @@ namespace fs = boost::filesystem;
 void MCCResults::write_to_files( const fs::path& dir ) const
 {
   {
-    ofstream success_file( ( dir / "res_success.txt" ).string() );
+    ofstream success_file( ( dir / "sim_success.txt" ).string() );
     success_file << success << endl;
   }
 
   if ( E ) {
-    ofstream E_file( ( dir / "res_E.txt" ).string() );
+    ofstream E_file( ( dir / "sim_res_E.txt" ).string() );
     E_file << E->mean << " " << E->sigma << endl;
   }
 
   if ( Deltak ) {
-    ofstream Dk_file( ( dir / "res_Dk.txt" ).string() );
+    ofstream Dk_file( ( dir / "sim_res_Dk.txt" ).string() );
     Dk_file << Deltak->transpose() << endl;
   }
 
   if ( Deltak_Deltakprime ) {
-    ofstream DkDkp_file( ( dir / "res_DkDkp.txt" ).string() );
+    ofstream DkDkp_file( ( dir / "sim_res_DkDkp.txt" ).string() );
     DkDkp_file << Deltak_Deltakprime.get() << endl;
   }
 
   if ( Deltak_E ) {
-    ofstream DkE_file( ( dir / "res_DkE.txt" ).string() );
+    ofstream DkE_file( ( dir / "sim_res_DkE.txt" ).string() );
     DkE_file << Deltak_E->transpose() << endl;
   }
 
   if ( dblocc ) {
-    ofstream dblocc_file( ( dir / "res_dblocc.txt" ).string() );
+    ofstream dblocc_file( ( dir / "sim_res_dblocc.txt" ).string() );
     dblocc_file << dblocc->mean << " " << dblocc->sigma << endl;
+  }
+
+  if ( nncorr ) {
+    ofstream nncorr_file( ( dir / "sim_res_nncorr.txt" ).string() );
+    nncorr_file << nncorr.get() << endl;
   }
 }
 
@@ -99,6 +104,14 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
         << "      dblocc = " << res.dblocc->mean << endl
         << "sigma_dblocc = " << res.dblocc->sigma << endl;
   }
+
+  if ( res.nncorr ) {
+    out << endl
+        << "nncorr = " << endl
+        << res.nncorr.get() << endl;
+  }
+
+  out << endl;
 
   return out;
 }

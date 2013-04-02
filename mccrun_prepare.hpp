@@ -31,18 +31,17 @@
 
 #include "hmodvmc.hpp"
 #include "lattice.hpp"
-#include "fptype.hpp"
 #include "options.hpp"
 #include "obs.hpp"
 #include "detwf.hpp"
 
 
 HubbardModelVMC prepare_model(
-  const Options& opts, const Eigen::VectorXfp& vpar,
+  const Options& opts, const Eigen::VectorXd& vpar,
   const boost::mpi::communicator& mpicomm
 );
 
-std::shared_ptr<std::mt19937> prepare_rng(
+std::mt19937 prepare_rng(
   const Options& opts, const boost::mpi::communicator& mpicomm
 );
 
@@ -55,6 +54,5 @@ SingleParticleOrbitals prepare_detwf(
 std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
   const std::set<observables_t>& obs
 );
-
 
 #endif // MCCRUN_PREPARE_H_INCLUDED

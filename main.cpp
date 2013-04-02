@@ -51,7 +51,7 @@ int main( int argc, char* argv[] )
   // TODO: output all options if verbose (Robert Rueger, 2012-11-02 13:31)
 
   // create output directory
-  fs::create_directory( opts["output-dir"].as<fs::path>() );
+  fs::create_directory( opts["calc.working-dir"].as<fs::path>() );
 
   if ( mpicomm.rank() == 0 ) { // this process is the master
     sched_master( opts, mpicomm );

@@ -17,46 +17,52 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef JASTROW_H_INCLUDED
-#define JASTROW_H_INCLUDED
-
-#include <vector>
-#include <memory>
+#ifndef TVECTOR_H_INCLUDED
+#define TVECTOR_H_INCLUDED
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "macros.h"
 #include "lattice.hpp"
-#include "varparam.hpp"
+#include "econf.hpp"
+#include "jastrow.hpp"
+#include "fpctrl.hpp"
 
 
-class Jastrow
+class TVector
 {
+  protected:
 
-  private:
+    const Lattice* const lat;
+    const Jastrow& v;
+    const ElectronConfiguration& econf;
 
-    const std::shared_ptr<Lattice> lat;
+    Eigen::VectorXd T;
 
-    std::vector<double> idxrel_expv;
+    const unsigned int updates_until_recalc;
+    unsigned int updates_since_recalc;
+    FPDevStat devstat;
 
-    unsigned int num_vpar;
-    std::vector<unsigned int> idxrel_vparnum;
+    Eigen::VectorXd calc_new() const;
+    Eigen::VectorXd calc_qupdated( const ElectronHop& hop ) const;
 
   public:
 
-    Jastrow(
-      const std::shared_ptr<Lattice>& lat_init,
-      const Eigen::VectorXd& v_init
+    TVector(
+      const Lattice* lat_init,
+      const Jastrow& v_init,
+      const ElectronConfiguration& econf_init,
+      double deviation_target,
+      unsigned int updates_until_recalc_init
     );
 
-    double operator()( unsigned int i, unsigned int j ) const;
-    double exp( unsigned int i, unsigned int j ) const;
-    double exp_onsite() const;
-    void set( unsigned int i, unsigned int j, double v_new  );
+    void init();
+    void update( const ElectronHop& hop );
 
-    unsigned int get_num_vpar() const;
-    unsigned int get_vparnum( unsigned int irr_idxrel ) const;
+    double operator()( unsigned int i ) const;
+
+    FPDevStat get_devstat() const;
+
 };
 
-#endif // JASTROW_H_INCLUDED
+#endif // TVECTOR_H_INCLUDED

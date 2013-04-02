@@ -27,23 +27,22 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "fptype.hpp"
-
 
 class ObservableDeltaK : public Observable
 {
   private:
 
-    Eigen::VectorXfp Dk_sum;
-    unsigned int this_bin_num_measurements;
+    Eigen::VectorXd thisbin_Dk_sum;
+    unsigned int thisbin_count;
 
-    std::vector<Eigen::VectorXfp> Dk_binmeans;
+    Eigen::VectorXd binmean_Dk_sum;
+    unsigned int binmean_count;
 
   public:
 
     ObservableDeltaK();
 
-    void measure( HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const HubbardModelVMC& model, ObservableCache& cache );
 
     void completebin();
 

@@ -23,9 +23,10 @@
 #include <boost/program_options/variables_map.hpp>
 
 
-enum optsimmode_t {
-  OPTION_SIMULATION_MODE_SINGLERUN,
-  OPTION_SIMULATION_MODE_SR_OPTIMIZATION
+enum optmode_t {
+  OPTION_MODE_OPTIMIZATION,
+  OPTION_MODE_SIMULATION,
+  OPTION_MODE_ANALYSIS
 };
 
 typedef boost::program_options::variables_map Options;

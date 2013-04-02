@@ -23,7 +23,7 @@
 #include <fstream>
 #include <set>
 
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/archive/text_iarchive.hpp>
 
 #include "serialization_eigen.hpp"
@@ -35,17 +35,17 @@ namespace fs  = boost::filesystem;
 namespace ar  = boost::archive;
 
 
-Eigen::VectorXfp get_initial_varparam( const Options& opts )
+Eigen::VectorXd get_initial_varparam( const Options& opts )
 {
   // determine how many variational parameters there are
   unsigned int num_vpars
     = prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
 
-  if ( opts.count( "phys.vpars" ) ) {
+  if ( fs::exists( opts["phys.vpar-file"].as<fs::path>() ) ) {
     // read the variational parameters from a file
-    ifstream vpar_file( opts["phys.vpars"].as<fs::path>().string() );
+    ifstream vpar_file( ( opts["phys.vpar-file"].as<fs::path>() ).string() );
     ar::text_iarchive vpar_archive( vpar_file );
-    Eigen::VectorXfp vpar;
+    Eigen::VectorXd vpar;
     vpar_archive >> vpar;
     if ( vpar.size() != num_vpars ) {
       cerr << "ERROR: variational parameter file does not have the right number "
@@ -55,6 +55,6 @@ Eigen::VectorXfp get_initial_varparam( const Options& opts )
     return vpar;
   } else {
     // set all variational parameters to zero
-    return Eigen::VectorXfp::Zero( num_vpars );
+    return Eigen::VectorXd::Zero( num_vpars );
   }
 }

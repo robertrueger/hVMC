@@ -23,6 +23,8 @@
 # include <iostream>
 #endif
 
+#include <cmath>
+
 using namespace std;
 
 
@@ -100,6 +102,35 @@ set<unsigned int> Lattice1DChain::irreducible_idxrel_list() const
 
 
 
-unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const {
+unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const
+{
   return L / 2;
+}
+
+
+
+Eigen::VectorXd Lattice1DChain::r( unsigned int i, unsigned int j ) const
+{
+  assert( i < L );
+  assert( j < L );
+
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 1 );
+  result( 0 ) = static_cast<double>( j ) - static_cast<double>( i );
+  return result;
+};
+
+
+
+vector<Eigen::VectorXd> Lattice1DChain::get_qvectors() const
+{
+  vector<Eigen::VectorXd> allq;
+  allq.reserve( L / 2 );
+
+  for ( unsigned int i = 1; i <= L / 2; ++i ) {
+    Eigen::VectorXd q( 1 );
+    q[0] = i * 2.0 * M_PI / static_cast<double>( L );
+    allq.push_back( q );
+  }
+
+  return allq;
 }

@@ -22,60 +22,76 @@
 nn-hopping = 1.0
 
 # 2nd nearest-neighbor hopping matrix element t'
-2nd-nn-hopping = 0.5
+2nd-nn-hopping = -0.75
 
 # 3rd nearest-neighbor hopping matrix element t''
 3rd-nn-hopping = 0.0
 
 # on-site energy U
-onsite-energy = 4.0
+onsite-energy = 1.0
 
 # lattice type
-lattice = 2dsquare
+lattice = 1dchain
 
 # number of lattice sites
-num-lattice-sites = 36
+num-lattice-sites = 120
 
 # total number of electrons
-num-electrons = 26
+num-electrons = 120
+
+# file to load the variational parameters from
+#vpar-file =
 
 
-[sim] ####################### SIMULATION SETTINGS ##############################
+[calc] ####################### SIMULATION SETTINGS ##############################
 
-# simulation mode (single, sropt)
-#mode = sropt
+# simulation mode (optimization, simulation, analysis)
+#mode = opt
 
-# measured observables in single run mode
-# available observables: E, Dk, DkDkp, DkE
+# [opt+sim+ana]: input/output directory"
+working-dir = ./example/
+
+# [sim]: measured observables
+# available observables: E, Dk, DkDkp, DkE, dblocc, nncorr
+# (uncomment to activate)
 observable = E
 #observable = Dk
 #observable = DkDkp
 #observable = DkE
 observable = dblocc
+#observable = nncorr
 
-# maximum hopping distance for electronic configuration updates
+# [ana]: selected analysis modules
+# available modules: ssfac
+# (uncomment to activate)
+analysis = ssfac
+
+# [opt+sim]: maximum hopping distance for electronic configuration updates
 update-hop-maxdistance = 2
 
-# number of Monte Carlo steps for equilibration
-num-mcs-equil = 50
+# [opt+sim]: number of Monte Carlo steps for equilibration
+num-mcs-equil = 100
 
-# number of measurement bins
-num-bins = 50
+# [opt+sim]: number of measurement bins
+num-bins = 100
 
-# number of Monte Carlo steps per bin
-num-binmcs = 50
+# [opt+sim]: number of Monte Carlo steps per bin
+num-binmcs = 100
 
-# random number generator seed
+# [opt+sim]: random number generator seed
 # rng-seed = 1337133789
 
-# controls the SR convergence: vpar += dt * dvpar
-sr-dt = 2
+# [opt]: controls the SR convergence: vpar += dt * dvpar
+sr-dt = 20
 
-# number of refinements during the SR cycle
-sr-max-refinements = 4
+# [opt]: Mann-Kendall threshold for convergence detection
+sr-mkthreshold = 0.5
 
-# number of SR cycles to average the converged variational parameters
-sr-averaging-cycles = 10
+# [opt]: number of refinements during the SR cycle
+sr-max-refinements = 1
+
+# [opt]: number of SR cycles to average the converged variational parameters
+sr-averaging-cycles = 50
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################
@@ -90,4 +106,4 @@ sr-averaging-cycles = 10
 # T-deviation-target = 0.001
 
 # number of quick updates until recalculation of the vector T
-# T-updates-until-recalc = 50000
+# T-updates-until-recalc = 500000

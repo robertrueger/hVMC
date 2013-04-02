@@ -68,11 +68,11 @@ class ElectronConfiguration
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
     std::vector<unsigned int> electron_pos;
 
-    const std::shared_ptr<std::mt19937> rng;
+    std::mt19937& rng;
 
     // buffer vectors for nearest-neighbors
     // (in order to avoid allocating new ones all the time)
-    std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
+    mutable std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
 
     void reconstr_electron_pos();
 
@@ -80,17 +80,23 @@ class ElectronConfiguration
 
     ElectronConfiguration(
       const std::shared_ptr<Lattice>& lat_init, unsigned int N_init,
-      const std::shared_ptr<std::mt19937>& rng_init
+      std::mt19937& rng_init
     );
 
     void distribute_random();
 
-    ElectronHop propose_random_hop( unsigned int update_hop_maxdist );
+    ElectronHop propose_random_hop( unsigned int update_hop_maxdist ) const;
     void do_hop( const ElectronHop& hop );
 
     unsigned int get_electron_pos( unsigned int k ) const;
     unsigned int get_site_occ( unsigned int l ) const;
+
+    // ----- physical observables:
+    // total number of electrons
     unsigned int N() const;
+    // number of electrons per site
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
+    // total number of double occupancies
     unsigned int get_num_dblocc() const;
 
 };
