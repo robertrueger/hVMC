@@ -70,8 +70,11 @@ void TVector::update( const ElectronHop& hop )
 
     updates_since_recalc = 0;
 
-    const Eigen::VectorXd& T_approx = calc_qupdated( hop );
+    Eigen::VectorXd T_approx = calc_qupdated( hop );
     T = calc_new();
+
+    // normalize T_approx to the first element of the recalculated T
+    T_approx *= T( 0 ) / T_approx( 0 );
 
     double dev = calc_deviation( T_approx, T );
     devstat.add( dev );
@@ -104,7 +107,11 @@ void TVector::update( const ElectronHop& hop )
     T = calc_qupdated( hop );
 
 #ifndef NDEBUG
-    const Eigen::VectorXd& T_chk = calc_new();
+    Eigen::VectorXd T_chk = calc_new();
+
+    // normalize T_chk to the first element of the updated T
+    T_chk *= T( 0 ) / T_chk( 0 );
+
     double dev = calc_deviation( T, T_chk );
 
 # if VERBOSE >= 2
@@ -130,18 +137,18 @@ void TVector::update( const ElectronHop& hop )
 
 Eigen::VectorXd TVector::calc_new() const
 {
-  Eigen::VectorXd T_new( lat->L );
+  Eigen::VectorXd T_sum = Eigen::VectorXd::Zero( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
-    double sum = 0.0;
     for ( unsigned int j = 0; j < lat->L; ++j ) {
-      sum += v( i, j ) * static_cast<double>(
-               ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
+      T_sum( i ) += v( i, j ) * static_cast<double>(
+                    ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
     }
-    T_new( i ) = exp( sum );
   }
 
-  return T_new;
+  double T_middle = ( T_sum.minCoeff() + T_sum.maxCoeff() ) / 2.0;
+
+  return ( T_sum.array() - T_middle ).exp();
 }
 
 
