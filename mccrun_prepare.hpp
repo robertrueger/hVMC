@@ -52,7 +52,7 @@ SingleParticleOrbitals prepare_detwf(
 );
 
 std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
-  const std::set<observables_t>& obs
+  const std::set<observables_t>& obs, const Options& opts
 );
 
 #endif // MCCRUN_PREPARE_H_INCLUDED

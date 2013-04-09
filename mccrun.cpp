@@ -46,7 +46,7 @@ MCCResults mccrun_master(
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
 
-  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs, opts );
   ObservableCache obscache;
 
   unsigned int finished_workers = 0;
@@ -224,7 +224,7 @@ void mccrun_slave(
   // prepare the simulation
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
-  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs, opts );
   ObservableCache obscache;
 
   // equilibrate the system

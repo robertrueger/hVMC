@@ -40,7 +40,7 @@ class ObservableDensityDensityCorrelation final : public Observable
 
   public:
 
-    ObservableDensityDensityCorrelation();
+    ObservableDensityDensityCorrelation( unsigned int L );
 
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 

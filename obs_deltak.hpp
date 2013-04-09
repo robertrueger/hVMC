@@ -40,7 +40,7 @@ class ObservableDeltaK final : public Observable
 
   public:
 
-    ObservableDeltaK();
+    ObservableDeltaK( unsigned int num_vpar );
 
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 

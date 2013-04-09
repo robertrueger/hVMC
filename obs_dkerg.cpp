@@ -32,9 +32,12 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaKEnergy::ObservableDeltaKEnergy()
+ObservableDeltaKEnergy::ObservableDeltaKEnergy( unsigned int num_vpar )
   : Observable( OBSERVABLE_DELTAK_E ),
-    thisbin_count( 0 ), binmean_count( 0 ) { }
+    thisbin_DkE_sum( Eigen::VectorXd::Zero( num_vpar ) ),
+    thisbin_count( 0 ),
+    binmean_DkE_sum( Eigen::VectorXd::Zero( num_vpar ) ),
+    binmean_count( 0 ) { }
 
 
 void ObservableDeltaKEnergy::measure(
@@ -46,15 +49,7 @@ void ObservableDeltaKEnergy::measure(
   if ( !cache.E ) {
     cache.E = model.E_l();
   }
-
   const Eigen::VectorXd& DkE_current = cache.DeltaK.get() * cache.E.get();
-
-  if ( thisbin_DkE_sum.size() == 0 ) {
-    // first use of thisbin_DkE_sum
-    thisbin_DkE_sum.setZero( DkE_current.size() );
-  } else {
-    assert( thisbin_DkE_sum.size() ==DkE_current.size() );
-  }
 
   thisbin_DkE_sum += DkE_current;
   ++thisbin_count;
@@ -68,13 +63,6 @@ void ObservableDeltaKEnergy::measure(
 
 void ObservableDeltaKEnergy::completebin()
 {
-  if ( binmean_DkE_sum.size() == 0 ) {
-    // first use of binmean_DkE_sum
-    binmean_DkE_sum.setZero( thisbin_DkE_sum.size() );
-  } else {
-    assert( binmean_DkE_sum.size() == thisbin_DkE_sum.size() );
-  }
-
   binmean_DkE_sum += thisbin_DkE_sum / static_cast<double>( thisbin_count );
   ++binmean_count;
 

@@ -32,9 +32,12 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaK::ObservableDeltaK()
+ObservableDeltaK::ObservableDeltaK( unsigned int num_vpar )
   : Observable( OBSERVABLE_DELTAK ),
-    thisbin_count( 0 ), binmean_count( 0 ) { }
+    thisbin_Dk_sum( Eigen::VectorXd::Zero( num_vpar ) ),
+    thisbin_count( 0 ),
+    binmean_Dk_sum( Eigen::VectorXd::Zero( num_vpar ) ),
+    binmean_count( 0 ) { }
 
 
 void ObservableDeltaK::measure(
@@ -43,15 +46,7 @@ void ObservableDeltaK::measure(
   if ( !cache.DeltaK ) {
     cache.DeltaK = model.Delta_k();
   }
-
   const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
-
-  if ( thisbin_Dk_sum.size() == 0 ) {
-    // first use of thisbin_Dk_sum
-    thisbin_Dk_sum.setZero( Dk_current.size() );
-  } else {
-    assert( thisbin_Dk_sum.size() == Dk_current.size() );
-  }
 
   thisbin_Dk_sum += Dk_current;
   ++thisbin_count;
@@ -65,13 +60,6 @@ void ObservableDeltaK::measure(
 
 void ObservableDeltaK::completebin()
 {
-  if ( binmean_Dk_sum.size() == 0 ) {
-    // first use of binmean_Dk_sum
-    binmean_Dk_sum.setZero( thisbin_Dk_sum.size() );
-  } else {
-    assert( binmean_Dk_sum.size() == thisbin_Dk_sum.size() );
-  }
-
   binmean_Dk_sum += thisbin_Dk_sum / static_cast<double>( thisbin_count );
   ++binmean_count;
 

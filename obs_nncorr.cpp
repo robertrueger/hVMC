@@ -32,9 +32,15 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDensityDensityCorrelation::ObservableDensityDensityCorrelation()
+ObservableDensityDensityCorrelation::ObservableDensityDensityCorrelation(
+  unsigned int L )
   : Observable( OBSERVABLE_DENSITY_DENSITY_CORRELATION ),
-    thisbin_count( 0 ), binmean_count( 0 ) { }
+    thisbin_nncorr_sum(
+      Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic>::Zero( L, L )
+    ),
+    thisbin_count( 0 ),
+    binmean_nncorr_sum( Eigen::MatrixXd::Zero( L, L ) ),
+    binmean_count( 0 ) { }
 
 
 void ObservableDensityDensityCorrelation::measure(
@@ -43,16 +49,7 @@ void ObservableDensityDensityCorrelation::measure(
   if ( !cache.n ) {
     cache.n = model.n();
   }
-
   const Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>& n_current = cache.n.get();
-
-  if ( thisbin_nncorr_sum.size() == 0 ) {
-    // first use of thisbin_nncorr_sum
-    thisbin_nncorr_sum.setZero( n_current.size(), n_current.size() );
-  } else {
-    assert( thisbin_nncorr_sum.cols() == n_current.size() );
-    assert( thisbin_nncorr_sum.rows() == n_current.size() );
-  }
 
   thisbin_nncorr_sum += n_current * n_current.transpose();
   ++thisbin_count;
@@ -66,16 +63,6 @@ void ObservableDensityDensityCorrelation::measure(
 
 void ObservableDensityDensityCorrelation::completebin()
 {
-  if ( binmean_nncorr_sum.size() == 0 ) {
-    // first use of binmean_nncorr_sum
-    binmean_nncorr_sum.setZero(
-      thisbin_nncorr_sum.rows(), thisbin_nncorr_sum.cols()
-    );
-  } else {
-    assert( binmean_nncorr_sum.rows() == thisbin_nncorr_sum.rows() );
-    assert( binmean_nncorr_sum.cols() == thisbin_nncorr_sum.cols() );
-  }
-
   binmean_nncorr_sum
     += thisbin_nncorr_sum.cast<double>() / static_cast<double>( thisbin_count );
   ++binmean_count;

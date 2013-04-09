@@ -24,6 +24,7 @@
 
 #include "lattice_1dchain.hpp"
 #include "lattice_2dsquare.hpp"
+#include "varparam.hpp"
 #include "obs_all.hpp"
 
 using namespace std;
@@ -115,7 +116,8 @@ SingleParticleOrbitals prepare_detwf(
 }
 
 
-vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs )
+vector< unique_ptr<Observable> > prepare_obscalcs(
+  const set<observables_t>& obs, const Options& opts )
 {
   vector< unique_ptr<Observable> > obscalc;
 
@@ -124,18 +126,26 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
   }
 
   if ( obs.count( OBSERVABLE_DELTAK ) ) {
-    obscalc.push_back( unique_ptr<Observable>( new ObservableDeltaK() ) );
+    obscalc.push_back(
+      unique_ptr<Observable>(
+        new ObservableDeltaK( get_num_vpars( opts ) )
+      )
+    );
   }
 
   if ( obs.count( OBSERVABLE_DELTAK_DELTAKPRIME ) ) {
     obscalc.push_back(
-      unique_ptr<Observable>( new ObservableDeltaKDeltaKPrime() )
+      unique_ptr<Observable>(
+        new ObservableDeltaKDeltaKPrime( get_num_vpars( opts ) )
+      )
     );
   }
 
   if ( obs.count( OBSERVABLE_DELTAK_E ) ) {
     obscalc.push_back(
-      unique_ptr<Observable>( new ObservableDeltaKEnergy() )
+      unique_ptr<Observable>(
+        new ObservableDeltaKEnergy( get_num_vpars( opts ) )
+      )
     );
   }
 
@@ -147,7 +157,11 @@ vector< unique_ptr<Observable> > prepare_obscalcs( const set<observables_t>& obs
 
   if ( obs.count( OBSERVABLE_DENSITY_DENSITY_CORRELATION ) ) {
     obscalc.push_back(
-      unique_ptr<Observable>( new ObservableDensityDensityCorrelation() )
+      unique_ptr<Observable>(
+        new ObservableDensityDensityCorrelation(
+          opts["phys.num-lattice-sites"].as<unsigned int>()
+        )
+      )
     );
   }
 
