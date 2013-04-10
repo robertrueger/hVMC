@@ -50,7 +50,7 @@ endif
 
 # build [debug/profile/release] specific compiler/linker flags
 ifeq ($(BUILD), DEBUG)
-  CXXFLAGS += -g
+  CXXFLAGS += -Og -g
   DEFINES  += -DVERBOSE=1
 else ifeq ($(BUILD), PROFILE)
   CXXFLAGS += -march=native -O2 -g
