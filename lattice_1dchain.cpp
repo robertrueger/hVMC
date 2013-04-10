@@ -117,7 +117,7 @@ Eigen::VectorXd Lattice1DChain::r( unsigned int i, unsigned int j ) const
   Eigen::VectorXd result = Eigen::VectorXd::Zero( 1 );
   result( 0 ) = static_cast<double>( j ) - static_cast<double>( i );
   return result;
-};
+}
 
 
 

@@ -27,7 +27,7 @@ GIT_HASH = $(shell git rev-parse --short HEAD 2> /dev/null || echo *unknown*)
 
 # common compiler/linker flags
 CXX      = mpic++
-CXXFLAGS = -std=c++11 -Wall -Wextra
+CXXFLAGS = -std=c++11 -Wall -Wextra -Wpedantic
 LDFLAGS  = -lboost_program_options -lboost_filesystem -lboost_system
 LDFLAGS += -lboost_serialization -lboost_mpi
 DEFINES  = -DGIT_HASH=\"$(GIT_HASH)\"
