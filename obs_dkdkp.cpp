@@ -32,9 +32,12 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime()
+ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime( unsigned int num_vpar )
   : Observable( OBSERVABLE_DELTAK_DELTAKPRIME ),
-    thisbin_count( 0 ), binmean_count( 0 ) { }
+    thisbin_DkDkp_sum( Eigen::MatrixXd::Zero( num_vpar, num_vpar ) ),
+    thisbin_count( 0 ),
+    binmean_DkDkp_sum( Eigen::MatrixXd::Zero( num_vpar, num_vpar ) ),
+    binmean_count( 0 ) { }
 
 
 void ObservableDeltaKDeltaKPrime::measure(
@@ -43,16 +46,7 @@ void ObservableDeltaKDeltaKPrime::measure(
   if ( !cache.DeltaK ) {
     cache.DeltaK = model.Delta_k();
   }
-
   const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
-
-  if ( thisbin_DkDkp_sum.size() == 0 ) {
-    // first use of thisbin_DkDkp_sum
-    thisbin_DkDkp_sum.setZero( Dk_current.size(), Dk_current.size() );
-  } else {
-    assert( thisbin_DkDkp_sum.cols() == Dk_current.size() );
-    assert( thisbin_DkDkp_sum.rows() == Dk_current.size() );
-  }
 
   thisbin_DkDkp_sum += Dk_current * Dk_current.transpose();
   ++thisbin_count;
@@ -66,14 +60,6 @@ void ObservableDeltaKDeltaKPrime::measure(
 
 void ObservableDeltaKDeltaKPrime::completebin()
 {
-  if ( binmean_DkDkp_sum.size() == 0 ) {
-    // first use of binmean_DkDkp_sum
-    binmean_DkDkp_sum.setZero( thisbin_DkDkp_sum.rows(), thisbin_DkDkp_sum.cols() );
-  } else {
-    assert( binmean_DkDkp_sum.rows() == thisbin_DkDkp_sum.rows() );
-    assert( binmean_DkDkp_sum.cols() == thisbin_DkDkp_sum.cols() );
-  }
-
   binmean_DkDkp_sum += thisbin_DkDkp_sum / static_cast<double>( thisbin_count );
   ++binmean_count;
 

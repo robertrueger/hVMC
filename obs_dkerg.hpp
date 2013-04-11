@@ -35,7 +35,7 @@ class ObservableDeltaKEnergy : public Observable
 
   public:
 
-    ObservableDeltaKEnergy();
+    ObservableDeltaKEnergy( unsigned int num_vpar );
 
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 

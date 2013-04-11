@@ -25,6 +25,9 @@
 
 #include "options.hpp"
 
+
+unsigned int get_num_vpars( const Options& opts );
+
 Eigen::VectorXd get_initial_varparam( const Options& opts );
 
 #endif // VARPARAM_H_INCLUDED

@@ -46,7 +46,7 @@ MCCResults mccrun_master(
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
 
-  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs, opts );
   ObservableCache obscache;
 
   unsigned int finished_workers = 0;
@@ -61,11 +61,11 @@ MCCResults mccrun_master(
       // receive the request and hand out new bins to the source
       mpicomm.recv( status->source(), MSGTAG_S_M_REQUEST_BINS );
       if ( enqueued_bins > 0 ) {
-        mpicomm.isend( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 1 );
+        mpicomm.send( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 1 );
         scheduled_bins += 1;
         enqueued_bins  -= 1;
       } else {
-        mpicomm.isend( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 0 );
+        mpicomm.send( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 0 );
         ++finished_workers;
       }
     }
@@ -156,7 +156,7 @@ MCCResults mccrun_master(
       // receive the request for more work
       mpicomm.recv( status->source(), MSGTAG_S_M_REQUEST_BINS );
       // tell him there is no more work
-      mpicomm.isend( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 0 );
+      mpicomm.send( status->source(), MSGTAG_M_S_DISPATCHED_BINS, 0 );
       ++finished_workers;
     }
   }
@@ -224,7 +224,7 @@ void mccrun_slave(
   // prepare the simulation
 
   HubbardModelVMC model = prepare_model( opts, vpar, mpicomm );
-  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs );
+  vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs, opts );
   ObservableCache obscache;
 
   // equilibrate the system
@@ -242,7 +242,7 @@ void mccrun_slave(
   unsigned int completed_bins_thisslave = 0;
   bool master_out_of_work = false;
   unsigned int scheduled_bins_thisslave;
-  mpicomm.isend( 0, MSGTAG_S_M_REQUEST_BINS );
+  mpicomm.send( 0, MSGTAG_S_M_REQUEST_BINS );
   mpicomm.recv( 0, MSGTAG_M_S_DISPATCHED_BINS, scheduled_bins_thisslave );
   master_out_of_work = ( scheduled_bins_thisslave == 0 );
 
@@ -252,7 +252,7 @@ void mccrun_slave(
     mpi::request master_answer;
     if ( !master_out_of_work ) {
       // ask the master for more work
-      mpicomm.isend( 0, MSGTAG_S_M_REQUEST_BINS );
+      mpicomm.send( 0, MSGTAG_S_M_REQUEST_BINS );
       master_answer = mpicomm.irecv(
         0, MSGTAG_M_S_DISPATCHED_BINS,
         new_scheduled_bins_thisslave
@@ -280,7 +280,7 @@ void mccrun_slave(
     }
 
     // report completion of the work
-    mpicomm.isend( 0, 2 );
+    mpicomm.send( 0, 2 );
     ++completed_bins_thisslave;
     --scheduled_bins_thisslave;
 

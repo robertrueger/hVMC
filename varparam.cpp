@@ -35,11 +35,16 @@ namespace fs  = boost::filesystem;
 namespace ar  = boost::archive;
 
 
+unsigned int get_num_vpars( const Options& opts )
+{
+  return prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
+}
+
+
 Eigen::VectorXd get_initial_varparam( const Options& opts )
 {
   // determine how many variational parameters there are
-  unsigned int num_vpars
-    = prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
+  unsigned int num_vpars = get_num_vpars( opts );
 
   if ( fs::exists( opts["phys.vpar-file"].as<fs::path>() ) ) {
     // read the variational parameters from a file

@@ -126,7 +126,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   unsigned int sr_cycles_since_refinement = 0;
   bool         sr_all_converged = false;
   unsigned int sr_fullconv_cycles = 0;
-  vector<double> sr_vpar_mkresult( vpar.size() );
+  vector< MannKendall<double> > sr_vpar_mk( vpar.size() );
 
   bool finished = false;
   while ( !finished ) {
@@ -176,21 +176,23 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
 
     // save the new variational parameters for future reference
     vpar_hist.push_back( vpar );
+    // ... and add them to the Mann-Kendall-Test
+    for ( unsigned int k = 0; k < vpar.size(); ++k ) {
+      sr_vpar_mk[k].push_back( vpar[k] );
+    }
 
     ++sr_cycles;
     ++sr_cycles_since_refinement;
     unsigned int sr_num_vpar_converged = 0;
     if ( sr_cycles_since_refinement >= 20 ) {
       for ( unsigned int k = 0; k < vpar.size(); ++k ) {
-        // perform a Mann-Kendall test on the evolution of the vpar
-        vector<double> vpar_k_hist_sinceref;
-        for ( auto it = vpar_hist.end() - 1 - sr_cycles_since_refinement / 2;
-              it != vpar_hist.end();
-              ++it ) {
-          vpar_k_hist_sinceref.push_back( ( *it )[k] );
+        // remove old data from the Mann-Kendall test
+        // (we want to be testing only the last half since the refinement)
+        while ( sr_vpar_mk[k].size() > sr_cycles_since_refinement / 2 ) {
+          sr_vpar_mk[k].remove_front();
         }
-        sr_vpar_mkresult[k] = mktest( vpar_k_hist_sinceref );
-        if ( sr_vpar_mkresult[k] <= sr_nodrift_threshold ) {
+        // perform a Mann-Kendall test on the evolution of the vpar
+        if ( sr_vpar_mk[k].test() <= sr_nodrift_threshold ) {
           ++sr_num_vpar_converged;
         }
       }
@@ -212,8 +214,9 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       cout << "vpar' = " << endl << vpar.transpose() << endl << endl;
       if ( sr_cycles_since_refinement >= 20 ) {
         cout << "mktest = " << endl;
-        copy( sr_vpar_mkresult.begin(), sr_vpar_mkresult.end(),
-              ostream_iterator<double>( cout, " " ) );
+        for ( auto it = sr_vpar_mk.begin(); it != sr_vpar_mk.end(); ++it ) {
+          cout << it->test() << " ";
+        }
         cout << endl << endl;
       }
     }

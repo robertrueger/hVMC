@@ -20,26 +20,54 @@
 #ifndef MANN_KENDALL_TEST_H_INCLUDED
 #define MANN_KENDALL_TEST_H_INCLUDED
 
-#include <vector>
+#include <deque>
 #include <cmath>
 
 #include <boost/math/special_functions/sign.hpp>
 
 
 template <typename T>
-double mktest( const std::vector<T>& data )
-{
-  int S = 0;
-  const unsigned int n = data.size();
-  for ( unsigned int i = 0; i < n - 1; ++i ) {
-    for ( unsigned int j = i + 1; j < n; ++j ) {
-      S += boost::math::sign( data[j] - data[i] );
+class MannKendall {
+
+  private:
+
+    std::deque<T> data;
+    long S;
+
+  public:
+
+    MannKendall() : S( 0 ) { }
+
+    size_t size() const {
+      return data.size();
     }
-  }
 
-  const double relS = std::abs( S / ( static_cast<double>( n * ( n - 1 ) / 2 ) ) );
+    void push_back( T x ) {
+      for ( auto it = data.begin(); it != data.end(); ++it ) {
+        S += boost::math::sign( x - *it );
+      }
+      data.push_back( x );
+    }
 
-  return relS;
-}
+    void remove_front() {
+      T deleted = data.front();
+      data.pop_front();
+      for ( auto it = data.begin(); it != data.end(); ++it ) {
+        S -= boost::math::sign( *it - deleted );
+      }
+    }
+
+    void clear() {
+      data.clear();
+      S = 0;
+    }
+
+    double test() {
+      return std::abs(
+        static_cast<double>( S ) /
+        static_cast<double>( data.size() * ( data.size() - 1 ) / 2 )
+      );
+    }
+};
 
 #endif // MANN_KENDALL_TEST_H_INCLUDED
