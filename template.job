@@ -28,16 +28,16 @@ nn-hopping = 1.0
 3rd-nn-hopping = 0.0
 
 # on-site energy U
-onsite-energy = 1.0
+onsite-energy = 2.0
 
 # lattice type
 lattice = 1dchain
 
 # number of lattice sites
-num-lattice-sites = 120
+num-lattice-sites = 80
 
 # total number of electrons
-num-electrons = 120
+num-electrons = 80
 
 # file to load the variational parameters from
 #vpar-file =
@@ -82,13 +82,13 @@ num-binmcs = 100
 # rng-seed = 1337133789
 
 # [opt]: controls the SR convergence: vpar += dt * dvpar
-sr-dt = 20
+sr-dt = 10
 
 # [opt]: Mann-Kendall threshold for convergence detection
 sr-mkthreshold = 0.5
 
 # [opt]: number of refinements during the SR cycle
-sr-max-refinements = 1
+sr-max-refinements = 2
 
 # [opt]: number of SR cycles to average the converged variational parameters
 sr-averaging-cycles = 50
