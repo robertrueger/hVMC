@@ -43,17 +43,7 @@ HubbardModelVMC prepare_model(
   t[1] = opts["phys.2nd-nn-hopping"].as<double>();
   t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
-  SingleParticleOrbitals detwf = prepare_detwf( lat, opts );
-  if ( detwf.E( detwf.M.cols() ) - detwf.E( detwf.M.cols() - 1 ) < 0.00001f ) {
-    if ( mpicomm.rank() == 0 ) {
-      cout << endl;
-      cout << "   WARNING: Open shell detected!" << endl;
-      cout << "     E_fermi = " << detwf.E( detwf.M.cols() - 1 ) << endl;
-      cout << "     Orbital below = " << detwf.E( detwf.M.cols() - 2 ) << endl;
-      cout << "     Orbital above = " << detwf.E( detwf.M.cols() ) << endl;
-      cout << endl;
-    }
-  }
+  SingleParticleOrbitals detwf = prepare_detwf( lat, opts, mpicomm );
 
   Jastrow v( lat, vpar );
 
@@ -104,7 +94,8 @@ shared_ptr<Lattice> prepare_lattice( const Options& opts )
 
 
 SingleParticleOrbitals prepare_detwf(
-  const shared_ptr<Lattice>& lat, const Options& opts )
+  const shared_ptr<Lattice>& lat, const Options& opts,
+  const mpi::communicator& mpicomm )
 {
   vector<double> t(3);
   t[0] = opts["phys.nn-hopping"].as<double>();
@@ -112,7 +103,8 @@ SingleParticleOrbitals prepare_detwf(
   t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
   return
-    wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
+    wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(),
+                      lat, mpicomm.rank() == 0 );
 }
 
 

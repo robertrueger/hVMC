@@ -29,12 +29,40 @@ using namespace std;
 
 SingleParticleOrbitals wf_tight_binding(
   const vector<double>& t,
-  unsigned int N, const shared_ptr<Lattice>& lat )
+  unsigned int N, const shared_ptr<Lattice>& lat,
+  bool is_master )
 {
   // make sure we pass the right number of parameters
   assert( t.size() == 3  );
 
-  Eigen::MatrixXfp H_tb = Eigen::MatrixXfp::Zero( 2*lat->L, 2*lat->L );
+  // ----- 1.: determine the chemical potential
+  fptype mu;
+  {
+    Eigen::MatrixXfp H_tb_nopht = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
+
+    // t hopping
+    vector<unsigned int> l_Xnn;
+    for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
+      for ( unsigned int X = 1; X <= 3; ++X ) {
+        lat->get_Xnn( l, X, &l_Xnn );
+        for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+          H_tb_nopht( l, *it ) -= t[X - 1];
+        }
+      }
+    }
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> H_tb_nopht_solver( H_tb_nopht );
+    assert( H_tb_nopht_solver.info() == Eigen::Success );
+    mu = .5f * ( H_tb_nopht_solver.eigenvalues()( N )
+                 + H_tb_nopht_solver.eigenvalues()( N - 1 ) );
+
+#if VERBOSE >= 1
+    cout << "wf_tight_binding() : chemical potential = " << mu << endl;
+#endif
+  }
+
+  // ----- 2.: diagonalize single particle Hamiltonian under p.-h. transformation
+
+  Eigen::MatrixXfp H_tb = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
 
   // t hopping
   vector<unsigned int> l_Xnn;
@@ -48,7 +76,6 @@ SingleParticleOrbitals wf_tight_binding(
   }
 
   // chemical potential
-  const fptype mu = -0.65; // TODO: calculate (Robert Rueger, 2013-04-19 10:49)
   H_tb.diagonal().head( lat->L ).array() -= mu;
   H_tb.diagonal().tail( lat->L ).array() += mu;
 
@@ -57,24 +84,39 @@ SingleParticleOrbitals wf_tight_binding(
        << endl << H_tb << endl;
 #endif
 
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> eigensolver( H_tb );
-  assert( eigensolver.info() == Eigen::Success );
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> H_tb_solver( H_tb );
+  assert( H_tb_solver.info() == Eigen::Success );
 
+  // determine how many particles we have after the p.-h. transformation
   assert( N % 2 == 0 );
+  const unsigned int Np = N / 2 + ( lat->L - N / 2 );
 
   const Eigen::MatrixXfp& M
-    = eigensolver.eigenvectors().topLeftCorner( 2 * lat->L, N );
+    = H_tb_solver.eigenvectors().topLeftCorner( 2 * lat->L, Np );
 
 #if VERBOSE >= 1
   cout << "wf_tight_binding() : eigenenergies = " << endl
-       << eigensolver.eigenvalues().transpose() << endl
+       << H_tb_solver.eigenvalues().transpose() << endl
        << "wf_tight_binding() : eigenvectors = " << endl
-       << eigensolver.eigenvectors() << endl
+       << H_tb_solver.eigenvectors() << endl
 
        << "wf_tight_binding() : M = " << endl << M << endl
        << "wf_tight_binding() : slater determinant ground state energy = "
-       << eigensolver.eigenvalues().head( N ).sum()  << endl;
+       << H_tb_solver.eigenvalues().head( N ).sum()  << endl;
 #endif
 
-  return SingleParticleOrbitals( M, eigensolver.eigenvalues(), false );
+  // ----- 3.: check for open shell
+  if ( H_tb_solver.eigenvalues()( Np ) - H_tb_solver.eigenvalues()( Np - 1 ) < 0.00001f ) {
+    if ( is_master ) {
+      cout << endl;
+      cout << "   ERROR: Open shell detected!" << endl;
+      cout << "     E_fermi = " << H_tb_solver.eigenvalues()( Np - 1 ) << endl;
+      cout << "     Orbital below = " << H_tb_solver.eigenvalues()( Np - 2 ) << endl;
+      cout << "     Orbital above = " << H_tb_solver.eigenvalues()( Np ) << endl;
+      cout << endl;
+    }
+    exit( 1 );
+  }
+
+  return SingleParticleOrbitals( M, H_tb_solver.eigenvalues() );
 }
