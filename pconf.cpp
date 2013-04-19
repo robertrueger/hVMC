@@ -17,7 +17,7 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "econf.hpp"
+#include "pconf.hpp"
 
 #if VERBOSE >= 1
 # include <iostream>
@@ -27,36 +27,36 @@ using namespace std;
 
 
 
-ElectronConfiguration::ElectronConfiguration(
-  const shared_ptr<Lattice>& lat_init,
-  unsigned int electron_number_init,
-  mt19937& rng_init )
-  : lat( lat_init ), electron_number( electron_number_init ),
+ParticleConfiguration::ParticleConfiguration(
+  const shared_ptr<Lattice>& lat_init, unsigned int Ne_init,  mt19937& rng_init )
+  : lat( lat_init ),
+    Ne( Ne_init ), Npu( Ne / 2 ), Npd( lat->L - Ne / 2 ), Np( Npu + Npd ),
     site_occ(
-      Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat_init->L )
+      Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat->L )
     ),
-    electron_pos( electron_number_init ),
+    particle_pos( vector<unsigned int>( Np ) ),
     rng( rng_init )
 {
+  assert( Ne % 2 == 0 );
   distribute_random();
 }
 
 
 
-void ElectronConfiguration::reconstr_electron_pos()
+void ParticleConfiguration::reconstr_particle_pos()
 {
-  electron_pos.clear();
+  particle_pos.clear();
   for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-    if ( site_occ[l] == ELECTRON_OCCUPATION_FULL ) {
-      electron_pos.push_back( l );
+    if ( site_occ[l] == PARTICLE_OCCUPATION_FULL ) {
+      particle_pos.push_back( l );
     }
   }
-  assert( electron_pos.size() == electron_number );
+  assert( particle_pos.size() == Np );
 
 #if VERBOSE >= 2
-  cout << "ElectronConfiguration::reconstr_electron_pos() : electron positions are"
+  cout << "ParticleConfiguration::reconstr_particle_pos() : particle positions are"
        << endl;
-  for ( auto it = electron_pos.begin(); it != electron_pos.end(); ++it ) {
+  for ( auto it = particle_pos.begin(); it != particle_pos.end(); ++it ) {
     cout << *it << " ";
   }
   cout << endl;
@@ -66,57 +66,54 @@ void ElectronConfiguration::reconstr_electron_pos()
 
 
 
-void ElectronConfiguration::distribute_random()
+void ParticleConfiguration::distribute_random()
 {
-  // TODO: assert -> exception (Robert Rueger, 2012-10-23 13:50)
-  assert( electron_number % 2 == 0 );
-
   // clear all sites
   site_occ = Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat->L );
 
-  // randomly distribute L/2 electrons per spin direction
-  while ( site_occ.head( lat->L ).sum() < electron_number / 2 ) {
+  // randomly distribute Npu/Npd particles per spin direction
+  while ( site_occ.head( lat->L ).sum() < Npu ) {
     site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng ) ]
-      = ELECTRON_OCCUPATION_FULL;
+      = PARTICLE_OCCUPATION_FULL;
   }
-  while ( site_occ.tail( lat->L ).sum() < electron_number / 2 ) {
+  while ( site_occ.tail( lat->L ).sum() < Npd ) {
     site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng )
-              + lat->L ] = ELECTRON_OCCUPATION_FULL;
+              + lat->L ] = PARTICLE_OCCUPATION_FULL;
   }
 
 #if VERBOSE >= 2
-  cout << "ElectronConfiguration::distribute_random() : new config is" << endl;
+  cout << "ParticleConfiguration::distribute_random() : new config is" << endl;
   cout << site_occ.head( lat->L ).transpose() << endl
        << site_occ.tail( lat->L ).transpose() << endl;
 #endif
 
-  assert( site_occ.head( lat->L ).sum() == electron_number / 2 );
-  assert( site_occ.tail( lat->L ).sum() == electron_number / 2 );
-  assert( site_occ.sum() == electron_number );
+  assert( site_occ.head( lat->L ).sum() == Npu );
+  assert( site_occ.tail( lat->L ).sum() == Npd );
+  assert( site_occ.sum() == Np );
 
-  reconstr_electron_pos();
+  reconstr_particle_pos();
 }
 
 
 
-ElectronHop ElectronConfiguration::propose_random_hop(
+ParticleHop ParticleConfiguration::propose_random_hop(
   unsigned int update_hop_maxdist ) const
 {
-  // hop the kth electron
+  // hop the kth particle
   const unsigned int k
-    = uniform_int_distribution<unsigned int>( 0, electron_number - 1 )( rng );
+    = uniform_int_distribution<unsigned int>( 0, Np - 1 )( rng );
 
-  // find the position of the xth electron
-  const unsigned int k_pos = electron_pos[k];
+  // find the position of the kth particle
+  const unsigned int k_pos = particle_pos[k];
 
 #if VERBOSE >= 2
   cout << site_occ.head( lat->L ).transpose() << endl
        << site_occ.tail( lat->L ).transpose() << endl;
-  cout << "ElectronConfiguration::propose_random_hop() : proposing to hop "
-       << "electron " << k << " from " << k_pos << " to ";
+  cout << "ParticleConfiguration::propose_random_hop() : proposing to hop "
+       << "particle " << k << " from " << k_pos << " to ";
 #endif
 
-  assert( site_occ[ k_pos ] == ELECTRON_OCCUPATION_FULL );
+  assert( site_occ[ k_pos ] == PARTICLE_OCCUPATION_FULL );
 
   // get nearest neighbors of site k_pos
   lat->get_Xnn( k_pos, 1, &k_1nb );
@@ -163,84 +160,75 @@ ElectronHop ElectronConfiguration::propose_random_hop(
     cout << *it << " ";
   }
   cout << "\b] ";
-  cout << l << " (" << ( site_occ[ l ] == ELECTRON_OCCUPATION_FULL ? "im" : "" )
+  cout << l << " (" << ( site_occ[ l ] == PARTICLE_OCCUPATION_FULL ? "im" : "" )
        << "possible" << ")" << endl;
 #endif
 
   assert( ( k_pos < lat->L && l < lat->L ) ||
           ( k_pos >= lat->L && k_pos < 2 * lat->L &&
             l >= lat->L && l < 2 * lat->L ) );
-  assert( site_occ[ l ] == ELECTRON_OCCUPATION_FULL ||
-          site_occ[ l ] == ELECTRON_OCCUPATION_EMPTY  );
+  assert( site_occ[ l ] == PARTICLE_OCCUPATION_FULL ||
+          site_occ[ l ] == PARTICLE_OCCUPATION_EMPTY  );
 
-  return ElectronHop( k, l, k_pos, site_occ[ l ] == ELECTRON_OCCUPATION_EMPTY );
+  return ParticleHop( k, l, k_pos, site_occ[ l ] == PARTICLE_OCCUPATION_EMPTY );
 }
 
 
 
-void ElectronConfiguration::do_hop( const ElectronHop& hop )
+void ParticleConfiguration::do_hop( const ParticleHop& hop )
 {
   assert( hop.possible );
-  assert( site_occ[ hop.k_pos ] == ELECTRON_OCCUPATION_FULL );
-  assert( site_occ[ hop.l ]     == ELECTRON_OCCUPATION_EMPTY );
+  assert( site_occ[ hop.k_pos ] == PARTICLE_OCCUPATION_FULL );
+  assert( site_occ[ hop.l ]     == PARTICLE_OCCUPATION_EMPTY );
   assert( ( hop.k_pos < lat->L && hop.l < lat->L ) ||
           ( hop.k_pos >= lat->L && hop.k_pos < 2 * lat->L &&
             hop.l >= lat->L && hop.l < 2 * lat->L ) );
 
-  site_occ[ hop.k_pos ] = ELECTRON_OCCUPATION_EMPTY;
-  site_occ[ hop.l ] = ELECTRON_OCCUPATION_FULL;
+  site_occ[ hop.k_pos ] = PARTICLE_OCCUPATION_EMPTY;
+  site_occ[ hop.l ] = PARTICLE_OCCUPATION_FULL;
 
-  electron_pos[ hop.k ] = hop.l;
+  particle_pos[ hop.k ] = hop.l;
 
 #if VERBOSE >= 2
-  cout << "ElectronConfiguration::do_hop() : hopping electron #"
+  cout << "ParticleConfiguration::do_hop() : hopping particle #"
        << hop.k << " from " << hop.k_pos << " to " << hop.l << endl;
   cout << site_occ.head( lat->L ).transpose() << endl
        << site_occ.tail( lat->L ).transpose() << endl;
-  cout << "ElectronConfiguration::do_hop() : electron positions are"
+  cout << "ParticleConfiguration::do_hop() : particle positions are"
        << endl;
-  for ( auto it = electron_pos.begin(); it != electron_pos.end(); ++it ) {
+  for ( auto it = particle_pos.begin(); it != particle_pos.end(); ++it ) {
     cout << *it << " ";
   }
   cout << endl;
 #endif
 
-  assert( site_occ.head( lat->L ).sum() == electron_number / 2 );
-  assert( site_occ.tail( lat->L ).sum() == electron_number / 2 );
-  assert( site_occ.sum() == electron_number );
+  assert( site_occ.head( lat->L ).sum() == Npu );
+  assert( site_occ.tail( lat->L ).sum() == Npd );
+  assert( site_occ.sum() == Np );
 }
 
 
 
-unsigned int ElectronConfiguration::get_electron_pos( unsigned int k ) const
+unsigned int ParticleConfiguration::get_particle_pos( unsigned int k ) const
 {
-  return electron_pos[ k ];
+  return particle_pos[ k ];
 }
 
 
 
-unsigned int ElectronConfiguration::get_site_occ( unsigned int l ) const
+unsigned int ParticleConfiguration::get_site_occ( unsigned int l ) const
 {
   return site_occ[ l ];
 }
 
 
 
-unsigned int ElectronConfiguration::N() const
+Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ParticleConfiguration::npu() const
 {
-  return electron_number;
+  return site_occ.head( lat->L );
 }
 
-
-
-Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ElectronConfiguration::n() const
+Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ParticleConfiguration::npd() const
 {
-  return ( site_occ.head( lat->L ) + site_occ.tail( lat->L ) );
-}
-
-
-
-unsigned int ElectronConfiguration::get_num_dblocc() const
-{
-  return ( site_occ.head( lat->L ).array() * site_occ.tail( lat->L ).array() ).sum();
+  return site_occ.tail( lat->L );
 }

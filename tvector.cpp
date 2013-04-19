@@ -23,6 +23,7 @@
 # include <iostream>
 #endif
 
+#include <cmath>
 #include <algorithm>
 
 #include "macros.h"
@@ -34,10 +35,10 @@ using namespace std;
 TVector::TVector(
   const Lattice* lat_init,
   const Jastrow& v_init,
-  const ElectronConfiguration& econf_init,
+  const ParticleConfiguration& pconf_init,
   double deviation_target,
   unsigned int updates_until_recalc_init )
-  : lat( lat_init ), v( v_init ), econf( econf_init ),
+  : lat( lat_init ), v( v_init ), pconf( pconf_init ),
     T( Eigen::VectorXd( lat->L ) ),
     updates_until_recalc( updates_until_recalc_init ),
     updates_since_recalc( 0 ),
@@ -48,6 +49,10 @@ TVector::TVector(
 void TVector::init()
 {
   T = calc_new();
+
+#if VERBOSE >= 1
+    cout << "TVector::init() : initial T = " << endl << T.transpose() << endl;
+#endif
 }
 
 
@@ -60,11 +65,11 @@ double TVector::operator()( unsigned int i ) const
 
 
 
-void TVector::update( const ElectronHop& hop )
+void TVector::update( const ParticleHop& hop )
 {
   if ( updates_since_recalc >= updates_until_recalc ) {
 
-#if VERBOSE >= 2
+#if VERBOSE >= 1
     cout << "TVector::update() : recalculating T!" << endl;
 #endif
 
@@ -73,13 +78,10 @@ void TVector::update( const ElectronHop& hop )
     Eigen::VectorXd T_approx = calc_qupdated( hop );
     T = calc_new();
 
-    // normalize T_approx to the first element of the recalculated T
-    T_approx *= T( 0 ) / T_approx( 0 );
-
     double dev = calc_deviation( T_approx, T );
     devstat.add( dev );
 
-#if VERBOSE >= 2
+#if VERBOSE >= 1
     cout << "TVector::update() : recalculated T "
          << "with deviation = " << dev << endl;
 
@@ -97,7 +99,7 @@ void TVector::update( const ElectronHop& hop )
 
   } else {
 
-#if VERBOSE >= 2
+#if VERBOSE >= 1
     cout << "TVector::update() : "
          << "performing a quick update of T!" << endl;
 #endif
@@ -109,16 +111,13 @@ void TVector::update( const ElectronHop& hop )
 #ifndef NDEBUG
     Eigen::VectorXd T_chk = calc_new();
 
-    // normalize T_chk to the first element of the updated T
-    T_chk *= T( 0 ) / T_chk( 0 );
-
     double dev = calc_deviation( T, T_chk );
 
-# if VERBOSE >= 2
+# if VERBOSE >= 1
     cout << "TVector::update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
-    if ( dev > devstat.target ) {
+    if ( dev > devstat.target || !std::isfinite( dev ) ) {
       cout << "TVector::update() : deviation goal for matrix "
            << "T not met!" << endl
            << "TVector::update() : quickly updated T =" << endl
@@ -137,32 +136,29 @@ void TVector::update( const ElectronHop& hop )
 
 Eigen::VectorXd TVector::calc_new() const
 {
-  Eigen::VectorXd T_sum = Eigen::VectorXd::Zero( lat->L );
+  Eigen::VectorXd T_new = Eigen::VectorXd::Zero( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
     for ( unsigned int j = 0; j < lat->L; ++j ) {
-      T_sum( i ) += v( i, j ) * static_cast<double>(
-                    ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) ) );
+      T_new( i ) +=
+        v( i, j ) * ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
     }
   }
-
-  double T_middle = ( T_sum.minCoeff() + T_sum.maxCoeff() ) / 2.0;
-
-  return ( T_sum.array() - T_middle ).exp();
+  return T_new;
 }
 
 
 
-Eigen::VectorXd TVector::calc_qupdated( const ElectronHop& hop ) const
+Eigen::VectorXd TVector::calc_qupdated( const ParticleHop& hop ) const
 {
-  Eigen::VectorXd T_prime( lat->L );
+  Eigen::VectorXd T_diff( lat->L );
 
   for ( unsigned int i = 0; i < lat->L; ++i ) {
-    T_prime( i ) = T( i ) * v.exp( i, lat->get_spinup_site( hop.l ) )
-                   / v.exp( i, lat->get_spinup_site( hop.k_pos ) );
+    T_diff( i ) = v( i, lat->get_spinup_site( hop.l ) )
+                  - v( i, lat->get_spinup_site( hop.k_pos ) );
   }
 
-  return T_prime;
+  return T + ( hop.l < lat->L ? 1.0 : -1.0 ) * T_diff;
 }
 
 

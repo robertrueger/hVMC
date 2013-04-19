@@ -24,7 +24,7 @@
 #include <eigen3/Eigen/Core>
 
 #include "lattice.hpp"
-#include "econf.hpp"
+#include "pconf.hpp"
 #include "jastrow.hpp"
 #include "fpctrl.hpp"
 
@@ -35,7 +35,7 @@ class TVector final
 
     const Lattice* const lat;
     const Jastrow& v;
-    const ElectronConfiguration& econf;
+    const ParticleConfiguration& pconf;
 
     Eigen::VectorXd T;
 
@@ -44,20 +44,20 @@ class TVector final
     FPDevStat devstat;
 
     Eigen::VectorXd calc_new() const;
-    Eigen::VectorXd calc_qupdated( const ElectronHop& hop ) const;
+    Eigen::VectorXd calc_qupdated( const ParticleHop& hop ) const;
 
   public:
 
     TVector(
       const Lattice* lat_init,
       const Jastrow& v_init,
-      const ElectronConfiguration& econf_init,
+      const ParticleConfiguration& pconf_init,
       double deviation_target,
       unsigned int updates_until_recalc_init
     );
 
     void init();
-    void update( const ElectronHop& hop );
+    void update( const ParticleHop& hop );
 
     double operator()( unsigned int i ) const;
 

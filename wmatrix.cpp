@@ -43,45 +43,17 @@ using namespace std;
 WMatrix::WMatrix(
   const Lattice* lat_init,
   const SingleParticleOrbitals& detwf_init,
-  const ElectronConfiguration& econf_init,
+  const ParticleConfiguration& pconf_init,
   double deviation_target,
   unsigned int updates_until_recalc_init )
-  : lat( lat_init ), detwf( detwf_init ), econf( econf_init ),
-    Wbu_1(
-      detwf_init.ssym ?
-      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
-      Eigen::MatrixXfp( 2 * lat->L, econf.N() )
-    ),
-    Wbu_2(
-      detwf_init.ssym ?
-      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
-      Eigen::MatrixXfp( 2 * lat->L, econf.N() )
-    ),
-    Wbu_active(   &Wbu_1 ),
-    Wbu_inactive( &Wbu_2 ),
-    Wd_1(
-      detwf_init.ssym ?
-      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
-      Eigen::MatrixXfp( 0 , 0 )
-    ),
-    Wd_2(
-      detwf_init.ssym ?
-      Eigen::MatrixXfp( lat->L, econf.N() / 2 ) :
-      Eigen::MatrixXfp( 0 , 0 )
-    ),
-    Wd_active(   detwf.ssym ? &Wd_1 : nullptr ),
-    Wd_inactive( detwf.ssym ? &Wd_2 : nullptr ),
+  : lat( lat_init ), detwf( detwf_init ), pconf( pconf_init ),
+    W_1( Eigen::MatrixXfp( 2 * lat->L, pconf.Np ) ),
+    W_2( Eigen::MatrixXfp( 2 * lat->L, pconf.Np ) ),
+    W_active(   &W_1 ),
+    W_inactive( &W_2 ),
 #ifdef USE_CBLAS
-    tempWcol(
-      detwf.ssym ?
-      Eigen::VectorXfp( lat->L ) :
-      Eigen::VectorXfp( 2 * lat->L )
-    ),
-    tempWrow(
-      detwf.ssym ?
-      Eigen::VectorXfp( econf.N() / 2 ) :
-      Eigen::VectorXfp( econf.N() )
-    ),
+    tempWcol( Eigen::VectorXfp( 2 * lat->L ) ),
+    tempWrow( Eigen::VectorXfp( pconf.Np ) ),
 #endif
     updates_until_recalc( updates_until_recalc_init ),
     updates_since_recalc( 0 ),
@@ -91,80 +63,27 @@ WMatrix::WMatrix(
 
 bool WMatrix::init_and_check()
 {
-  if ( detwf.ssym == true ) {
-
-    // check spin up part
-    Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Du().transpose() );
-
-    if ( lu_decomp.isInvertible() != true ) {
-#if VERBOSE >= 2
-      cout << "WMatrix::check_and_init() : spin up part has no "
-           << "overlap with the determinantal wavefunction" << endl;
+  Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_D().transpose() );
+  if ( lu_decomp.isInvertible() != true ) {
+#if VERBOSE >= 1
+    cout << "WMatrix::check_and_init() : state has no "
+         << "overlap with the determinantal wavefunction, "
+         << "D =" << endl << calc_D() << endl;
 #endif
-      return false;
-    }
+    return false;
+  }
 
-    Wbu_active->noalias()
-      = lu_decomp.solve( detwf.M.transpose() ).transpose();
-    fptype Wbu_avg
-      = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
-    if ( Wbu_avg > 100.f ) {
-#if VERBOSE >= 2
-      cout << "WMatrix::check_and_init() : spin up part has too "
-           << "little overlap with the determinantal wavefunction, "
-           << "inverse overlap measure is: " << Wbu_avg << endl;
+  W_active->noalias()
+    = lu_decomp.solve( detwf.M.transpose() ).transpose();
+  fptype W_avg
+    = W_active->squaredNorm() / static_cast<fptype>( W_active->size() );
+  if ( W_avg > 50.f ) {
+#if VERBOSE >= 1
+    cout << "WMatrix::check_and_init() : state has too "
+         << "little overlap with the determinantal wavefunction, "
+         << "inverse overlap measure is: " << W_avg << endl;
 #endif
-      return false;
-    }
-
-    // check spin down part
-    lu_decomp.compute( calc_Dd().transpose() );
-    if ( lu_decomp.isInvertible() != true ) {
-#if VERBOSE >= 2
-      cout << "WMatrix::check_and_init() : spin down part has no "
-           << "overlap with the determinantal wavefunction" << endl;
-#endif
-      return false;
-    }
-
-    Wd_active->noalias()
-      = lu_decomp.solve( detwf.M.transpose() ).transpose();
-    fptype Wd_avg
-      = Wd_active->squaredNorm()  / static_cast<fptype>( Wd_active->size() );
-    if ( Wd_avg > 100.f ) {
-#if VERBOSE >= 2
-      cout << "WMatrix::check_and_init() : spin down part has too "
-           << "little overlap with the determinantal wavefunction, "
-           << "inverse overlap measure is: " << Wd_avg << endl;
-#endif
-      return false;
-    }
-
-  } else {
-
-    // check whole determinantal part
-    Eigen::FullPivLU<Eigen::MatrixXfp> lu_decomp( calc_Db().transpose() );
-    if ( lu_decomp.isInvertible() != true ) {
-#if VERBOSE >= 2
-      cout << "WMatrix::check_and_init() : state has no "
-           << "overlap with the determinantal wavefunction" << endl;
-#endif
-      return false;
-    }
-
-    Wbu_active->noalias()
-      = lu_decomp.solve( detwf.M.transpose() ).transpose();
-    fptype Wbu_avg
-      = Wbu_active->squaredNorm() / static_cast<fptype>( Wbu_active->size() );
-    if ( Wbu_avg > 50.f ) {
-#if VERBOSE >= 2
-      cout << "WMatrix::check_and_init() : state has too "
-           << "little overlap with the determinantal wavefunction, "
-           << "inverse overlap measure is: " << Wbu_avg << endl;
-#endif
-      return false;
-    }
-
+    return false;
   }
 
   return true;
@@ -174,30 +93,13 @@ bool WMatrix::init_and_check()
 
 fptype WMatrix::operator()( unsigned int i, unsigned int j ) const
 {
-  assert( i < 2 * lat->L && j < econf.N() );
-
-  if ( detwf.ssym == true ) {
-    assert(
-      ( i < lat->L && j < econf.N() / 2 ) ||
-      ( i >= lat->L && j >= econf.N() / 2 )
-    );
-
-    if ( i >= lat->L ) {
-      return ( *Wd_active  )( i - lat->L, j - econf.N() / 2 );
-    } else {
-      return ( *Wbu_active )( i, j );
-    }
-
-  } else {
-
-    return ( *Wbu_active )( i, j );
-
-  }
+  assert( i < 2 * lat->L && j < pconf.Np );
+  return ( *W_active )( i, j );
 }
 
 
 
-void WMatrix::update( const ElectronHop& hop )
+void WMatrix::update( const ParticleHop& hop )
 {
   if ( updates_since_recalc >= updates_until_recalc ) {
 
@@ -215,10 +117,7 @@ void WMatrix::update( const ElectronHop& hop )
     // (pushs updated W into the inactive buffers)
     calc_new();
 
-    double dev = calc_deviation( *Wbu_inactive, *Wbu_active );
-    if ( detwf.ssym == true ) {
-      dev += calc_deviation( *Wd_inactive, *Wd_active );
-    }
+    double dev = calc_deviation( *W_inactive, *W_active );
     devstat.add( dev );
 
 #if VERBOSE >= 2
@@ -229,15 +128,9 @@ void WMatrix::update( const ElectronHop& hop )
       cout << "WMatrix::update() : deviation goal for matrix "
            << "W not met!" << endl
            << "WMatrix::update() : approximate W =" << endl
-           << *Wbu_inactive << endl;
-      if ( detwf.ssym == true ) {
-        cout << "----->" << endl << *Wd_inactive << endl;
-      }
+           << *W_inactive << endl;
       cout << "WMatrix::update() : exact W =" << endl
-           << *Wbu_active << endl;
-      if ( detwf.ssym == true ) {
-        cout << "----->" << endl << *Wd_active << endl;
-      }
+           << *W_active << endl;
     }
 #endif
 
@@ -262,18 +155,11 @@ void WMatrix::update( const ElectronHop& hop )
     calc_new();
 
     // swap the buffers (since we want the updated buffer to be the active one)
-    swap( Wbu_inactive, Wbu_active );
-    if ( detwf.ssym == true ) {
-      swap( Wd_inactive, Wd_active );
-    }
-
+    swap( W_inactive, W_active );
     // updated W should now be in the active buffer
-    // debug check recalc W should be in the inactive buffer
 
-    double dev = calc_deviation( *Wbu_inactive, *Wbu_active );
-    if ( detwf.ssym == true ) {
-      dev += calc_deviation( *Wd_inactive, *Wd_active );
-    }
+    // debug check recalculated W
+    double dev = calc_deviation( *W_inactive, *W_active );
 
 # if VERBOSE >= 2
     cout << "WMatrix::update() : "
@@ -283,15 +169,9 @@ void WMatrix::update( const ElectronHop& hop )
       cout << "WMatrix::update() : deviation goal for matrix "
            << "W not met!" << endl
            << "WMatrix::update() : quickly updated W =" << endl
-           << *Wbu_active << endl;
-      if ( detwf.ssym == true ) {
-        cout << "----->" << endl << *Wd_active << endl;
-      }
+           << *W_active << endl;
       cout << "WMatrix::update() : exact W =" << endl
-           << *Wbu_inactive << endl;
-      if ( detwf.ssym == true ) {
-        cout << "----->" << endl << *Wd_inactive << endl;
-      }
+           << *W_inactive << endl;
     }
 # endif
     assert( dev < devstat.target );
@@ -303,47 +183,24 @@ void WMatrix::update( const ElectronHop& hop )
 
 void WMatrix::calc_new()
 {
-  if ( detwf.ssym == true ) {
+  W_inactive->noalias()
+    = calc_D().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
 
-    Wbu_inactive->noalias()
-      = calc_Du().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
-    Wd_inactive->noalias()
-      = calc_Dd().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
-
-    swap( Wbu_inactive, Wbu_active );
-    swap( Wd_inactive, Wd_active );
-
-  } else {
-
-    Wbu_inactive->noalias()
-      = calc_Db().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
-
-    swap( Wbu_inactive, Wbu_active );
-
-  }
+  swap( W_inactive, W_active );
 }
 
 
 
-void WMatrix::calc_qupdated( const ElectronHop& hop )
+void WMatrix::calc_qupdated( const ParticleHop& hop )
 {
   unsigned int k     = hop.k;
   unsigned int l     = hop.l;
   unsigned int k_pos = hop.k_pos;
 
-  Eigen::MatrixXfp*& W = ( detwf.ssym == true && hop.k >= econf.N() / 2 ) ?
-                         Wd_active : Wbu_active;
-
-  if ( detwf.ssym == true && hop.k >= econf.N() / 2 ) {
-    k     -= econf.N() / 2;
-    l     -= lat->L;
-    k_pos -= lat->L;
-  }
-
 #ifdef USE_CBLAS
 
-  tempWcol = W->col( k );
-  tempWrow = W->row( l ) - W->row( k_pos );
+  tempWcol = W_active->col( k );
+  tempWrow = W_active->row( l ) - W_active->row( k_pos );
 
 #ifdef USE_FP_DBLPREC
   cblas_dger(
@@ -355,91 +212,48 @@ void WMatrix::calc_qupdated( const ElectronHop& hop )
 #else
     CblasColMajor,
 #endif
-    W->rows(),
-    W->cols(),
-    - 1.f / ( *W )( l, k ),
+    W_active->rows(),
+    W_active->cols(),
+    - 1.f / ( *W_active )( l, k ),
     tempWcol.data(),
     1,
     tempWrow.data(),
     1,
-    W->data(),
+    W_active->data(),
 #ifdef EIGEN_DEFAULT_TO_ROW_MAJOR
-    W->cols()
+    W_active->cols()
 #else
-    W->rows()
+    W_active->rows()
 #endif
   );
 
 #else // #ifndef USE_CBLAS
 
-  Eigen::MatrixXfp*& W_inactive
-    = ( detwf.ssym == true && hop.k >= econf.N() / 2 ) ?
-      Wd_inactive : Wbu_inactive;
-
-  *W_inactive = *W;
+  *W_inactive = *W_active;
 
   W_inactive->noalias() -=
-    ( W->col( k ) / ( *W )( l, k ) )
-    * ( W->row( l ) - W->row( k_pos ) );
+    ( W_active->col( k ) / ( *W_active )( l, k ) )
+    * ( W_active->row( l ) - W_active->row( k_pos ) );
 
-  swap( W_inactive, W );
+  swap( W_inactive, W_active );
 
 #endif
 }
 
 
 
-Eigen::MatrixXfp WMatrix::calc_Db() const
+Eigen::MatrixXfp WMatrix::calc_D() const
 {
-  assert( detwf.ssym == false );
-
-  Eigen::MatrixXfp Db( econf.N(), econf.N() );
-  for ( unsigned int eid = 0; eid < econf.N(); ++eid ) {
-    Db.row( eid ) = detwf.M.row( econf.get_electron_pos( eid ) );
+  Eigen::MatrixXfp D( pconf.Np, pconf.Np );
+  for ( unsigned int pid = 0; pid < pconf.Np; ++pid ) {
+    D.row( pid ) = detwf.M.row( pconf.get_particle_pos( pid ) );
   }
 
 #if VERBOSE >= 3
-  cout << "WMatrix::calc_Db() : Db = " << endl << Db << endl;
+  cout << "WMatrix::calc_D() : D = " << endl << Db << endl;
 #endif
 
-  return Db;
-}
-
-
-
-Eigen::MatrixXfp WMatrix::calc_Du() const
-{
-  assert( detwf.ssym == true );
-
-  Eigen::MatrixXfp Du( econf.N() / 2, econf.N() / 2 );
-  for ( unsigned int eid = 0; eid < econf.N() / 2; ++eid ) {
-    Du.row( eid ) = detwf.M.row( econf.get_electron_pos( eid ) );
-  }
-
-#if VERBOSE >= 3
-  cout << "WMatrix::calc_Du() : Du = " << endl << Du << endl;
-#endif
-
-  return Du;
-}
-
-
-
-Eigen::MatrixXfp WMatrix::calc_Dd() const
-{
-  assert( detwf.ssym == true );
-
-  Eigen::MatrixXfp Dd( econf.N() / 2, econf.N() / 2 );
-  for ( unsigned int eid = econf.N() / 2; eid < econf.N(); ++eid ) {
-    Dd.row( eid - econf.N() / 2 )
-      = detwf.M.row( lat->get_spinup_site( econf.get_electron_pos( eid ) ) );
-  }
-
-#if VERBOSE >= 3
-  cout << "WMatrix::calc_Dd() : Dd = " << endl << Dd << endl;
-#endif
-
-  return Dd;
+  return D;
 }
 
 

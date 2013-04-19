@@ -32,7 +32,7 @@
 #include "fpctrl.hpp"
 #include "lattice.hpp"
 #include "jastrow.hpp"
-#include "econf.hpp"
+#include "pconf.hpp"
 #include "wmatrix.hpp"
 #include "tvector.hpp"
 
@@ -61,7 +61,7 @@ class HubbardModelVMC final
 
     // ----- dependent and internal objects -----
 
-    ElectronConfiguration econf;
+    ParticleConfiguration pconf;
 
     WMatrix W;
     TVector T;
@@ -84,7 +84,7 @@ class HubbardModelVMC final
       const std::shared_ptr<Lattice>& lat_init,
       const SingleParticleOrbitals& detwf_init,
       const Jastrow& v_init,
-      unsigned int N_init,
+      unsigned int Ne_init,
       unsigned int update_hop_maxdist_init,
       const std::vector<double>& t_init, double U_init,
       double W_deviation_target,

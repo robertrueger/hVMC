@@ -85,7 +85,10 @@ double calc_deviation(
   assert( approx.size() == exact.size() );
   double exact_square_sum = exact.squaredNorm();
   double  diff_square_sum = ( approx - exact ).squaredNorm();
-  return sqrt( diff_square_sum / exact_square_sum );
+  return
+    diff_square_sum == 0.0 ?
+    0.0 :
+    sqrt( diff_square_sum / exact_square_sum );
 }
 
 #endif // FPCTRL_H_INCLUDED

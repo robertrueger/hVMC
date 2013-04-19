@@ -17,8 +17,8 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ELECTRON_CONFIGURATION_H_INCLUDED
-#define ELECTRON_CONFIGURATION_H_INCLUDED
+#ifndef PARTICLE_CONFIGURATION_H_INCLUDED
+#define PARTICLE_CONFIGURATION_H_INCLUDED
 
 #include <vector>
 #include <random>
@@ -31,42 +31,54 @@
 #include "lattice.hpp"
 
 
-enum ElectronOccupation_t {
-  ELECTRON_OCCUPATION_EMPTY = 0,
-  ELECTRON_OCCUPATION_FULL = 1
+enum ParticleOccupation_t {
+  PARTICLE_OCCUPATION_EMPTY = 0,
+  PARTICLE_OCCUPATION_FULL = 1
 };
 
 
-struct ElectronHop final {
+struct ParticleHop final {
 
-  // id of the hopping electron
+  // id of the hopping particle
   const unsigned int k;
 
   // site that it hops to
   const unsigned int l;
 
-  // position of electron k before the hop
+  // position of particle k before the hop
   const unsigned int k_pos;
 
   // hop possible = site l unoccupied?
   const bool possible;
 
-  ElectronHop( unsigned int k_init, unsigned int l_init,
+  ParticleHop( unsigned int k_init, unsigned int l_init,
                unsigned int k_pos_init, bool possible_init )
     : k( k_init ), l( l_init ),
       k_pos( k_pos_init ), possible( possible_init ) { }
 };
 
 
-class ElectronConfiguration final
+class ParticleConfiguration final
 {
 
   private:
 
     const std::shared_ptr<Lattice> lat;
-    const unsigned int electron_number;
+
+  public:
+
+    // BEWARE: particle-hole-transformation!!
+    // -> spin up particles are spin up electrons
+    // -> spin down particles are spin down electron holes
+    // total number of ...
+    const unsigned int Ne; // ... electrons
+    const unsigned int Npu; // ... spin up particles
+    const unsigned int Npd; /// ... spin down particles
+    const unsigned int Np; // ... particles
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
-    std::vector<unsigned int> electron_pos;
+    std::vector<unsigned int> particle_pos;
+
+  private:
 
     std::mt19937& rng;
 
@@ -74,31 +86,27 @@ class ElectronConfiguration final
     // (in order to avoid allocating new ones all the time)
     mutable std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
 
-    void reconstr_electron_pos();
+    void reconstr_particle_pos();
 
   public:
 
-    ElectronConfiguration(
-      const std::shared_ptr<Lattice>& lat_init, unsigned int N_init,
+    ParticleConfiguration(
+      const std::shared_ptr<Lattice>& lat_init, unsigned int Ne_init,
       std::mt19937& rng_init
     );
 
     void distribute_random();
 
-    ElectronHop propose_random_hop( unsigned int update_hop_maxdist ) const;
-    void do_hop( const ElectronHop& hop );
+    ParticleHop propose_random_hop( unsigned int update_hop_maxdist ) const;
+    void do_hop( const ParticleHop& hop );
 
-    unsigned int get_electron_pos( unsigned int k ) const;
+    unsigned int get_particle_pos( unsigned int k ) const;
     unsigned int get_site_occ( unsigned int l ) const;
 
-    // ----- physical observables:
-    // total number of electrons
-    unsigned int N() const;
-    // number of electrons per site
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
-    // total number of double occupancies
-    unsigned int get_num_dblocc() const;
-
+    // particle configuration readers
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> npu() const;
+    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> npd() const;
 };
 
-#endif // ELECTRON_CONFIGURATION_H_INCLUDED
+
+#endif // PARTICLE_CONFIGURATION_H_INCLUDED

@@ -34,10 +34,10 @@ onsite-energy = 2.0
 lattice = 1dchain
 
 # number of lattice sites
-num-lattice-sites = 80
+num-lattice-sites = 20
 
 # total number of electrons
-num-electrons = 80
+num-electrons = 20
 
 # file to load the variational parameters from
 #vpar-file =
@@ -82,7 +82,7 @@ num-binmcs = 100
 # rng-seed = 1337133789
 
 # [opt]: controls the SR convergence: vpar += dt * dvpar
-sr-dt = 10
+sr-dt = 1
 
 # [opt]: Mann-Kendall threshold for convergence detection
 sr-mkthreshold = 0.5

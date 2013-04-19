@@ -24,7 +24,7 @@
 #include <eigen3/Eigen/Core>
 
 #include "fptype.hpp"
-#include "econf.hpp"
+#include "pconf.hpp"
 #include "lattice.hpp"
 #include "detwf.hpp"
 #include "fpctrl.hpp"
@@ -36,20 +36,15 @@ class WMatrix final
 
     const Lattice* const lat;
     const SingleParticleOrbitals& detwf;
-    const ElectronConfiguration& econf;
+    const ParticleConfiguration& pconf;
 
-    Eigen::MatrixXfp  Wbu_1;
-    Eigen::MatrixXfp  Wbu_2;
-    Eigen::MatrixXfp* Wbu_active;
-    Eigen::MatrixXfp* Wbu_inactive;
-
-    Eigen::MatrixXfp  Wd_1;
-    Eigen::MatrixXfp  Wd_2;
-    Eigen::MatrixXfp* Wd_active;
-    Eigen::MatrixXfp* Wd_inactive;
+    Eigen::MatrixXfp  W_1;
+    Eigen::MatrixXfp  W_2;
+    Eigen::MatrixXfp* W_active;
+    Eigen::MatrixXfp* W_inactive;
 
 #ifdef USE_CBLAS
-    // a temporary vectors that are large enough to hold one row/col of Wbu
+    // a temporary vectors that are large enough to hold one row/col of W
     Eigen::VectorXfp tempWcol;
     Eigen::VectorXfp tempWrow;
 #endif
@@ -59,25 +54,23 @@ class WMatrix final
     FPDevStat devstat;
 
     // functions to calculate the matrix D
-    Eigen::MatrixXfp calc_Db() const;
-    Eigen::MatrixXfp calc_Du() const;
-    Eigen::MatrixXfp calc_Dd() const;
+    Eigen::MatrixXfp calc_D() const;
 
     void calc_new();
-    void calc_qupdated( const ElectronHop& hop );
+    void calc_qupdated( const ParticleHop& hop );
 
   public:
 
     WMatrix(
       const Lattice* lat_init,
       const SingleParticleOrbitals& detwf_init,
-      const ElectronConfiguration& econf_init,
+      const ParticleConfiguration& pconf_init,
       double deviation_target,
       unsigned int updates_until_recalc_init
     );
 
     bool init_and_check();
-    void update( const ElectronHop& hop );
+    void update( const ParticleHop& hop );
 
     fptype operator()( unsigned int i, unsigned int j ) const;
 
