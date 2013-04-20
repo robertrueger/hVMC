@@ -43,7 +43,9 @@ HubbardModelVMC prepare_model(
   t[1] = opts["phys.2nd-nn-hopping"].as<double>();
   t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
-  SingleParticleOrbitals detwf = prepare_detwf( lat, opts, mpicomm );
+  SingleParticleOrbitals detwf
+    = wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(),
+                        lat, mpicomm.rank() == 0 );
 
   Jastrow v( lat, vpar );
 
@@ -90,21 +92,6 @@ shared_ptr<Lattice> prepare_lattice( const Options& opts )
              opts["phys.num-lattice-sites"].as<unsigned int>()
            );
   }
-}
-
-
-SingleParticleOrbitals prepare_detwf(
-  const shared_ptr<Lattice>& lat, const Options& opts,
-  const mpi::communicator& mpicomm )
-{
-  vector<double> t(3);
-  t[0] = opts["phys.nn-hopping"].as<double>();
-  t[1] = opts["phys.2nd-nn-hopping"].as<double>();
-  t[2] = opts["phys.3rd-nn-hopping"].as<double>();
-
-  return
-    wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(),
-                      lat, mpicomm.rank() == 0 );
 }
 
 
