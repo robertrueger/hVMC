@@ -75,7 +75,7 @@ class ParticleConfiguration final
     const unsigned int Npu; // ... spin up particles
     const unsigned int Npd; /// ... spin down particles
     const unsigned int Np; // ... particles
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> site_occ;
+    Eigen::VectorXi site_occ;
     std::vector<unsigned int> particle_pos;
 
   private:
@@ -101,11 +101,11 @@ class ParticleConfiguration final
     void do_hop( const ParticleHop& hop );
 
     unsigned int get_particle_pos( unsigned int k ) const;
-    unsigned int get_site_occ( unsigned int l ) const;
+    ParticleOccupation_t get_site_occ( unsigned int l ) const;
 
     // particle configuration readers
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> npu() const;
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> npd() const;
+    Eigen::VectorXi npu() const;
+    Eigen::VectorXi npd() const;
 };
 
 

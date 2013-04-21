@@ -117,8 +117,8 @@ bool HubbardModelVMC::metstep()
           (
             T( lat->get_spinup_site( phop.l ) )
             - T( lat->get_spinup_site( phop.k_pos ) )
-          )
-        ) * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
+          ) + v.onsite() - v( phop.l, phop.k_pos )
+        );
 
     const double R_s = W( phop.l, phop.k );
 
@@ -185,12 +185,12 @@ double HubbardModelVMC::E_l() const
 
           const double R_j
             = std::exp(
-              ( k_pos < lat->L ? 1.0 : -1.0 ) *
-              (
-                T( lat->get_spinup_site( *l_it ) )
-                - T( lat->get_spinup_site( k_pos ) )
-              )
-            ) * v.exp_onsite() / v.exp( *l_it, k_pos );
+                ( k_pos < lat->L ? 1.0 : -1.0 ) *
+                (
+                  T( lat->get_spinup_site( *l_it ) )
+                  - T( lat->get_spinup_site( k_pos ) )
+                ) + v.onsite() - v( *l_it, k_pos )
+              );
 
           sum_Xnn += R_j * W( *l_it, k );
 
@@ -229,9 +229,8 @@ Eigen::VectorXd HubbardModelVMC::Delta_k() const
         unsigned int vparnum = v.get_vparnum( irr_idxrel );
         sum( vparnum )
         += dblcount_correction *
-           ( pconf.get_site_occ( i ) + 1 - pconf.get_site_occ( i + lat->L ) ) *
-           ( pconf.get_site_occ( j ) + 1 - pconf.get_site_occ( j + lat->L ) );
-        // TODO: check +1 in formula above (Robert Rueger, 2013-04-18 17:25)
+           ( pconf.get_site_occ( i ) - pconf.get_site_occ( i + lat->L ) ) *
+           ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
       }
     }
   }
@@ -257,7 +256,7 @@ double HubbardModelVMC::dblocc_dens() const
 
 Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
 {
-  return pconf.npu().array() + ( 1 - pconf.npd().array() );
+  return ( pconf.npu().array() + 1 - pconf.npd().array() ).cast<unsigned int>();
 }
 
 

@@ -38,7 +38,7 @@ class Jastrow final
 
     const std::shared_ptr<Lattice> lat;
 
-    std::vector<double> idxrel_expv;
+    std::vector<double> idxrel_v;
 
     unsigned int num_vpar;
     std::vector<unsigned int> idxrel_vparnum;
@@ -51,8 +51,7 @@ class Jastrow final
     );
 
     double operator()( unsigned int i, unsigned int j ) const;
-    double exp( unsigned int i, unsigned int j ) const;
-    double exp_onsite() const;
+    double onsite() const;
     void set( unsigned int i, unsigned int j, double v_new  );
 
     unsigned int get_num_vpar() const;

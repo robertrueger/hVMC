@@ -141,8 +141,7 @@ Eigen::VectorXd TVector::calc_new() const
   for ( unsigned int i = 0; i < lat->L; ++i ) {
     for ( unsigned int j = 0; j < lat->L; ++j ) {
       T_new( i ) +=
-        v( i, j ) * ( static_cast<double>( pconf.get_site_occ( j ) )
-                      - static_cast<double>( pconf.get_site_occ( j + lat->L ) ) );
+        v( i, j ) * ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
     }
   }
   return T_new;

@@ -31,9 +31,7 @@ ParticleConfiguration::ParticleConfiguration(
   const shared_ptr<Lattice>& lat_init, unsigned int Ne_init,  mt19937& rng_init )
   : lat( lat_init ),
     Ne( Ne_init ), Npu( Ne / 2 ), Npd( lat->L - Ne / 2 ), Np( Npu + Npd ),
-    site_occ(
-      Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat->L )
-    ),
+    site_occ( Eigen::VectorXi::Zero( 2 * lat->L ) ),
     particle_pos( vector<unsigned int>( Np ) ),
     rng( rng_init )
 {
@@ -69,14 +67,14 @@ void ParticleConfiguration::reconstr_particle_pos()
 void ParticleConfiguration::distribute_random()
 {
   // clear all sites
-  site_occ = Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>::Zero( 2 * lat->L );
+  site_occ.setZero();
 
   // randomly distribute Npu/Npd particles per spin direction
-  while ( site_occ.head( lat->L ).sum() < Npu ) {
+  while ( site_occ.head( lat->L ).sum() < static_cast<int>( Npu ) ) {
     site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng ) ]
       = PARTICLE_OCCUPATION_FULL;
   }
-  while ( site_occ.tail( lat->L ).sum() < Npd ) {
+  while ( site_occ.tail( lat->L ).sum() < static_cast<int>( Npd ) ) {
     site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng )
               + lat->L ] = PARTICLE_OCCUPATION_FULL;
   }
@@ -216,19 +214,19 @@ unsigned int ParticleConfiguration::get_particle_pos( unsigned int k ) const
 
 
 
-unsigned int ParticleConfiguration::get_site_occ( unsigned int l ) const
+ParticleOccupation_t ParticleConfiguration::get_site_occ( unsigned int l ) const
 {
-  return site_occ[ l ];
+  return static_cast<ParticleOccupation_t>( site_occ[ l ] );
 }
 
 
 
-Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ParticleConfiguration::npu() const
+Eigen::VectorXi ParticleConfiguration::npu() const
 {
   return site_occ.head( lat->L );
 }
 
-Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ParticleConfiguration::npd() const
+Eigen::VectorXi ParticleConfiguration::npd() const
 {
   return site_occ.tail( lat->L );
 }
