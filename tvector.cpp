@@ -39,7 +39,7 @@ TVector::TVector(
   double deviation_target,
   unsigned int updates_until_recalc_init )
   : lat( lat_init ), v( v_init ), pconf( pconf_init ),
-    T( Eigen::VectorXd( lat->L ) ),
+    T( lat->L ),
     updates_until_recalc( updates_until_recalc_init ),
     updates_since_recalc( 0 ),
     devstat( FPDevStat( deviation_target ) ) { }

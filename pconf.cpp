@@ -32,7 +32,7 @@ ParticleConfiguration::ParticleConfiguration(
   : lat( lat_init ),
     Ne( Ne_init ), Npu( Ne / 2 ), Npd( lat->L - Ne / 2 ), Np( Npu + Npd ),
     site_occ( Eigen::VectorXi::Zero( 2 * lat->L ) ),
-    particle_pos( vector<unsigned int>( Np ) ),
+    particle_pos( Np ),
     rng( rng_init )
 {
   assert( Ne % 2 == 0 );

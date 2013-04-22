@@ -44,11 +44,9 @@ HubbardModelVMC::HubbardModelVMC(
     lat( lat_init ), detwf( detwf_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
-    pconf( ParticleConfiguration( lat, Ne_init, rng ) ),
-    W( WMatrix( lat.get(), detwf, pconf,
-                W_deviation_target, updates_until_W_recalc ) ),
-    T( TVector( lat.get(), v, pconf,
-                T_deviation_target, updates_until_T_recalc ) )
+    pconf( lat, Ne_init, rng ),
+    W( lat.get(), detwf, pconf, W_deviation_target, updates_until_W_recalc ),
+    T( lat.get(), v, pconf, T_deviation_target, updates_until_T_recalc )
 {
   while ( true ) {
 
