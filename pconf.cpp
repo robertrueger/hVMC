@@ -85,9 +85,9 @@ void ParticleConfiguration::distribute_random()
        << site_occ.tail( lat->L ).transpose() << endl;
 #endif
 
-  assert( site_occ.head( lat->L ).sum() == Npu );
-  assert( site_occ.tail( lat->L ).sum() == Npd );
-  assert( site_occ.sum() == Np );
+  assert( site_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
+  assert( site_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
+  assert( site_occ.sum() == static_cast<int>( Np ) );
 
   reconstr_particle_pos();
 }
@@ -200,9 +200,9 @@ void ParticleConfiguration::do_hop( const ParticleHop& hop )
   cout << endl;
 #endif
 
-  assert( site_occ.head( lat->L ).sum() == Npu );
-  assert( site_occ.tail( lat->L ).sum() == Npd );
-  assert( site_occ.sum() == Np );
+  assert( site_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
+  assert( site_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
+  assert( site_occ.sum() == static_cast<int>( Np ) );
 }
 
 
