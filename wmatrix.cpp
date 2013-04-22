@@ -47,13 +47,13 @@ WMatrix::WMatrix(
   double deviation_target,
   unsigned int updates_until_recalc_init )
   : lat( lat_init ), detwf( detwf_init ), pconf( pconf_init ),
-    W_1( Eigen::MatrixXfp( 2 * lat->L, pconf.Np ) ),
-    W_2( Eigen::MatrixXfp( 2 * lat->L, pconf.Np ) ),
+    W_1( 2 * lat->L, pconf.Np ),
+    W_2( 2 * lat->L, pconf.Np ),
     W_active(   &W_1 ),
     W_inactive( &W_2 ),
 #ifdef USE_CBLAS
-    tempWcol( Eigen::VectorXfp( 2 * lat->L ) ),
-    tempWrow( Eigen::VectorXfp( pconf.Np ) ),
+    tempWcol( 2 * lat->L ),
+    tempWrow( pconf.Np ),
 #endif
     updates_until_recalc( updates_until_recalc_init ),
     updates_since_recalc( 0 ),
