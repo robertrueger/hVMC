@@ -75,7 +75,27 @@ SingleParticleOrbitals wf_tight_binding(
     }
   }
 
+  // BCS term
+  const double Delta = 10.0;
+  // TODO: make an option (Robert Rueger, 2013-04-22 16:18)
+  // TODO: make optimizable (Robert Rueger, 2013-04-22 16:18)
+  vector<unsigned int> l_nn;
+  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
+    // get nearest neighbors of site l
+    lat->get_Xnn( l, 1, &l_nn );
+    for ( auto it = l_nn.begin(); it != l_nn.end(); ++it ) {
+      if ( l < lat->L ) {
+        // l is a spin up site
+        H_tb( l, *it + lat->L ) += Delta;
+      } else {
+        // l is a spin down site
+        H_tb( l, *it - lat->L ) += Delta;
+      }
+    }
+  }
+
   // chemical potential
+  // TODO: make optimizable (Robert Rueger, 2013-04-22 16:18)
   H_tb.diagonal().head( lat->L ).array() -= mu;
   H_tb.diagonal().tail( lat->L ).array() += mu;
 
@@ -117,6 +137,8 @@ SingleParticleOrbitals wf_tight_binding(
     }
     exit( 1 );
   }
+
+  exit( 0 );
 
   return SingleParticleOrbitals(
            M.cast<fptype>(),
