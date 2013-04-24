@@ -28,39 +28,17 @@ using namespace std;
 
 
 SingleParticleOrbitals wf_tight_binding(
-  const vector<double>& t,
+  const vector<double>& t_ext,
   unsigned int N, const shared_ptr<Lattice>& lat,
   bool is_master )
 {
+  // TODO: remove and use t_ext (Robert Rueger, 2013-04-22 20:28)
+  vector<double> t = { 1.0, -0.3862688, 0 };
+
   // make sure we pass the right number of parameters
   assert( t.size() == 3  );
 
-  // ----- 1.: determine the chemical potential
-  double mu;
-  {
-    Eigen::MatrixXd H_tb_nopht = Eigen::MatrixXd::Zero( 2 * lat->L, 2 * lat->L );
-
-    // t hopping
-    vector<unsigned int> l_Xnn;
-    for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-      for ( unsigned int X = 1; X <= 3; ++X ) {
-        lat->get_Xnn( l, X, &l_Xnn );
-        for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-          H_tb_nopht( l, *it ) -= t[X - 1];
-        }
-      }
-    }
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> H_tb_nopht_solver( H_tb_nopht );
-    assert( H_tb_nopht_solver.info() == Eigen::Success );
-    mu = 0.5 * ( H_tb_nopht_solver.eigenvalues()( N )
-                 + H_tb_nopht_solver.eigenvalues()( N - 1 ) );
-
-#if VERBOSE >= 1
-    cout << "wf_tight_binding() : chemical potential = " << mu << endl;
-#endif
-  }
-
-  // ----- 2.: diagonalize single particle Hamiltonian under p.-h. transformation
+  // diagonalize single particle Hamiltonian under p.-h. transformation
 
   Eigen::MatrixXd H_tb = Eigen::MatrixXd::Zero( 2 * lat->L, 2 * lat->L );
 
@@ -76,25 +54,37 @@ SingleParticleOrbitals wf_tight_binding(
   }
 
   // BCS term
-  const double Delta = 10.0;
+  const vector<double> Delta = { -0.1800535, 0.3728459, 0.0, 0.0 };
   // TODO: make an option (Robert Rueger, 2013-04-22 16:18)
   // TODO: make optimizable (Robert Rueger, 2013-04-22 16:18)
-  vector<unsigned int> l_nn;
   for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-    // get nearest neighbors of site l
-    lat->get_Xnn( l, 1, &l_nn );
-    for ( auto it = l_nn.begin(); it != l_nn.end(); ++it ) {
-      if ( l < lat->L ) {
-        // l is a spin up site
-        H_tb( l, *it + lat->L ) += Delta;
-      } else {
-        // l is a spin down site
-        H_tb( l, *it - lat->L ) += Delta;
+
+    // onsite BCS term
+    if ( l < lat->L ) {
+      // l is a spin up site
+      H_tb( l, l + lat->L ) += Delta[ 0 ];
+    } else {
+      // l is a spin down site
+      H_tb( l, l - lat->L ) += Delta[ 0 ];
+    }
+
+    // neighboring sites BCS term
+    for ( unsigned int X = 1; X <= 3; ++X ) {
+      lat->get_Xnn( l, X, &l_Xnn );
+      for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+        if ( l < lat->L ) {
+          // l is a spin up site
+          H_tb( l, *it + lat->L ) += Delta[ X ];
+        } else {
+          // l is a spin down site
+          H_tb( l, *it - lat->L ) += Delta[ X ];
+        }
       }
     }
   }
 
   // chemical potential
+  const double mu = 2.017839;
   // TODO: make optimizable (Robert Rueger, 2013-04-22 16:18)
   H_tb.diagonal().head( lat->L ).array() -= mu;
   H_tb.diagonal().tail( lat->L ).array() += mu;
@@ -137,8 +127,6 @@ SingleParticleOrbitals wf_tight_binding(
     }
     exit( 1 );
   }
-
-  exit( 0 );
 
   return SingleParticleOrbitals(
            M.cast<fptype>(),
