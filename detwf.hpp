@@ -31,25 +31,75 @@
 #include "lattice.hpp"
 
 
-struct SingleParticleOrbitals final {
+class SingleParticleHamiltonian final {
 
-  // the actual orbitals
-  Eigen::MatrixXfp M;
+  public:
 
-  // the associated energies
-  Eigen::MatrixXfp E;
+    // the number of lattice sites
+    const unsigned int L;
 
-  SingleParticleOrbitals(
-    const Eigen::MatrixXfp& M_init,
-    const Eigen::MatrixXfp& E_init
-  ) : M( M_init ), E( E_init) { }
+  private:
+
+    // the single particle Hamiltonian under p.h. transformation
+    Eigen::MatrixXfp int_H;
+
+    // masks the vpar operators
+    std::vector<Eigen::MatrixXfp> int_V;
+
+  public:
+
+    SingleParticleHamiltonian( unsigned int L_init );
+
+    void add_anyterm(  const Eigen::MatrixXfp& term );
+    void add_vparterm( const Eigen::MatrixXfp& mask, fptype vpar );
+
+    const Eigen::MatrixXfp& H() const;
+    const std::vector<Eigen::MatrixXfp>& V() const;
 };
 
 
-SingleParticleOrbitals wf_tight_binding(
-  const std::vector<double>& t,
-  unsigned int N, const std::shared_ptr<Lattice>& lat,
-  bool is_master
+class DeterminantalWavefunction final {
+
+  private:
+
+    // the single particle Hamiltonian
+    const SingleParticleHamiltonian int_spHam;
+
+  public:
+
+    // the number of particles (= number of states in the slater determinant)
+    const unsigned int Np;
+
+  private:
+
+    // the eigenstates
+    Eigen::MatrixXfp int_U;
+
+    // the associated energies
+    Eigen::VectorXfp int_epsilon;
+
+    // resulting matrices for the vpar operators
+    std::vector<Eigen::MatrixXfp> int_A;
+
+  public:
+
+    DeterminantalWavefunction(
+      const SingleParticleHamiltonian& spHam_init, unsigned int Np_init );
+
+    bool is_openshell() const;
+
+    const SingleParticleHamiltonian& spHam() const;
+
+    const Eigen::MatrixXfp& U() const;
+    Eigen::Block<const Eigen::MatrixXfp> M() const;
+    const Eigen::VectorXfp& epsilon() const;
+    const std::vector<Eigen::MatrixXfp>& A() const;
+};
+
+
+DeterminantalWavefunction build_detwf(
+  const std::shared_ptr<Lattice>& lat, unsigned int Ne,
+  const std::vector<double>& t, const std::vector<double>& Delta, double mu
 );
 
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED

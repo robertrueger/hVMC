@@ -42,7 +42,7 @@ using namespace std;
 
 WMatrix::WMatrix(
   const Lattice* lat_init,
-  const SingleParticleOrbitals& detwf_init,
+  const DeterminantalWavefunction& detwf_init,
   const ParticleConfiguration& pconf_init,
   double deviation_target,
   unsigned int updates_until_recalc_init )
@@ -74,7 +74,7 @@ bool WMatrix::init_and_check()
   }
 
   W_active->noalias()
-    = lu_decomp.solve( detwf.M.transpose() ).transpose();
+    = lu_decomp.solve( detwf.M().transpose() ).transpose();
   fptype W_avg
     = W_active->squaredNorm() / static_cast<fptype>( W_active->size() );
   if ( W_avg > 50.f ) {
@@ -184,7 +184,7 @@ void WMatrix::update( const ParticleHop& hop )
 void WMatrix::calc_new()
 {
   W_inactive->noalias()
-    = calc_D().transpose().partialPivLu().solve( detwf.M.transpose() ).transpose();
+    = calc_D().transpose().partialPivLu().solve( detwf.M().transpose() ).transpose();
 
   swap( W_inactive, W_active );
 }
@@ -246,7 +246,7 @@ Eigen::MatrixXfp WMatrix::calc_D() const
 {
   Eigen::MatrixXfp D( pconf.Np, pconf.Np );
   for ( unsigned int pid = 0; pid < pconf.Np; ++pid ) {
-    D.row( pid ) = detwf.M.row( pconf.get_particle_pos( pid ) );
+    D.row( pid ) = detwf.M().row( pconf.get_particle_pos( pid ) );
   }
 
 #if VERBOSE >= 3

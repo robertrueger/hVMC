@@ -35,7 +35,7 @@ class WMatrix final
   protected:
 
     const Lattice* const lat;
-    const SingleParticleOrbitals& detwf;
+    const DeterminantalWavefunction& detwf;
     const ParticleConfiguration& pconf;
 
     Eigen::MatrixXfp  W_1;
@@ -63,7 +63,7 @@ class WMatrix final
 
     WMatrix(
       const Lattice* lat_init,
-      const SingleParticleOrbitals& detwf_init,
+      const DeterminantalWavefunction& detwf_init,
       const ParticleConfiguration& pconf_init,
       double deviation_target,
       unsigned int updates_until_recalc_init

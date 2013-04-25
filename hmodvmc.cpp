@@ -30,7 +30,7 @@ using namespace std;
 HubbardModelVMC::HubbardModelVMC(
   const mt19937& rng_init,
   const shared_ptr<Lattice>& lat_init,
-  const SingleParticleOrbitals& detwf_init,
+  const DeterminantalWavefunction& detwf_init,
   const Jastrow& v_init,
   unsigned int Ne_init,
   unsigned int update_hop_maxdist_init,

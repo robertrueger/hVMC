@@ -43,9 +43,16 @@ HubbardModelVMC prepare_model(
   t[1] = opts["phys.2nd-nn-hopping"].as<double>();
   t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
-  SingleParticleOrbitals detwf
-    = wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(),
-                        lat, mpicomm.rank() == 0 );
+  // TODO: REMOVE!!! (Robert Rueger, 2013-04-25 17:27)
+  const vector<double> t_vpar = { 1.0, -0.3862688, 0 };
+  const vector<double> Delta_vpar = { -0.1800535, 0.3728459, 0.0, 0.0 };
+  const double mu_vpar = 2.017839;
+
+  DeterminantalWavefunction detwf
+    = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
+                   t_vpar, Delta_vpar, mu_vpar );
+
+  // TODO: open shell check!!! (Robert Rueger, 2013-04-25 17:34)
 
   Jastrow v( lat, vpar );
 

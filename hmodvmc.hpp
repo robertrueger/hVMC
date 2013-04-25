@@ -50,7 +50,7 @@ class HubbardModelVMC final
     const std::shared_ptr<Lattice> lat;
 
     // wavefunction and Jastrow
-    const SingleParticleOrbitals detwf;
+    const DeterminantalWavefunction detwf;
     const Jastrow v;
 
     // Hubbard model parameters
@@ -82,7 +82,7 @@ class HubbardModelVMC final
     HubbardModelVMC(
       const std::mt19937& rng_init,
       const std::shared_ptr<Lattice>& lat_init,
-      const SingleParticleOrbitals& detwf_init,
+      const DeterminantalWavefunction& detwf_init,
       const Jastrow& v_init,
       unsigned int Ne_init,
       unsigned int update_hop_maxdist_init,
