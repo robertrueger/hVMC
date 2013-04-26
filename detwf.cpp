@@ -61,7 +61,7 @@ DeterminantalWavefunction::DeterminantalWavefunction(
   const SingleParticleHamiltonian& spHam_init, unsigned int Np_init )
   : int_spHam( spHam_init ), Np( Np_init ),
     int_U( 2 * int_spHam.L, 2 * int_spHam.L ),
-    int_epsilon( int_spHam.L )
+    int_epsilon( 2 * int_spHam.L )
 {
   // diagonalize single particle Hamiltonian
   {
@@ -210,7 +210,7 @@ DeterminantalWavefunction build_detwf(
 
 
   // determine how many particles we have after the p.-h. transformation
-  assert( N % 2 == 0 );
+  assert( Ne % 2 == 0 );
   const unsigned int Np = Ne / 2 + ( lat->L - Ne / 2 );
 
   return DeterminantalWavefunction( spHam, Np );

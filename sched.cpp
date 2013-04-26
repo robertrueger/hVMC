@@ -87,6 +87,15 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   // prepare the initial variational parameters
   Eigen::VectorXd vpar = get_initial_varparam( opts );
 
+  // TODO: REMOVE!!! (Robert Rueger, 2013-04-26 11:28)
+  vpar[0] = -0.3862688; // 2nn hopping
+  vpar[1] = 0.0; // 3nn hopping
+  vpar[2] = -0.1800535; // onsite pairing
+  vpar[3] = 0.3728459; // 1nn pairing
+  vpar[4] = 0.0; // 2nn pairing
+  vpar[5] = 0.0; // 3nn pairing
+  vpar[6] = 2.017839; // chemical potential
+
   // add the observables you want to measure to the set
   set<observables_t> obs;
   obs.insert( OBSERVABLE_E );

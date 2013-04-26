@@ -38,15 +38,11 @@ HubbardModelVMC prepare_model(
   mt19937 rng = prepare_rng( opts, mpicomm );
   shared_ptr<Lattice> lat = prepare_lattice( opts );
 
-  vector<double> t(3);
-  t[0] = opts["phys.nn-hopping"].as<double>();
-  t[1] = opts["phys.2nd-nn-hopping"].as<double>();
-  t[2] = opts["phys.3rd-nn-hopping"].as<double>();
-
-  // TODO: REMOVE!!! (Robert Rueger, 2013-04-25 17:27)
-  const vector<double> t_vpar = { 1.0, -0.3862688, 0 };
-  const vector<double> Delta_vpar = { -0.1800535, 0.3728459, 0.0, 0.0 };
-  const double mu_vpar = 2.017839;
+  // slice vpar vector into the different components
+  const vector<double> t_vpar
+    = { opts["phys.nn-hopping"].as<double>(), vpar[0], vpar[1] };
+  const vector<double> Delta_vpar( vpar.data() + 2, vpar.data() + 6 );
+  const double mu_vpar = vpar[6];
 
   DeterminantalWavefunction detwf
     = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
@@ -54,7 +50,12 @@ HubbardModelVMC prepare_model(
 
   // TODO: open shell check!!! (Robert Rueger, 2013-04-25 17:34)
 
-  Jastrow v( lat, vpar );
+  Jastrow v( lat, vpar.tail( vpar.size() - 7 ) );
+
+  vector<double> t(3);
+  t[0] = opts["phys.nn-hopping"].as<double>();
+  t[1] = opts["phys.2nd-nn-hopping"].as<double>();
+  t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
   return HubbardModelVMC(
     rng,
