@@ -37,7 +37,8 @@ namespace ar  = boost::archive;
 
 unsigned int get_num_vpars( const Options& opts )
 {
-  return 7 + prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
+  //return 7 + prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
+  return 4 + prepare_lattice( opts )->irreducible_idxrel_list().size() - 1;
 }
 
 

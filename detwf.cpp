@@ -160,7 +160,8 @@ DeterminantalWavefunction build_detwf(
   spHam_mask.setZero();
 
   // 2nd and 3rd nearest neighbor hopping
-  for ( unsigned int X = 2; X <= 3; ++X ) {
+  //for ( unsigned int X = 2; X <= 3; ++X ) {
+  for ( unsigned int X = 2; X <= 2; ++X ) {
     for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
       lat->get_Xnn( l, X, &l_Xnn );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
@@ -185,7 +186,8 @@ DeterminantalWavefunction build_detwf(
   spHam_mask.setZero();
 
   // 1st, 2nd and 3rd nearest neighbor BCS pairing
-  for ( unsigned int X = 1; X <= 3; ++X ) {
+  //for ( unsigned int X = 1; X <= 3; ++X ) {
+  for ( unsigned int X = 1; X <= 1; ++X ) {
     for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
       lat->get_Xnn( l, X, &l_Xnn );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {

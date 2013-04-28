@@ -23,6 +23,8 @@
 # include <iostream>
 #endif
 
+#include "fptype.hpp"
+
 using namespace std;
 
 
@@ -215,12 +217,22 @@ double HubbardModelVMC::E_l() const
 
 Eigen::VectorXd HubbardModelVMC::Delta_k() const
 {
-  Eigen::VectorXd result = Eigen::VectorXd::Zero( 7 + v.get_num_vpar() );
+  //Eigen::VectorXd result = Eigen::VectorXd::Zero( 7 + v.get_num_vpar() );
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 4 + v.get_num_vpar() );
 
   // ----- first seven variational parameters are from the determinantal part
 
-  for ( unsigned int k = 0; k < 7; ++k ) {
-    // TODO: calculate logarithmic derivates (Robert Rueger, 2013-04-26 11:17)
+  Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
+  for ( unsigned int k = 0; k < pconf.Np; ++k ) {
+    const unsigned int k_pos = pconf.get_particle_pos( k );
+    for ( unsigned int l = 0; l < lat->L; ++l ) {
+      G( k_pos, l ) = W( l, k );
+    }
+  }
+
+  for ( unsigned int vpar = 0; vpar < 4; ++vpar ) {
+  //for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {
+    result( vpar ) = ( detwf.A()[vpar].array() * G ).sum();
   }
 
   // ----- everything except the first 7 are Jastrow parameters
@@ -228,11 +240,12 @@ Eigen::VectorXd HubbardModelVMC::Delta_k() const
   for ( unsigned int i = 0; i < lat->L; ++i ) {
     for ( unsigned int j = i; j < lat->L; ++j ) {
 
-      unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
-      double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
+      const unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
+      const double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
 
       if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
-        result( 7 + v.get_vparnum( irr_idxrel ) )
+        //result( 7 + v.get_vparnum( irr_idxrel ) )
+        result( 4 + v.get_vparnum( irr_idxrel ) )
         += dblcount_correction *
            ( pconf.get_site_occ( i ) - pconf.get_site_occ( i + lat->L ) ) *
            ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
