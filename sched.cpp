@@ -103,8 +103,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   obs.insert( OBSERVABLE_DELTAK_DELTAKPRIME );
   obs.insert( OBSERVABLE_DELTAK_E );
 
-  // create datastructures to store the history of E
-  // and the variational parameters during the optimization
+  // vector to store evolution of the variational parameters during the opt.
   vector<Eigen::VectorXd> vpar_hist;
   vpar_hist.push_back( vpar );
 
@@ -116,6 +115,13 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   ofstream E_hist_file( (
     opts["calc.working-dir"].as<fs::path>() / "opt_E_hist.txt"
   ).string(), ios::app );
+
+  // write the initial variational parameters to the evolution file
+  vpar_hist_file << "0 " << vpar.transpose() << endl;
+  // ... and to stdout if verbose
+  if ( opts.count( "verbose" ) ) {
+    cout << "initial vpar = " << endl << vpar.transpose() << endl << endl;
+  }
 
   // optimization settings
   const unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();

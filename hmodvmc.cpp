@@ -217,8 +217,7 @@ double HubbardModelVMC::E_l() const
 
 Eigen::VectorXd HubbardModelVMC::Delta_k() const
 {
-  //Eigen::VectorXd result = Eigen::VectorXd::Zero( 7 + v.get_num_vpar() );
-  Eigen::VectorXd result = Eigen::VectorXd::Zero( 4 + v.get_num_vpar() );
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 7 + v.get_num_vpar() );
 
   // ----- first seven variational parameters are from the determinantal part
 
@@ -230,8 +229,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k() const
     }
   }
 
-  for ( unsigned int vpar = 0; vpar < 4; ++vpar ) {
-  //for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {
+  for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {
     result( vpar ) = ( detwf.A()[vpar].array() * G ).sum();
   }
 
@@ -244,8 +242,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k() const
       const double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
 
       if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
-        //result( 7 + v.get_vparnum( irr_idxrel ) )
-        result( 4 + v.get_vparnum( irr_idxrel ) )
+        result( 7 + v.get_vparnum( irr_idxrel ) )
         += dblcount_correction *
            ( pconf.get_site_occ( i ) - pconf.get_site_occ( i + lat->L ) ) *
            ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );

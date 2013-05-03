@@ -40,18 +40,17 @@ HubbardModelVMC prepare_model(
 
   // slice vpar vector into the different components
   const vector<double> t_vpar
-    = { opts["phys.nn-hopping"].as<double>(), vpar[0]/*, vpar[1]*/ };
-  const vector<double> Delta_vpar( vpar.data() + /*2*/ 1, vpar.data() + /*6*/ 3 );
-  const double mu_vpar = vpar[/*6*/ 3];
+    = { opts["phys.nn-hopping"].as<double>(), vpar[0], vpar[1] };
+  const vector<double> Delta_vpar( vpar.data() + 2, vpar.data() + 6 );
+  const double mu_vpar = vpar[6];
 
-  DeterminantalWavefunction detwf
+  const DeterminantalWavefunction detwf
     = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
                    t_vpar, Delta_vpar, mu_vpar );
 
   // TODO: open shell check!!! (Robert Rueger, 2013-04-25 17:34)
 
-  //Jastrow v( lat, vpar.tail( vpar.size() - 7 ) );
-  Jastrow v( lat, vpar.tail( vpar.size() - 4 ) );
+  Jastrow v( lat, vpar.tail( vpar.size() - 7 ) );
 
   vector<double> t(3);
   t[0] = opts["phys.nn-hopping"].as<double>();
