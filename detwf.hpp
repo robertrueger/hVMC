@@ -102,4 +102,10 @@ DeterminantalWavefunction build_detwf(
   const std::vector<double>& t, const std::vector<double>& Delta, double mu
 );
 
+
+double calc_tbdetwf_chempot(
+  const std::shared_ptr<Lattice>& lat, unsigned int Ne,
+  const std::vector<double>& t
+);
+
 #endif // DETERMINANTAL_WAVEFUNCTIONS_H_INCLUDED

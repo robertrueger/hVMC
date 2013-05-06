@@ -22,6 +22,7 @@
 #include <iostream>
 #include <fstream>
 #include <set>
+#include <vector>
 
 #include <boost/filesystem.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -29,6 +30,7 @@
 #include "serialization_eigen.hpp"
 #include "mccrun_prepare.hpp"
 #include "lattice.hpp"
+#include "detwf.hpp"
 
 using namespace std;
 namespace fs  = boost::filesystem;
@@ -72,7 +74,14 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
     init_vpar( 0 ) = opts["phys.2nd-nn-hopping"].as<double>();
     init_vpar( 1 ) = opts["phys.3rd-nn-hopping"].as<double>();
 
-    // TODO: chemical potential default (Robert Rueger, 2013-05-06 14:23)
+    // set the chemical potential
+    const vector<double> t_vpar
+      = { opts["phys.nn-hopping"].as<double>(), init_vpar( 0 ), init_vpar( 1 ) };
+    init_vpar( 6 ) =
+      calc_tbdetwf_chempot(
+        prepare_lattice( opts ),
+        opts["phys.num-electrons"].as<unsigned int>(), t_vpar
+      );
 
   }
 

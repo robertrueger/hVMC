@@ -87,9 +87,9 @@ DeterminantalWavefunction::DeterminantalWavefunction(
   // calculate the A matrices of the variational parameters
   for ( auto it = int_spHam.V().begin(); it != int_spHam.V().end(); ++it ) {
     int_A.push_back(
-        int_U *
-        ( ( int_U.adjoint() * *it * int_U  ).array() * ptmask ).matrix()
-        * int_U.adjoint()
+      int_U *
+      ( ( int_U.adjoint() * *it * int_U  ).array() * ptmask ).matrix()
+      * int_U.adjoint()
     );
   }
 }
@@ -212,4 +212,29 @@ DeterminantalWavefunction build_detwf(
   const unsigned int Np = Ne / 2 + ( lat->L - Ne / 2 );
 
   return DeterminantalWavefunction( spHam, Np );
+}
+
+
+
+double calc_tbdetwf_chempot(
+  const std::shared_ptr<Lattice>& lat, unsigned int Ne,
+  const std::vector<double>& t )
+{
+  Eigen::MatrixXfp H_tb_nopht = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
+
+  vector<unsigned int> l_Xnn;
+  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
+    for ( unsigned int X = 1; X <= 3; ++X ) {
+      lat->get_Xnn( l, X, &l_Xnn );
+      for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+        H_tb_nopht( l, *it ) -= t[X - 1];
+      }
+    }
+  }
+
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> H_tb_nopht_solver( H_tb_nopht );
+  assert( H_tb_nopht_solver.info() == Eigen::Success );
+
+  return 0.5 * ( H_tb_nopht_solver.eigenvalues()( Ne )
+                 + H_tb_nopht_solver.eigenvalues()( Ne - 1 ) );
 }
