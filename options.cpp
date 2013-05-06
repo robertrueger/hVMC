@@ -88,7 +88,39 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.vpar-file,P",
     po::value<fs::path>(),
-    "file to load the variational parameters from" );
+    "file to load the variational parameters from" )
+
+  ( "phys.vpar-ovwrt-t2",
+    po::value<double>(),
+    "variational parameter overwrite: t'" )
+
+  ( "phys.vpar-ovwrt-t3",
+    po::value<double>(),
+    "variational parameter overwrite: t''" )
+
+  ( "phys.vpar-ovwrt-D0",
+    po::value<double>(),
+    "variational parameter overwrite: Delta_onsite" )
+
+  ( "phys.vpar-ovwrt-D1",
+    po::value<double>(),
+    "variational parameter overwrite: Delta" )
+
+  ( "phys.vpar-ovwrt-D2",
+    po::value<double>(),
+    "variational parameter overwrite: Delta'" )
+
+  ( "phys.vpar-ovwrt-D3",
+    po::value<double>(),
+    "variational parameter overwrite: Delta""'" )
+
+  ( "phys.vpar-ovwrt-mu",
+    po::value<double>(),
+    "variational parameter overwrite: mu" )
+
+  ( "phys.vpar-ovwrt-J0",
+    po::value<double>(),
+    "variational parameter overwrite: J_00" );
 
   po::options_description calcset( "calculation settings" );
   calcset.add_options()

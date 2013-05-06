@@ -46,20 +46,65 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
   // determine how many variational parameters there are
   unsigned int num_vpars = get_num_vpars( opts );
 
+  // prepare vector
+  Eigen::VectorXd init_vpar( num_vpars );
+
   if ( fs::exists( opts["phys.vpar-file"].as<fs::path>() ) ) {
+
     // read the variational parameters from a file
     ifstream vpar_file( ( opts["phys.vpar-file"].as<fs::path>() ).string() );
     ar::text_iarchive vpar_archive( vpar_file );
-    Eigen::VectorXd vpar;
-    vpar_archive >> vpar;
-    if ( vpar.size() != num_vpars ) {
+    Eigen::VectorXd vpar_fromfile;
+    vpar_archive >> vpar_fromfile;
+    if ( vpar_fromfile.size() != num_vpars ) {
       cerr << "ERROR: variational parameter file does not have the right number "
-              "of variational parameters!" << endl;
+           "of variational parameters!" << endl;
       exit( 1 );
     }
-    return vpar;
+    init_vpar = vpar_fromfile;
+
   } else {
-    // set all variational parameters to zero
-    return Eigen::VectorXd::Zero( num_vpars );
+
+    // choose a reasonable default value
+    init_vpar.setZero();
+
+    // TODO: chemical potential default (Robert Rueger, 2013-05-06 14:23)
+
   }
+
+  // apply variational parameter overwrites
+
+  if ( opts.count( "phys.vpar-ovwrt-t2" ) ) {
+    init_vpar( 0 ) = opts["phys.vpar-ovwrt-t2"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-t3" ) ) {
+    init_vpar( 1 ) = opts["phys.vpar-ovwrt-t3"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-D0" ) ) {
+    init_vpar( 2 ) = opts["phys.vpar-ovwrt-D0"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-D1" ) ) {
+    init_vpar( 3 ) = opts["phys.vpar-ovwrt-D1"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-D2" ) ) {
+    init_vpar( 4 ) = opts["phys.vpar-ovwrt-D2"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-D3" ) ) {
+    init_vpar( 5 ) = opts["phys.vpar-ovwrt-D3"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-mu" ) ) {
+    init_vpar( 6 ) = opts["phys.vpar-ovwrt-mu"].as<double>();
+  }
+
+  if ( opts.count( "phys.vpar-ovwrt-J0" ) ) {
+    init_vpar( 7 ) = opts["phys.vpar-ovwrt-J0"].as<double>();
+  }
+
+  return init_vpar;
 }

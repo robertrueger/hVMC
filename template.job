@@ -42,6 +42,16 @@ num-electrons = 60
 # file to load the variational parameters from
 #vpar-file =
 
+# variational parameter overwrite
+# vpar-ovwrt-t2 =
+# vpar-ovwrt-t3 =
+# vpar-ovwrt-D0 =
+# vpar-ovwrt-D1 =
+# vpar-ovwrt-D2 =
+# vpar-ovwrt-D3 =
+# vpar-ovwrt-mu =
+# vpar-ovwrt-J0 =
+
 
 [calc] ###################### CALCULATION SETTINGS #############################
 
