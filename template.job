@@ -106,6 +106,9 @@ optimizers = 255
 # [opt]: controls the SR convergence: vpar += dt * dvpar
 sr-dt = 1
 
+# [opt]: factor to boost the convergence speed of the Jastrow
+sr-dt-Jboost = 1
+
 # [opt]: Mann-Kendall threshold for convergence detection
 sr-mkthreshold = 0.5
 

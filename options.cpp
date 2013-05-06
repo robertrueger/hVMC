@@ -169,6 +169,10 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<double>()->default_value( 1.0 ),
     "[opt]: controls the SR convergence: vpar += dt * dvpar" )
 
+  ( "calc.sr-dt-Jboost,J",
+    po::value<double>()->default_value( 1.0 ),
+    "[opt]: factor to boost the convergence speed of the Jastrow" )
+
   ( "calc.sr-mkthreshold,T",
     po::value<double>()->default_value( 0.5 ),
     "[opt]: Mann-Kendall threshold for convergence detection" )

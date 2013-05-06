@@ -48,7 +48,11 @@ HubbardModelVMC prepare_model(
     = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
                    t_vpar, Delta_vpar, mu_vpar );
 
-  // TODO: open shell check!!! (Robert Rueger, 2013-04-25 17:34)
+  if ( mpicomm.rank() == 0 && detwf.is_openshell() ) {
+    cout << endl;
+    cout << "   WARNING: Open shell detected!" << endl;
+    cout << endl;
+  }
 
   Jastrow v( lat, vpar.tail( vpar.size() - 7 ) );
 

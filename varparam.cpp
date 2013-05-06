@@ -68,6 +68,10 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
     // choose a reasonable default value
     init_vpar.setZero();
 
+    // set the variational t to the t in the Hubbard Hamiltonian
+    init_vpar( 0 ) = opts["phys.2nd-nn-hopping"].as<double>();
+    init_vpar( 1 ) = opts["phys.3rd-nn-hopping"].as<double>();
+
     // TODO: chemical potential default (Robert Rueger, 2013-05-06 14:23)
 
   }

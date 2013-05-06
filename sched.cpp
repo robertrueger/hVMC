@@ -87,15 +87,6 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   // prepare the initial variational parameters
   Eigen::VectorXd vpar = get_initial_varparam( opts );
 
-  // TODO: REMOVE!!! (Robert Rueger, 2013-04-26 11:28)
-//  vpar[0] = -0.3862688; // 2nn hopping
-//  vpar[1] = 0.0; // 3nn hopping
-//  vpar[1] = -0.1800535; // onsite pairing
-//  vpar[2] = 0.3728459; // 1nn pairing
-//  vpar[4] = 0.0; // 2nn pairing
-//  vpar[5] = 0.0; // 3nn pairing
-//  vpar[3] = 2.017839; // chemical potential
-
   // add the observables you want to measure to the set
   set<observables_t> obs;
   obs.insert( OBSERVABLE_E );
@@ -131,6 +122,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   const unsigned int sr_averaging_cycles
     = opts["calc.sr-averaging-cycles"].as<unsigned int>();
   const double sr_nodrift_threshold = opts["calc.sr-mkthreshold"].as<double>();
+  const double sr_Jboost = opts["calc.sr-dt-Jboost"].as<double>();
 
   // helper variables
   unsigned int sr_bins = sr_bins_init;
@@ -181,9 +173,12 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       res.Deltak_Deltakprime.get() - res.Deltak.get() * res.Deltak->transpose();
     const Eigen::VectorXd f =
       res.Deltak.get() * res.E->mean - res.Deltak_E.get();
-    const Eigen::VectorXd dvpar =
+    Eigen::VectorXd dvpar =
       ( S + 0.01 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
       .fullPivLu().solve( f );
+
+    // Jastrow convergence speed boost
+    dvpar.tail( dvpar.size() - 7 ) *= sr_Jboost;
 
     // update variational parameters
     vpar += sr_dt * dvpar;
