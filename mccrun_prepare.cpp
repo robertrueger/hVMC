@@ -115,7 +115,10 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
   if ( obs.count( OBSERVABLE_DELTAK ) ) {
     obscalc.push_back(
       unique_ptr<Observable>(
-        new ObservableDeltaK( get_num_vpars( opts ) )
+        new ObservableDeltaK(
+          get_num_vpars( opts ),
+          opts["calc.optimizers"].as<unsigned int>()
+        )
       )
     );
   }
@@ -123,7 +126,10 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
   if ( obs.count( OBSERVABLE_DELTAK_DELTAKPRIME ) ) {
     obscalc.push_back(
       unique_ptr<Observable>(
-        new ObservableDeltaKDeltaKPrime( get_num_vpars( opts ) )
+        new ObservableDeltaKDeltaKPrime(
+          get_num_vpars( opts ),
+          opts["calc.optimizers"].as<unsigned int>()
+        )
       )
     );
   }
@@ -131,7 +137,10 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
   if ( obs.count( OBSERVABLE_DELTAK_E ) ) {
     obscalc.push_back(
       unique_ptr<Observable>(
-        new ObservableDeltaKEnergy( get_num_vpars( opts ) )
+        new ObservableDeltaKEnergy(
+          get_num_vpars( opts ),
+          opts["calc.optimizers"].as<unsigned int>()
+        )
       )
     );
   }

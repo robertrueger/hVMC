@@ -98,7 +98,7 @@ class HubbardModelVMC final
 
     // observable measurements
     double E_l() const;
-    Eigen::VectorXd Delta_k() const;
+    Eigen::VectorXd Delta_k( unsigned int optimizers ) const;
     double dblocc_dens() const;
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
 

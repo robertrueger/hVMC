@@ -129,6 +129,10 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<unsigned int>(),
     "[opt+sim]: random number generator seed" )
 
+  ( "calc.optimizers,Z",
+    po::value<unsigned int>()->default_value( 255 ),
+    "[opt]: which variational parameters to optimize" )
+
   ( "calc.sr-dt,d",
     po::value<double>()->default_value( 1.0 ),
     "[opt]: controls the SR convergence: vpar += dt * dvpar" )
@@ -355,6 +359,19 @@ Options read_options( int argc, char* argv[], bool is_master )
       throw logic_error(
         "electronic configuration updates with hopping > 3rd nearest neighbors"
         "are not supported"
+      );
+    }
+
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
+         vm["calc.optimizers"].as<unsigned int>() == 0 ) {
+      throw logic_error( "you need to optimize at least one variational parameter" );
+    }
+
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
+         vm["calc.optimizers"].as<unsigned int>() > 255 ) {
+      throw logic_error(
+        "hVMC only has 7+Jastrow variational parameters "
+        "-> calc.optimizers can not be larger than 255"
       );
     }
 

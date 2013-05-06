@@ -32,8 +32,10 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaKEnergy::ObservableDeltaKEnergy( unsigned int num_vpar )
+ObservableDeltaKEnergy::ObservableDeltaKEnergy(
+  unsigned int num_vpar, unsigned int optimizers_init )
   : Observable( OBSERVABLE_DELTAK_E ),
+    optimizers( optimizers_init ),
     thisbin_DkE_sum( Eigen::VectorXd::Zero( num_vpar ) ),
     thisbin_count( 0 ),
     binmean_DkE_sum( Eigen::VectorXd::Zero( num_vpar ) ),
@@ -44,7 +46,7 @@ void ObservableDeltaKEnergy::measure(
   const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.DeltaK ) {
-    cache.DeltaK = model.Delta_k();
+    cache.DeltaK = model.Delta_k( optimizers );
   }
   if ( !cache.E ) {
     cache.E = model.E_l();

@@ -32,8 +32,10 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime( unsigned int num_vpar )
+ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime(
+  unsigned int num_vpar, unsigned int optimizers_init )
   : Observable( OBSERVABLE_DELTAK_DELTAKPRIME ),
+    optimizers( optimizers_init ),
     thisbin_DkDkp_sum( Eigen::MatrixXd::Zero( num_vpar, num_vpar ) ),
     thisbin_count( 0 ),
     binmean_DkDkp_sum( Eigen::MatrixXd::Zero( num_vpar, num_vpar ) ),
@@ -44,7 +46,7 @@ void ObservableDeltaKDeltaKPrime::measure(
   const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.DeltaK ) {
-    cache.DeltaK = model.Delta_k();
+    cache.DeltaK = model.Delta_k( optimizers );
   }
   const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
 
