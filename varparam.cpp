@@ -74,18 +74,9 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
     init_vpar( 0 ) = opts["phys.2nd-nn-hopping"].as<double>();
     init_vpar( 1 ) = opts["phys.3rd-nn-hopping"].as<double>();
 
-    // set the chemical potential
-    const vector<double> t_vpar
-      = { opts["phys.nn-hopping"].as<double>(), init_vpar( 0 ), init_vpar( 1 ) };
-    init_vpar( 6 ) =
-      calc_tbdetwf_chempot(
-        prepare_lattice( opts ),
-        opts["phys.num-electrons"].as<unsigned int>(), t_vpar
-      );
-
   }
 
-  // apply variational parameter overwrites
+  // apply variational parameter overwrites for t
 
   if ( opts.count( "phys.vpar-ovwrt-t2" ) ) {
     init_vpar( 0 ) = opts["phys.vpar-ovwrt-t2"].as<double>();
@@ -94,6 +85,20 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
   if ( opts.count( "phys.vpar-ovwrt-t3" ) ) {
     init_vpar( 1 ) = opts["phys.vpar-ovwrt-t3"].as<double>();
   }
+
+  if ( !fs::exists( opts["phys.vpar-file"].as<fs::path>() ) ) {
+    // set the chemical potential to a reasonable default value
+    // (we have to do it here, because the ts could have been overwritten)
+    const vector<double> t_vpar
+      = { opts["phys.nn-hopping"].as<double>(), init_vpar( 0 ), init_vpar( 1 ) };
+    init_vpar( 6 ) =
+      calc_tbdetwf_chempot(
+        prepare_lattice( opts ),
+        opts["phys.num-electrons"].as<unsigned int>(), t_vpar
+      );
+  }
+
+ // apply the other variational parameter overwrites
 
   if ( opts.count( "phys.vpar-ovwrt-D0" ) ) {
     init_vpar( 2 ) = opts["phys.vpar-ovwrt-D0"].as<double>();

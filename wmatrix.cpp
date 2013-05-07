@@ -75,16 +75,6 @@ bool WMatrix::init_and_check()
 
   W_active->noalias()
     = lu_decomp.solve( detwf.M().transpose() ).transpose();
-  fptype W_avg
-    = W_active->squaredNorm() / static_cast<fptype>( W_active->size() );
-  if ( W_avg > 50.f ) {
-#if VERBOSE >= 1
-    cout << "WMatrix::check_and_init() : state has too "
-         << "little overlap with the determinantal wavefunction, "
-         << "inverse overlap measure is: " << W_avg << endl;
-#endif
-    return false;
-  }
 
   return true;
 }
