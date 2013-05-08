@@ -25,6 +25,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <iterator>
 
@@ -98,7 +99,19 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   vector<Eigen::VectorXd> vpar_hist;
   vpar_hist.push_back( vpar );
 
-  // open output files for the energy and the variational parameters
+  // clear folder for the machine readable variational parameter snapshots
+  fs::remove_all(       opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
+  fs::create_directory( opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
+  // initial variational parameters -> first snapshot
+  {
+    ofstream vpar_init_file( (
+      opts["calc.working-dir"].as<fs::path>() / "vpar_hist" / "0.dat"
+    ).string() );
+    ar::text_oarchive vpar_init_archive( vpar_init_file );
+    vpar_init_archive << vpar;
+  }
+
+  // open human readable output files for the energy and the variational parameters
   ofstream vpar_hist_file( (
     opts["calc.working-dir"].as<fs::path>() / "opt_vpar_hist.txt"
   ).string(), ios::app );
@@ -208,6 +221,18 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     }
     if ( sr_num_vpar_converged == vpar.size() ) {
       sr_all_converged = true;
+    }
+
+    // take the machine readable snapshot of the vpars
+    {
+      // determine the file name
+      stringstream fname;
+      fname << sr_cycles << ".dat";
+      ofstream vpar_current_file( (
+        opts["calc.working-dir"].as<fs::path>() / "vpar_hist" / fname.str()
+      ).string() );
+      ar::text_oarchive vpar_current_archive( vpar_current_file );
+      vpar_current_archive << vpar;
     }
 
     // output the vpars and the energy to their files
