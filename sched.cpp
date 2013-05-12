@@ -32,6 +32,7 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
+//#include <eigen3/Eigen/Eigenvalues>
 
 #include <boost/mpi/collectives.hpp>
 #include <boost/serialization/set.hpp>
@@ -186,9 +187,138 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       res.Deltak_Deltakprime.get() - res.Deltak.get() * res.Deltak->transpose();
     const Eigen::VectorXd f =
       res.Deltak.get() * res.E->mean - res.Deltak_E.get();
+
+/*
+    // ---- SORELLA METHOD
+
+    // calculate the required change of the variational parameters
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> S_esolver( S + 0.001 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) );
+    assert( S_esolver.info() == Eigen::Success );
+    Eigen::VectorXd gamma
+      =   ( S_esolver.eigenvectors().adjoint() * f ).array()
+        / S_esolver.eigenvalues().array();
+    for ( unsigned int i = 0; i < vpar.size(); ++i ) {
+      if ( S_esolver.eigenvalues()( i ) / S_esolver.eigenvalues()( vpar.size() - 1 ) < 1.0E-10 ) {
+        gamma( i ) = 0;
+      }
+    }
+    Eigen::VectorXd dvpar = S_esolver.eigenvectors() * gamma;
+*/
+
+
+    // ---- TOCCHIO METHOD
+
     Eigen::VectorXd dvpar =
-      ( S + 0.01 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
+      ( S + 0.0001 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
       .fullPivLu().solve( f );
+
+/*
+    // ---- ATTACCALITE METHOD
+
+    // calculate eigenvalues of S
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> S_esolver( S );
+    assert( S_esolver.info() == Eigen::Success );
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : eigenvalues of S =" << endl
+         << S_esolver.eigenvalues().transpose() << endl;
+#endif
+
+    // count the number of eigenvalues where the sqrt is smaller than epsilon
+    const unsigned int p = ( S_esolver.eigenvalues().array().sqrt() <= 0.001 ).count();
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : number of eigenvalues below threshold = " << p << endl;
+#endif
+
+    // define a reduced matrix S
+    Eigen::MatrixXd S_red = S;
+    // ... and a vector that keeps track of which variational parameter
+    // ends up in which row/column of the S_red matrix and our final solution
+    std::vector<unsigned int> red_vpartracker( vpar.size() );
+    for ( unsigned int i = 0; i < vpar.size(); ++i ) {
+      red_vpartracker.at( i ) = i;
+    }
+
+    // loop that removes rows and columns from S; reduces S to S_red
+    for ( unsigned int k = 0; k < p; ++k ) {
+
+      // invert S_red
+      Eigen::MatrixXd S_red_inv = S_red.fullPivLu().inverse();
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : S_red_inv =" << endl << S_red_inv << endl;
+#endif
+
+      // find index i of the largest diagonal element of S_red_inv
+      unsigned int i_max = 0;
+      for ( unsigned int i = 1; i < S_red_inv.diagonal().size(); ++i ) {
+        if ( S_red_inv.diagonal()( i ) > S_red_inv.diagonal()( i_max ) ) {
+          i_max = i;
+        }
+      }
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : largest diagonal element of S_red_inv = "
+           << S_red_inv.diagonal()( i_max ) << " (at position " << i_max << ")" << endl;
+#endif
+
+      // remove the i-th row and column from S_red
+      for ( unsigned int j = i_max + 1; j < S_red.rows(); ++j ) {
+        S_red.row( j - 1 ) = S_red.row( j );
+      }
+      for ( unsigned int j = i_max + 1; j < S_red.cols(); ++j ) {
+        S_red.col( j - 1 ) = S_red.col( j );
+      }
+      S_red.conservativeResize( S_red.rows() - 1, S_red.cols() - 1 );
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : new S_red =" << endl << S_red << endl;
+#endif
+
+      // shift the variational parameter tracker
+      red_vpartracker.erase( red_vpartracker.begin() + i_max );
+      assert( static_cast<unsigned int>( red_vpartracker.size() ) == S_red.rows() );
+      assert( static_cast<unsigned int>( red_vpartracker.size() ) == S_red.cols() );
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : new vpartracker = " << endl;
+      for ( auto it = red_vpartracker.begin(); it != red_vpartracker.end(); ++it ) {
+        cout << *it << " ";
+      }
+      cout << endl;
+#endif
+    }
+
+    // build the reduced force vector
+    Eigen::VectorXd f_red( S_red.cols() );
+    for ( unsigned int i = 0; i < f_red.size(); ++i ) {
+     f_red( i ) = f( red_vpartracker.at( i ) );
+    }
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : f_red =" << endl << f_red.transpose() << endl;
+#endif
+
+    // calculate the change of the reduced set of vpars by solving S_red * dv_red = f_red
+    const Eigen::VectorXd dvpar_red =
+      ( S_red + 0.0001 * Eigen::MatrixXd::Identity( S_red.rows(), S_red.cols() ) )
+      .fullPivLu().solve( f_red );
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : dvpar_red =" << endl << dvpar_red.transpose() << endl;
+#endif
+
+    // build change vector from reduced change vector (filling in the gaps with 0)
+    Eigen::VectorXd dvpar = Eigen::VectorXd::Zero( vpar.size() );
+    for ( unsigned int i = 0; i < dvpar_red.size(); ++i ) {
+      dvpar( red_vpartracker.at( i ) ) = dvpar_red( i );
+    }
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : dvpar =" << endl << dvpar.transpose() << endl;
+#endif
+*/
 
     // Jastrow convergence speed boost
     dvpar.tail( dvpar.size() - 7 ) *= sr_Jboost;
