@@ -41,6 +41,10 @@ class Lattice2DSquare final : public Lattice {
     void get_2nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
     void get_3nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
 
+    // functions to calculate positions on the lattice from spindices
+    int x( Lattice::spindex l ) const;
+    int y( Lattice::spindex l ) const;
+
   public:
 
     Lattice2DSquare( unsigned int L_init );

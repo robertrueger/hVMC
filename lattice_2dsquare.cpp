@@ -39,6 +39,22 @@ Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
 
 
 
+int Lattice2DSquare::x( Lattice::spindex l ) const
+{
+  assert( l < 2 * L );
+  // we don't have to convert the spindex to an index first, because
+  // it does not make any difference for the position in x
+  return l % S;
+}
+
+int Lattice2DSquare::y( Lattice::spindex l ) const
+{
+  assert( l < 2 * L );
+  return get_index_from_spindex( l ) / S;
+}
+
+
+
 void Lattice2DSquare::get_Xnn(
   Lattice::spindex l, unsigned int X, std::vector<Lattice::spindex>* outbuf ) const
 {
@@ -50,6 +66,7 @@ void Lattice2DSquare::get_Xnn(
   } else if ( X == 2 ) {
     get_2nn( l, outbuf );
   } else { /* X == 3 */
+    assert( X == 3 );
     get_3nn( l, outbuf );
   }
 }
@@ -59,29 +76,32 @@ void Lattice2DSquare::get_1nn(
 {
   outbuf->resize( 4 );
 
+  const unsigned int xl = x( l );
+  const unsigned int yl = y( l );
+
   // add left neighbor
-  if ( l % S == 0 ) {
+  if ( xl == 0 ) {
     ( *outbuf )[0] = l + S - 1;
   } else {
     ( *outbuf )[0] = l - 1;
   }
 
   // add right neighbor
-  if ( ( l + 1 ) % S == 0 ) {
+  if ( xl == S - 1 ) {
     ( *outbuf )[1] = l + 1 - S;
   } else {
     ( *outbuf )[1] = l + 1;
   }
 
   // add bottom neighbor
-  if ( l < S || ( l >= L && l < L + S ) ) {
+  if ( yl == 0 ) {
     ( *outbuf )[2] = l + L - S;
   } else {
     ( *outbuf )[2] = l - S;
   }
 
   // add top neighbor
-  if ( l >= 2 * L - S || ( l < L && l >= L - S ) ) {
+  if ( yl == S - 1 ) {
     ( *outbuf )[3] = l + S - L;
   } else {
     ( *outbuf )[3] = l + S;
@@ -93,16 +113,19 @@ void Lattice2DSquare::get_2nn(
 {
   outbuf->resize( 4 );
 
+  const unsigned int xl = x( l );
+  const unsigned int yl = y( l );
+
   // add bottom left neighbor
-  if ( l % S == 0 ) {
+  if ( xl == 0 ) {
     // in left column
-    if ( l == 0 || l == L ) {
+    if ( yl == 0 ) {
       // bottom left corner
       ( *outbuf )[0] = l + L - 1;
     } else {
       ( *outbuf )[0] = l - 1;
     }
-  } else if ( l < S || ( l >= L && l < L + S ) ) {
+  } else if ( yl == 0 ) {
     // in bottom row
     // (but NOT in bottom left corner!)
     ( *outbuf )[0] = l + L - S - 1;
@@ -112,15 +135,15 @@ void Lattice2DSquare::get_2nn(
   }
 
   // add bottom right neighbor
-  if ( ( l + 1 ) % S == 0 ) {
+  if ( xl == S - 1 ) {
     // in right column
-    if ( l == S - 1 || l == L + S - 1 ) {
+    if ( yl == 0 ) {
       // bottom right corner
       ( *outbuf )[1] = l + L + 1 - 2 * S;
     } else {
       ( *outbuf )[1] = l + 1 - 2 * S;
     }
-  } else if ( l < S || ( l >= L && l < L + S ) ) {
+  } else if ( yl == 0 ) {
     // in bottom row
     // (but NOT in bottom right corner!)
     ( *outbuf )[1] = l + L + 1 - S;
@@ -130,15 +153,15 @@ void Lattice2DSquare::get_2nn(
   }
 
   // add top right neighbor
-  if ( ( l + 1 ) % S == 0 ) {
+  if ( xl == S - 1 ) {
     // in right column
-    if ( l == L - 1 || l == 2 * L - 1 ) {
+    if ( yl == S - 1 ) {
       // top right corner
       ( *outbuf )[2] = l + 1 - L;
     } else {
       ( *outbuf )[2] = l + 1;
     }
-  } else if ( l >= 2 * L - S || ( l < L && l >= L - S ) ) {
+  } else if ( yl == S - 1 ) {
     // in top row
     // (but NOT in top right corner!)
     ( *outbuf )[2] = l + S + 1 - L;
@@ -148,15 +171,15 @@ void Lattice2DSquare::get_2nn(
   }
 
   // add top left neighbor
-  if ( l % S == 0 ) {
+  if ( xl == 0 ) {
     // in left column
-    if ( l == L - S || l == 2 * L - S ) {
+    if ( yl == S - 1 ) {
       // top left corner
       ( *outbuf )[3] = l + 2 * S - 1 - L ;
     } else {
       ( *outbuf )[3] = l + 2 * S - 1;
     }
-  } else if ( l >= 2 * L - S || ( l < L && l >= L - S ) ) {
+  } else if ( yl == S - 1 ) {
     // in top row
     // (but NOT in top left corner!)
     ( *outbuf )[3] = l + S - 1 - L;
@@ -171,29 +194,32 @@ void Lattice2DSquare::get_3nn(
 {
   outbuf->resize( 4 );
 
+  const unsigned int xl = x( l );
+  const unsigned int yl = y( l );
+
   // add left neighbor
-  if ( l % S <= 1  ) {
+  if ( xl <= 1  ) {
     ( *outbuf )[0] = l + S - 2;
   } else {
     ( *outbuf )[0] = l - 2;
   }
 
   // add right neighbor
-  if ( l % S >= S - 2 ) {
+  if ( xl >= S - 2 ) {
     ( *outbuf )[1] = l + 2 - S;
   } else {
     ( *outbuf )[1] = l + 2;
   }
 
   // add bottom neighbor
-  if ( l < 2 * S || ( l >= L && l < L + 2 * S ) ) {
+  if ( yl <= 1 ) {
     ( *outbuf )[2] = l + L - 2 * S;
   } else {
     ( *outbuf )[2] = l - 2 * S;
   }
 
   // add top neighbor
-  if ( l >= 2 * ( L - S ) || ( l < L && l >= L - 2 * S ) ) {
+  if ( yl >= S - 2 ) {
     ( *outbuf )[3] = l + 2 * S - L;
   } else {
     ( *outbuf )[3] = l + 2 * S;
@@ -209,15 +235,9 @@ Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
   assert( j < 2 * L );
   assert( get_spindex_type( i ) == get_spindex_type( j ) );
 
-  // calculate the positions of i and j
-  const unsigned int x_i = i % S;
-  const unsigned int y_i = i / S;
-  const unsigned int x_j = j % S;
-  const unsigned int y_j = j / S;
-
   // calculate the position difference
-  unsigned int dx = x_i > x_j ? x_i - x_j : x_j - x_i;
-  unsigned int dy = y_i > y_j ? y_i - y_j : y_j - y_i;
+  unsigned int dx = std::abs( x( i ) - x( j ) );
+  unsigned int dy = std::abs( y( i ) - y( j ) );
 
   // wrap large differences around the boundaries
   if ( dx > S / 2 ) {
@@ -273,15 +293,9 @@ Eigen::VectorXd Lattice2DSquare::r( Lattice::index i, Lattice::index j ) const
   assert( i < L );
   assert( j < L );
 
-  // calculate the positions of i and j
-  const unsigned int x_i = i % S;
-  const unsigned int y_i = i / S;
-  const unsigned int x_j = j % S;
-  const unsigned int y_j = j / S;
-
   Eigen::VectorXd result = Eigen::VectorXd::Zero( 2 );
-  result( 0 ) = static_cast<double>( x_j ) - static_cast<double>( x_i );
-  result( 1 ) = static_cast<double>( y_j ) - static_cast<double>( y_i );
+  result( 0 ) = x( j ) - x( i );
+  result( 1 ) = y( j ) - y( i );
   return result;
 }
 
