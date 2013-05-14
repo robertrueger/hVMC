@@ -19,7 +19,7 @@
 
 #include "tvector.hpp"
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
 # include <iostream>
 #endif
 
@@ -50,7 +50,7 @@ void TVector::init()
 {
   T = calc_new();
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "TVector::init() : initial T = " << endl << T.transpose() << endl;
 #endif
 }
@@ -69,7 +69,7 @@ void TVector::update( const ParticleHop& hop )
 {
   if ( updates_since_recalc >= updates_until_recalc ) {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "TVector::update() : recalculating T!" << endl;
 #endif
 
@@ -81,7 +81,7 @@ void TVector::update( const ParticleHop& hop )
     double dev = calc_deviation( T_approx, T );
     devstat.add( dev );
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "TVector::update() : recalculated T "
          << "with deviation = " << dev << endl;
 
@@ -99,7 +99,7 @@ void TVector::update( const ParticleHop& hop )
 
   } else {
 
-#if VERBOSE >= 1
+#if VERBOSE >= 2
     cout << "TVector::update() : "
          << "performing a quick update of T!" << endl;
 #endif
@@ -113,7 +113,7 @@ void TVector::update( const ParticleHop& hop )
 
     double dev = calc_deviation( T, T_chk );
 
-# if VERBOSE >= 1
+# if VERBOSE >= 2
     cout << "TVector::update() : "
          << "[DEBUG CHECK] deviation after quick update = " << dev << endl;
 
@@ -138,8 +138,8 @@ Eigen::VectorXd TVector::calc_new() const
 {
   Eigen::VectorXd T_new = Eigen::VectorXd::Zero( lat->L );
 
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
-    for ( unsigned int j = 0; j < lat->L; ++j ) {
+  for ( Lattice::index i = 0; i < lat->L; ++i ) {
+    for ( Lattice::index j = 0; j < lat->L; ++j ) {
       T_new( i ) +=
         v( i, j ) * ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
     }
@@ -153,9 +153,9 @@ Eigen::VectorXd TVector::calc_qupdated( const ParticleHop& hop ) const
 {
   Eigen::VectorXd T_diff( lat->L );
 
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
-    T_diff( i ) = v( i, lat->get_spinup_site( hop.l ) )
-                  - v( i, lat->get_spinup_site( hop.k_pos ) );
+  for ( Lattice::index i = 0; i < lat->L; ++i ) {
+    T_diff( i ) = v( i, lat->get_index_from_spindex( hop.l ) )
+                  - v( i, lat->get_index_from_spindex( hop.k_pos ) );
   }
 
   return T + ( hop.l < lat->L ? 1.0 : -1.0 ) * T_diff;

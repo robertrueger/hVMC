@@ -29,6 +29,7 @@
 #include "macros.h"
 #include "lattice.hpp"
 
+
 class Lattice2DSquare final : public Lattice {
 
   private:
@@ -45,15 +46,14 @@ class Lattice2DSquare final : public Lattice {
     Lattice2DSquare( unsigned int L_init );
 
     void get_Xnn(
-      unsigned int l, unsigned int X,
-      std::vector<unsigned int>* outbuf
+      spindex l, unsigned int X, std::vector<spindex>* outbuf
     ) const;
 
-    unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const;
-    std::set<unsigned int> irreducible_idxrel_list() const;
-    unsigned int irreducible_idxrel_maxdist() const;
+    irridxrel reduce_idxrel( spindex i, spindex j ) const;
+    std::set<irridxrel> get_all_irridxrels() const;
+    irridxrel get_maxdist_irridxrel() const;
 
-    Eigen::VectorXd r( unsigned int i, unsigned int j ) const;
+    Eigen::VectorXd r( index i, index j ) const;
     std::vector<Eigen::VectorXd> get_qvectors() const;
 };
 

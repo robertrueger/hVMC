@@ -32,7 +32,7 @@ using namespace std;
 
 
 Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
-  : Lattice( LATTICE_2DSQUARE, L_init ), S( uintsqrt( L_init ) )
+  : Lattice( L_init ), S( uintsqrt( L_init ) )
 {
   assert( is_perfect_square( L_init ) );
 }
@@ -40,8 +40,7 @@ Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
 
 
 void Lattice2DSquare::get_Xnn(
-  unsigned int l, unsigned int X,
-  vector<unsigned int>* outbuf ) const
+  Lattice::spindex l, unsigned int X, std::vector<Lattice::spindex>* outbuf ) const
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
@@ -55,7 +54,8 @@ void Lattice2DSquare::get_Xnn(
   }
 }
 
-void Lattice2DSquare::get_1nn( unsigned int l, vector<unsigned int>* outbuf ) const
+void Lattice2DSquare::get_1nn(
+  Lattice::spindex l, vector<Lattice::spindex>* outbuf ) const
 {
   outbuf->resize( 4 );
 
@@ -88,7 +88,8 @@ void Lattice2DSquare::get_1nn( unsigned int l, vector<unsigned int>* outbuf ) co
   }
 }
 
-void Lattice2DSquare::get_2nn( unsigned int l, vector<unsigned int>* outbuf ) const
+void Lattice2DSquare::get_2nn(
+  Lattice::spindex l, vector<Lattice::spindex>* outbuf ) const
 {
   outbuf->resize( 4 );
 
@@ -165,7 +166,8 @@ void Lattice2DSquare::get_2nn( unsigned int l, vector<unsigned int>* outbuf ) co
   }
 }
 
-void Lattice2DSquare::get_3nn( unsigned int l, vector<unsigned int>* outbuf ) const
+void Lattice2DSquare::get_3nn(
+  Lattice::spindex l, vector<Lattice::spindex>* outbuf ) const
 {
   outbuf->resize( 4 );
 
@@ -200,12 +202,12 @@ void Lattice2DSquare::get_3nn( unsigned int l, vector<unsigned int>* outbuf ) co
 
 
 
-unsigned int Lattice2DSquare::reduce_idxrel(
-  unsigned int i, unsigned int j ) const
+Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
+  Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( i < 2 * L );
   assert( j < 2 * L );
-  assert( ( i < L && j < L ) || ( i >= L && j >= L ) );
+  assert( get_spindex_type( i ) == get_spindex_type( j ) );
 
   // calculate the positions of i and j
   const unsigned int x_i = i % S;
@@ -235,27 +237,27 @@ unsigned int Lattice2DSquare::reduce_idxrel(
 
 
 
-set<unsigned int> Lattice2DSquare::irreducible_idxrel_list() const
+set<Lattice::irridxrel> Lattice2DSquare::get_all_irridxrels() const
 {
-  set<unsigned int> irr_idxrels;
-  for ( unsigned int i = 0; i < L; ++i ) {
-    irr_idxrels.insert( reduce_idxrel( 0, i ) );
+  set<Lattice::irridxrel> allrels;
+  for ( Lattice::index i = 0; i < L; ++i ) {
+    allrels.insert( reduce_idxrel( 0, i ) );
   }
 
 #if VERBOSE >= 1
   cout << "Lattice2DSquare::irreducible_idxrel_list() : "
        << "list of irreducible index relations =" << endl;
-  for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
+  for ( auto it = allrels.begin(); it != allrels.end(); ++it ) {
     cout << *it << endl;
   }
 #endif
 
-  return irr_idxrels;
+  return allrels;
 }
 
 
 
-unsigned int Lattice2DSquare::irreducible_idxrel_maxdist() const
+Lattice::irridxrel Lattice2DSquare::get_maxdist_irridxrel() const
 {
   if ( S % 2 == 0 ) {
     return L / 2 + S / 2;
@@ -266,7 +268,7 @@ unsigned int Lattice2DSquare::irreducible_idxrel_maxdist() const
 
 
 
-Eigen::VectorXd Lattice2DSquare::r( unsigned int i, unsigned int j ) const
+Eigen::VectorXd Lattice2DSquare::r( Lattice::index i, Lattice::index j ) const
 {
   assert( i < L );
   assert( j < L );

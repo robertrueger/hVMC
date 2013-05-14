@@ -75,7 +75,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     "on-site energy U" )
 
   ( "phys.lattice,l",
-    po::value<lattice_t>()->required(),
+    po::value<Lattice::type>()->required(),
     "lattice type (1dchain, 2dsquare)" )
 
   ( "phys.num-lattice-sites,L",
@@ -367,7 +367,7 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
-    if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
+    if ( vm["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d &&
          !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
       throw logic_error( "the number of lattice sites must be a perfect square" );
     }
@@ -436,14 +436,14 @@ Options read_options( int argc, char* argv[], bool is_master )
 }
 
 
-istream& operator>>( std::istream& in, lattice_t& lat )
+istream& operator>>( std::istream& in, Lattice::type& lat )
 {
   string token;
   in >> token;
   if ( token == "1dchain" ) {
-    lat = LATTICE_1DCHAIN;
+    lat = Lattice::type::chain1d;
   } else if ( token == "2dsquare" ) {
-    lat = LATTICE_2DSQUARE;
+    lat = Lattice::type::square2d;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

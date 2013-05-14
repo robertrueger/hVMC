@@ -43,16 +43,16 @@ struct ParticleHop final {
   const unsigned int k;
 
   // site that it hops to
-  const unsigned int l;
+  const Lattice::spindex l;
 
   // position of particle k before the hop
-  const unsigned int k_pos;
+  const Lattice::spindex k_pos;
 
   // hop possible = site l unoccupied?
   const bool possible;
 
-  ParticleHop( unsigned int k_init, unsigned int l_init,
-               unsigned int k_pos_init, bool possible_init )
+  ParticleHop( Lattice::spindex k_init, Lattice::spindex l_init,
+               Lattice::spindex k_pos_init, bool possible_init )
     : k( k_init ), l( l_init ),
       k_pos( k_pos_init ), possible( possible_init ) { }
 };
@@ -76,7 +76,7 @@ class ParticleConfiguration final
     const unsigned int Npd; /// ... spin down particles
     const unsigned int Np; // ... particles
     Eigen::VectorXi site_occ;
-    std::vector<unsigned int> particle_pos;
+    std::vector<Lattice::spindex> particle_pos;
 
   private:
 
@@ -84,7 +84,7 @@ class ParticleConfiguration final
 
     // buffer vectors for nearest-neighbors
     // (in order to avoid allocating new ones all the time)
-    mutable std::vector<unsigned int> k_1nb, k_2nb, k_3nb;
+    mutable std::vector<Lattice::spindex> k_1nb, k_2nb, k_3nb;
 
     void reconstr_particle_pos();
 
@@ -100,8 +100,8 @@ class ParticleConfiguration final
     ParticleHop propose_random_hop( unsigned int update_hop_maxdist ) const;
     void do_hop( const ParticleHop& hop );
 
-    unsigned int get_particle_pos( unsigned int k ) const;
-    ParticleOccupation_t get_site_occ( unsigned int l ) const;
+    Lattice::spindex get_particle_pos( unsigned int k ) const;
+    ParticleOccupation_t get_site_occ( Lattice::spindex l ) const;
 
     // particle configuration readers
     Eigen::VectorXi npu() const;

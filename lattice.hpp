@@ -29,34 +29,46 @@
 #include "macros.h"
 
 
-enum lattice_t {
-  LATTICE_1DCHAIN,
-  LATTICE_2DSQUARE
-};
-
 class Lattice {
 
   public:
 
-    const lattice_t type;
+    // the lattice type
+    enum class type {
+        chain1d,
+        square2d
+    };
+
+    // the number of lattice sites
     const unsigned int L;
 
-    Lattice( lattice_t type_init, unsigned int L_init )
-      : type( type_init ), L( L_init ) { }
+    Lattice( unsigned int L_init ) : L( L_init ) { }
     virtual ~Lattice() { }
 
-    unsigned int get_spinup_site( unsigned int l ) const;
-    unsigned int get_spinlinked_site( unsigned int l ) const;
+    // typedefs for the different types of indices
+    typedef unsigned int index;
+    typedef unsigned int spindex;
+    enum class spindex_type { up, down };
+    typedef unsigned int irridxrel;
 
+    // convenience functions for the indices
+    index get_index_from_spindex( spindex l ) const;
+    spindex get_linked_spindex( spindex l ) const;
+    spindex_type get_spindex_type( spindex l ) const;
+
+    // method to find the neighboring sites
+    std::vector<spindex> get_Xnn( spindex l, unsigned int X ) const;
     virtual void get_Xnn(
-      unsigned int l, unsigned int X, std::vector<unsigned int>* outbuf
+      spindex l, unsigned int X, std::vector<spindex>* outbuf
     ) const = 0;
 
-    virtual unsigned int reduce_idxrel( unsigned int i, unsigned int j ) const = 0;
-    virtual std::set<unsigned int> irreducible_idxrel_list() const = 0;
-    virtual unsigned int irreducible_idxrel_maxdist() const = 0;
+    // everything related to reduced index relations
+    virtual irridxrel reduce_idxrel( spindex i, spindex j ) const = 0;
+    virtual std::set<irridxrel> get_all_irridxrels() const = 0;
+    virtual irridxrel get_maxdist_irridxrel() const = 0;
 
-    virtual Eigen::VectorXd r( unsigned int i, unsigned int j ) const = 0;
+    // lattice geometry and relevant reciprocal lattice vectors
+    virtual Eigen::VectorXd r( index i, index j ) const = 0;
     virtual std::vector<Eigen::VectorXd> get_qvectors() const = 0;
 };
 

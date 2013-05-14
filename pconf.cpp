@@ -44,7 +44,7 @@ ParticleConfiguration::ParticleConfiguration(
 void ParticleConfiguration::reconstr_particle_pos()
 {
   particle_pos.clear();
-  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
     if ( site_occ[l] == PARTICLE_OCCUPATION_FULL ) {
       particle_pos.push_back( l );
     }
@@ -71,11 +71,11 @@ void ParticleConfiguration::distribute_random()
 
   // randomly distribute Npu/Npd particles per spin direction
   while ( site_occ.head( lat->L ).sum() < static_cast<int>( Npu ) ) {
-    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng ) ]
+    site_occ[ uniform_int_distribution<Lattice::index>( 0, lat->L - 1 )( rng ) ]
       = PARTICLE_OCCUPATION_FULL;
   }
   while ( site_occ.tail( lat->L ).sum() < static_cast<int>( Npd ) ) {
-    site_occ[ uniform_int_distribution<unsigned int>( 0, lat->L - 1 )( rng )
+    site_occ[ uniform_int_distribution<Lattice::index>( 0, lat->L - 1 )( rng )
               + lat->L ] = PARTICLE_OCCUPATION_FULL;
   }
 
@@ -102,7 +102,7 @@ ParticleHop ParticleConfiguration::propose_random_hop(
     = uniform_int_distribution<unsigned int>( 0, Np - 1 )( rng );
 
   // find the position of the kth particle
-  const unsigned int k_pos = particle_pos[k];
+  const Lattice::spindex k_pos = particle_pos[k];
 
 #if VERBOSE >= 2
   cout << site_occ.head( lat->L ).transpose() << endl
@@ -131,7 +131,7 @@ ParticleHop ParticleConfiguration::propose_random_hop(
     = uniform_int_distribution<unsigned int>
       ( 0, k_1nb.size() + k_2nb.size() + k_3nb.size() - 1 )( rng );
 
-  unsigned int l;
+  Lattice::spindex l;
   if ( nb_number < k_1nb.size() ) {
     l = k_1nb[ nb_number ];
   } else {
@@ -162,9 +162,7 @@ ParticleHop ParticleConfiguration::propose_random_hop(
        << "possible" << ")" << endl;
 #endif
 
-  assert( ( k_pos < lat->L && l < lat->L ) ||
-          ( k_pos >= lat->L && k_pos < 2 * lat->L &&
-            l >= lat->L && l < 2 * lat->L ) );
+  assert( lat->get_spindex_type( k_pos ) == lat->get_spindex_type( l ) );
   assert( site_occ[ l ] == PARTICLE_OCCUPATION_FULL ||
           site_occ[ l ] == PARTICLE_OCCUPATION_EMPTY  );
 
@@ -178,9 +176,7 @@ void ParticleConfiguration::do_hop( const ParticleHop& hop )
   assert( hop.possible );
   assert( site_occ[ hop.k_pos ] == PARTICLE_OCCUPATION_FULL );
   assert( site_occ[ hop.l ]     == PARTICLE_OCCUPATION_EMPTY );
-  assert( ( hop.k_pos < lat->L && hop.l < lat->L ) ||
-          ( hop.k_pos >= lat->L && hop.k_pos < 2 * lat->L &&
-            hop.l >= lat->L && hop.l < 2 * lat->L ) );
+  assert( lat->get_spindex_type( hop.k_pos ) == lat->get_spindex_type( hop.l ) );
 
   site_occ[ hop.k_pos ] = PARTICLE_OCCUPATION_EMPTY;
   site_occ[ hop.l ] = PARTICLE_OCCUPATION_FULL;
@@ -207,14 +203,14 @@ void ParticleConfiguration::do_hop( const ParticleHop& hop )
 
 
 
-unsigned int ParticleConfiguration::get_particle_pos( unsigned int k ) const
+Lattice::spindex ParticleConfiguration::get_particle_pos( unsigned int k ) const
 {
   return particle_pos[ k ];
 }
 
 
 
-ParticleOccupation_t ParticleConfiguration::get_site_occ( unsigned int l ) const
+ParticleOccupation_t ParticleConfiguration::get_site_occ( Lattice::spindex l ) const
 {
   return static_cast<ParticleOccupation_t>( site_occ[ l ] );
 }

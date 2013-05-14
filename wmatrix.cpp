@@ -183,9 +183,9 @@ void WMatrix::calc_new()
 
 void WMatrix::calc_qupdated( const ParticleHop& hop )
 {
-  unsigned int k     = hop.k;
-  unsigned int l     = hop.l;
-  unsigned int k_pos = hop.k_pos;
+  unsigned int k         = hop.k;
+  Lattice::spindex l     = hop.l;
+  Lattice::spindex k_pos = hop.k_pos;
 
 #ifdef USE_CBLAS
 

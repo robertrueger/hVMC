@@ -115,8 +115,8 @@ bool HubbardModelVMC::metstep()
       = std::exp(
           ( phop.l < lat->L ? 1.0 : -1.0 ) *
           (
-            T( lat->get_spinup_site( phop.l ) )
-            - T( lat->get_spinup_site( phop.k_pos ) )
+            T( lat->get_index_from_spindex( phop.l ) )
+            - T( lat->get_index_from_spindex( phop.k_pos ) )
           ) + v.onsite() - v( phop.l, phop.k_pos )
         );
 
@@ -166,7 +166,7 @@ double HubbardModelVMC::E_l() const
   // loop over different elektrons k
   for ( unsigned int k = 0; k < pconf.Np; ++k ) {
 
-    const unsigned int k_pos = pconf.get_particle_pos( k );
+    const Lattice::spindex k_pos = pconf.get_particle_pos( k );
     assert( pconf.get_site_occ( k_pos ) == PARTICLE_OCCUPATION_FULL );
 
     // loop over different neighbor orders X
@@ -185,10 +185,13 @@ double HubbardModelVMC::E_l() const
 
           const double R_j
             = std::exp(
-                ( k_pos < lat->L ? 1.0 : -1.0 ) *
                 (
-                  T( lat->get_spinup_site( *l_it ) )
-                  - T( lat->get_spinup_site( k_pos ) )
+                  ( lat->get_spindex_type( k_pos ) == Lattice::spindex_type::up )
+                  ? 1.0 : -1.0
+                ) *
+                (
+                  T( lat->get_index_from_spindex( *l_it ) )
+                  - T( lat->get_index_from_spindex( k_pos ) )
                 ) + v.onsite() - v( *l_it, k_pos )
               );
 
@@ -197,7 +200,9 @@ double HubbardModelVMC::E_l() const
         }
       }
       // reverse sign of spin down part due to particle-hole-transformation
-      E_l_kin += ( k_pos < lat->L ? -1.0 : 1.0 ) * t[X - 1] * sum_Xnn;
+      E_l_kin +=
+        ( lat->get_spindex_type( k_pos ) == Lattice::spindex_type::up ? -1.0 : 1.0 )
+        * t[X - 1] * sum_Xnn;
 
     }
   }
@@ -228,8 +233,8 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
 
     Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
     for ( unsigned int k = 0; k < pconf.Np; ++k ) {
-      const unsigned int k_pos = pconf.get_particle_pos( k );
-      for ( unsigned int l = 0; l < lat->L; ++l ) {
+      const Lattice::spindex k_pos = pconf.get_particle_pos( k );
+      for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
         G( k_pos, l ) = W( l, k );
       }
     }
@@ -246,14 +251,14 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
   if ( optimizers >= 128 ) {
     // only do it if we are optimizing the Jastrow
 
-    for ( unsigned int i = 0; i < lat->L; ++i ) {
-      for ( unsigned int j = i; j < lat->L; ++j ) {
+    for ( Lattice::index i = 0; i < lat->L; ++i ) {
+      for ( Lattice::index j = i; j < lat->L; ++j ) {
 
-        const unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
+        const Lattice::irridxrel ij_iir = lat->reduce_idxrel( i, j );
         const double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
 
-        if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
-          result( 7 + v.get_vparnum( irr_idxrel ) )
+        if ( ij_iir != lat->get_maxdist_irridxrel() ) {
+          result( 7 + v.get_vparnum( ij_iir ) )
           += dblcount_correction *
              ( pconf.get_site_occ( i ) - pconf.get_site_occ( i + lat->L ) ) *
              ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );

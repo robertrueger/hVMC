@@ -74,8 +74,8 @@ DeterminantalWavefunction::DeterminantalWavefunction(
   // define perturbation theory mask
   Eigen::ArrayXfp ptmask
     = Eigen::ArrayXfp::Zero( 2 * int_spHam.L,  2 * int_spHam.L );
-  for ( unsigned int eta = 0; eta < 2 * int_spHam.L; ++eta ) {
-    for ( unsigned int nu = 0; nu < 2 * int_spHam.L; ++nu ) {
+  for ( Lattice::index eta = 0; eta < 2 * int_spHam.L; ++eta ) {
+    for ( Lattice::index nu = 0; nu < 2 * int_spHam.L; ++nu ) {
       if ( eta >= Np && nu < Np ) {
         ptmask( eta, nu ) = 1.f / ( int_epsilon( nu ) - int_epsilon( eta ) );
       } else {
@@ -144,14 +144,14 @@ DeterminantalWavefunction build_detwf(
 
   SingleParticleHamiltonian spHam( lat->L );
   Eigen::MatrixXfp spHam_mask = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
-  vector<unsigned int> l_Xnn;
 
   // nearest neighbour hopping
   // (NOT a variational parameters, as it determines the energy scale!)
-  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-    lat->get_Xnn( l, 1, &l_Xnn );
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+    vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, 1 );
     for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-      spHam_mask( l, *it ) = ( l < lat->L ? -1.f : 1.f );
+      spHam_mask( l, *it ) =
+        ( lat->get_spindex_type( l ) == Lattice::spindex_type::up ) ? -1.f : 1.f;
     }
   }
   spHam.add_anyterm( t[0] * spHam_mask );
@@ -159,10 +159,11 @@ DeterminantalWavefunction build_detwf(
 
   // 2nd and 3rd nearest neighbor hopping
   for ( unsigned int X = 2; X <= 3; ++X ) {
-    for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-      lat->get_Xnn( l, X, &l_Xnn );
+    for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+      vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-        spHam_mask( l, *it ) = ( l < lat->L ? -1.f : 1.f );
+        spHam_mask( l, *it ) =
+          ( lat->get_spindex_type( l ) == Lattice::spindex_type::up ) ? -1.f : 1.f;
       }
     }
     spHam.add_vparterm( spHam_mask, t[X - 1] );
@@ -170,30 +171,18 @@ DeterminantalWavefunction build_detwf(
   }
 
   // onsite BCS pairing
-  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-    if ( l < lat->L ) {
-      // l is a spin up site
-      spHam_mask( l, l + lat->L ) = +1.f;
-    } else {
-      // l is a spin down site
-      spHam_mask( l, l - lat->L ) = +1.f;
-    }
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+    spHam_mask( l, lat->get_linked_spindex( l ) ) = +1.f;
   }
   spHam.add_vparterm( spHam_mask, Delta[0] );
   spHam_mask.setZero();
 
   // 1st, 2nd and 3rd nearest neighbor BCS pairing
   for ( unsigned int X = 1; X <= 3; ++X ) {
-    for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
-      lat->get_Xnn( l, X, &l_Xnn );
+    for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+      vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-        if ( l < lat->L ) {
-          // l is a spin up site
-          spHam_mask( l, *it + lat->L ) = +1.f;
-        } else {
-          // l is a spin down site
-          spHam_mask( l, *it - lat->L ) = +1.f;
-        }
+        spHam_mask( l, lat->get_linked_spindex( *it ) ) = +1.f;
       }
     }
     spHam.add_vparterm( spHam_mask, Delta[X] );
@@ -222,10 +211,9 @@ double calc_tbdetwf_chempot(
 {
   Eigen::MatrixXfp H_tb_nopht = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
 
-  vector<unsigned int> l_Xnn;
-  for ( unsigned int l = 0; l < 2 * lat->L; ++l ) {
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
     for ( unsigned int X = 1; X <= 3; ++X ) {
-      lat->get_Xnn( l, X, &l_Xnn );
+      vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
         H_tb_nopht( l, *it ) -= t[X - 1];
       }

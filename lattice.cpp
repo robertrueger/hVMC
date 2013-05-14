@@ -21,20 +21,45 @@
 using namespace std;
 
 
-unsigned int Lattice::get_spinup_site( unsigned int l ) const
+Lattice::index Lattice::get_index_from_spindex( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
-  return l >= L ? l - L : l;
+
+  if ( get_spindex_type( l ) == Lattice::spindex_type::down ) {
+    return l - L;
+  } else {
+    return l;
+  }
 }
 
 
-unsigned int Lattice::get_spinlinked_site( unsigned int l ) const
+Lattice::spindex Lattice::get_linked_spindex( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
 
-  if ( l < L ) {
+  if ( get_spindex_type( l ) == Lattice::spindex_type::up ) {
     return l + L;
   } else {
     return l - L;
   }
+}
+
+
+Lattice::spindex_type Lattice::get_spindex_type( Lattice::spindex l ) const
+{
+  assert( l < 2 * L );
+
+  if ( l < L ) {
+    return Lattice::spindex_type::up;
+  } else {
+    return Lattice::spindex_type::down;
+  }
+}
+
+
+vector<Lattice::spindex> Lattice::get_Xnn( Lattice::spindex l, unsigned int X ) const
+{
+  vector<Lattice::spindex> Xnn;
+  get_Xnn( l, X, &Xnn );
+  return Xnn;
 }

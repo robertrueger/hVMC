@@ -95,7 +95,7 @@ mt19937 prepare_rng(
 
 shared_ptr<Lattice> prepare_lattice( const Options& opts )
 {
-  if ( opts["phys.lattice"].as<lattice_t>() == LATTICE_1DCHAIN ) {
+  if ( opts["phys.lattice"].as<Lattice::type>() == Lattice::type::chain1d ) {
     return make_shared<Lattice1DChain>(
              opts["phys.num-lattice-sites"].as<unsigned int>()
            );

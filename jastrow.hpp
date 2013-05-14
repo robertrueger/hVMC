@@ -38,10 +38,10 @@ class Jastrow final
 
     const std::shared_ptr<Lattice> lat;
 
-    std::vector<double> idxrel_v;
+    std::vector<double> iir_v;
 
     unsigned int num_vpar;
-    std::vector<unsigned int> idxrel_vparnum;
+    std::vector<unsigned int> iir_vparnum;
 
   public:
 
@@ -50,12 +50,12 @@ class Jastrow final
       const Eigen::VectorXd& v_init
     );
 
-    double operator()( unsigned int i, unsigned int j ) const;
+    double operator()( Lattice::spindex i, Lattice::spindex j ) const;
     double onsite() const;
-    void set( unsigned int i, unsigned int j, double v_new  );
+    void set( Lattice::spindex i, Lattice::spindex j, double v_new  );
 
     unsigned int get_num_vpar() const;
-    unsigned int get_vparnum( unsigned int irr_idxrel ) const;
+    unsigned int get_vparnum( Lattice::irridxrel iir ) const;
 };
 
 #endif // JASTROW_H_INCLUDED

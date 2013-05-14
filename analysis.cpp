@@ -65,8 +65,8 @@ void analysis_static_structure_factor(
 
   for ( auto q = allq.begin(); q != allq.end(); ++q ) {
     double sum = 0.0;
-    for ( unsigned int l = 0; l < lat->L; ++l ) {
-      for ( unsigned int k = l + 1; k < lat->L; ++k ) {
+    for ( Lattice::index l = 0; l < lat->L; ++l ) {
+      for ( Lattice::index k = l + 1; k < lat->L; ++k ) {
         sum += cos( q->dot( lat->r( 0, k ) - lat->r( 0, l ) ) ) * nn( l, k);
       }
     }
