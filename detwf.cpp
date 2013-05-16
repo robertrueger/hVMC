@@ -135,7 +135,9 @@ const vector<Eigen::MatrixXfp>& DeterminantalWavefunction::A() const
 
 DeterminantalWavefunction build_detwf(
   const std::shared_ptr<Lattice>& lat, unsigned int Ne,
-  const std::vector<double>& t, const std::vector<double>& Delta, double mu )
+  const std::vector<double>& t,
+  const std::vector<double>& Delta, optpairsym_t pairsym,
+  double mu )
 {
   // check if we have the correct number of variational parameters
   assert( t.size() == 3 );
@@ -182,7 +184,8 @@ DeterminantalWavefunction build_detwf(
     for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
       vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-        spHam_mask( l, lat->get_linked_spindex( *it ) ) = +1.f;
+        spHam_mask( l, lat->get_linked_spindex( *it ) )
+          = +1.f * lat->pairsym_modifier( pairsym, l, *it );
       }
     }
     spHam.add_vparterm( spHam_mask, Delta[X] );

@@ -26,6 +26,7 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
+#include "options.hpp"
 #include "macros.h"
 #include "fptype.hpp"
 #include "lattice.hpp"
@@ -99,7 +100,9 @@ class DeterminantalWavefunction final {
 
 DeterminantalWavefunction build_detwf(
   const std::shared_ptr<Lattice>& lat, unsigned int Ne,
-  const std::vector<double>& t, const std::vector<double>& Delta, double mu
+  const std::vector<double>& t,
+  const std::vector<double>& Delta, optpairsym_t pairsym,
+  double mu
 );
 
 

@@ -45,6 +45,9 @@ class Lattice2DSquare final : public Lattice {
     int x( Lattice::spindex l ) const;
     int y( Lattice::spindex l ) const;
 
+    // functions to calculate position differences wrapped around the PBC
+    int d( int p1, int p2 ) const;
+
   public:
 
     Lattice2DSquare( unsigned int L_init );
@@ -59,6 +62,8 @@ class Lattice2DSquare final : public Lattice {
 
     Eigen::VectorXd r( index i, index j ) const;
     std::vector<Eigen::VectorXd> get_qvectors() const;
+
+    double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
 };
 
 #endif // LATTICE_2DSQUARE_H_INCLUDED

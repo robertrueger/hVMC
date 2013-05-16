@@ -134,3 +134,12 @@ vector<Eigen::VectorXd> Lattice1DChain::get_qvectors() const
 
   return allq;
 }
+
+
+
+double Lattice1DChain::pairsym_modifier(
+  optpairsym_t, Lattice::spindex, Lattice::spindex ) const
+{
+  // s- or d-wave symmetry doesn't make a difference in 1D ...
+  return 1.0;
+}

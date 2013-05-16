@@ -53,6 +53,23 @@ int Lattice2DSquare::y( Lattice::spindex l ) const
   return get_index_from_spindex( l ) / S;
 }
 
+int Lattice2DSquare::d( int p1, int p2 ) const
+{
+  assert( p1 >= 0 && p2 >= 0 );
+
+  int dist = p2 - p1;
+
+  // wrap large d around the boundaries
+  if ( dist > static_cast<int>( S ) / 2 ) {
+    dist -= S ;
+  }
+  if ( dist < -1 * static_cast<int>( S ) / 2 ) {
+    dist += S;
+  }
+
+  return dist;
+}
+
 
 
 void Lattice2DSquare::get_Xnn(
@@ -235,17 +252,9 @@ Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
   assert( j < 2 * L );
   assert( get_spindex_type( i ) == get_spindex_type( j ) );
 
-  // calculate the position difference
-  unsigned int dx = std::abs( x( i ) - x( j ) );
-  unsigned int dy = std::abs( y( i ) - y( j ) );
-
-  // wrap large differences around the boundaries
-  if ( dx > S / 2 ) {
-    dx = S - dx;
-  }
-  if ( dy > S / 2 ) {
-    dy = S - dy;
-  }
+  // calculate the absolute values of the position differences
+  unsigned int dx = std::abs( d( x( i ), x( j ) ) );
+  unsigned int dy = std::abs( d( y( i ), y( j ) ) );
 
   // dx should be larger than dy
   if ( dy > dx ) {
@@ -316,4 +325,41 @@ vector<Eigen::VectorXd> Lattice2DSquare::get_qvectors() const
   }
 
   return allq;
+}
+
+
+
+double Lattice2DSquare::pairsym_modifier(
+  optpairsym_t sym, Lattice::spindex i, Lattice::spindex j ) const
+{
+  assert( get_spindex_type( i ) == get_spindex_type( j ) );
+
+  if ( sym == OPTION_PAIRING_SYMMETRY_SWAVE ) {
+    return 1.0;
+  } else { // sym == OPTION_PAIRING_SYMMETRY_DWAVE
+
+    int dx = d( x( i ), x( j ) );
+    int dy = d( y( i ), y( j ) );
+
+    if ( ( dx == 1 || dx == -1 ) && dy == 0 ) {
+      // nearest neighbors along x-axis
+      return 1.0;
+    } else if ( dx == 0 && ( dy == 1 || dy == -1 ) ) {
+      // nearest neighbors along y-axis
+      return -1.0;
+    } else if ( ( dx == 1 || dx == -1 ) && ( dy == 1 || dy == -1 ) ) {
+      // second nearest neighbors along diagonal
+      return 0.0;
+    } else if ( ( dx == 2 || dx == -2 ) && dy == 0 ) {
+      // third nearest neighbors along x-axis
+      return 1.0;
+    } else if ( dx == 0 && ( dy == 2 || dy == -2 ) ) {
+      // third nearest neighbors along y-axis
+      return -1.0;
+    }
+  }
+
+  // still here? no meaningful decision yet??? --> this is a bug ...
+  assert( false );
+  return 0.0; // <-- should never be reached; only to suppress compiler warning
 }

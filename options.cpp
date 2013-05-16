@@ -86,6 +86,10 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<unsigned int>()->required(),
     "total number of electrons" )
 
+  ( "phys.pairing-symmetry,y",
+    po::value<optpairsym_t>()->default_value( OPTION_PAIRING_SYMMETRY_SWAVE ),
+    "symmetry of the pairing term (swave, dwave)" )
+
   ( "phys.vpar-file,P",
     po::value<fs::path>(),
     "file to load the variational parameters from" )
@@ -461,6 +465,20 @@ istream& operator>>( std::istream& in, optmode_t& m )
     m = OPTION_MODE_SIMULATION;
   } else if ( token == "ana" || token == "analysis" ) {
     m = OPTION_MODE_ANALYSIS;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
+
+istream& operator>>( std::istream& in, optpairsym_t& s )
+{
+  string token;
+  in >> token;
+  if ( token == "s" || token == "swave" ) {
+    s = OPTION_PAIRING_SYMMETRY_SWAVE;
+  } else if ( token == "d" || token == "dwave" ) {
+    s = OPTION_PAIRING_SYMMETRY_DWAVE;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

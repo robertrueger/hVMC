@@ -47,6 +47,8 @@ class Lattice1DChain final : public Lattice {
 
     Eigen::VectorXd r( index i, index j ) const;
     std::vector<Eigen::VectorXd> get_qvectors() const;
+
+    double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
 };
 
 #endif // LATTICE_1DCHAIN_H_INCLUDED

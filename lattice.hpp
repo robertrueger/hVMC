@@ -26,6 +26,7 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
+#include "options.hpp"
 #include "macros.h"
 
 
@@ -70,6 +71,11 @@ class Lattice {
     // lattice geometry and relevant reciprocal lattice vectors
     virtual Eigen::VectorXd r( index i, index j ) const = 0;
     virtual std::vector<Eigen::VectorXd> get_qvectors() const = 0;
+
+    // pairing symmetry modifying factor
+    virtual double pairsym_modifier(
+        optpairsym_t sym, spindex i, spindex j
+    ) const = 0;
 };
 
 #endif // LATTICE_H_INCLUDED

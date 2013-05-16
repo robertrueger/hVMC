@@ -46,7 +46,9 @@ HubbardModelVMC prepare_model(
 
   const DeterminantalWavefunction detwf
     = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
-                   t_vpar, Delta_vpar, mu_vpar );
+                   t_vpar,
+                   Delta_vpar, opts["phys.pairing-symmetry"].as<optpairsym_t>(),
+                   mu_vpar );
 
   if ( mpicomm.rank() == 0 && detwf.is_openshell() ) {
     cout << endl;

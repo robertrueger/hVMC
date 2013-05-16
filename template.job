@@ -22,7 +22,7 @@
 nn-hopping = 1.0
 
 # 2nd nearest-neighbor hopping matrix element t'
-2nd-nn-hopping = -0.9
+2nd-nn-hopping = 0.0
 
 # 3rd nearest-neighbor hopping matrix element t''
 3rd-nn-hopping = 0.0
@@ -31,13 +31,16 @@ nn-hopping = 1.0
 onsite-energy = 8.0
 
 # lattice type
-lattice = 1dchain
+lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 60
+num-lattice-sites = 100
 
 # total number of electrons
-num-electrons = 60
+num-electrons = 100
+
+# symmetry of the pairing term (swave, dwave)
+pairing-symmetry = dwave
 
 # file to load the variational parameters from
 #vpar-file =
@@ -46,7 +49,7 @@ num-electrons = 60
 # vpar-ovwrt-t2 =
 # vpar-ovwrt-t3 =
 # vpar-ovwrt-D0 =
-# vpar-ovwrt-D1 =
+vpar-ovwrt-D1 = 0.5
 # vpar-ovwrt-D2 =
 # vpar-ovwrt-D3 =
 # vpar-ovwrt-mu =
@@ -80,10 +83,10 @@ analysis = ssfac
 update-hop-maxdistance = 2
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
-num-mcs-equil = 1000
+num-mcs-equil = 100
 
 # [opt+sim]: number of measurement bins
-num-bins = 400
+num-bins = 100
 
 # [opt+sim]: number of Monte Carlo steps per bin
 num-binmcs = 100
@@ -101,13 +104,13 @@ num-binmcs = 100
 # Delta" += 32
 # mu += 64
 # Jastrow += 128
-optimizers = 255
+optimizers = 200
 
 # [opt]: controls the SR convergence: vpar += dt * dvpar
-sr-dt = 1
+sr-dt = 0.5
 
 # [opt]: factor to boost the convergence speed of the Jastrow
-sr-dt-Jboost = 1
+sr-dt-Jboost = 5
 
 # [opt]: Mann-Kendall threshold for convergence detection
 sr-mkthreshold = 0.5
