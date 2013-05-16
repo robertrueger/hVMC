@@ -76,7 +76,7 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.lattice,l",
     po::value<Lattice::type>()->required(),
-    "lattice type (1dchain, 2dsquare)" )
+    "lattice type (1dchain, 2dsquare, 2dsquare2layer)" )
 
   ( "phys.num-lattice-sites,L",
     po::value<unsigned int>()->required(),
@@ -376,6 +376,13 @@ Options read_options( int argc, char* argv[], bool is_master )
       throw logic_error( "the number of lattice sites must be a perfect square" );
     }
 
+    if ( vm["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d2layer &&
+         !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() / 2 ) ) {
+      throw logic_error(
+              "the number of lattice sites must be two times a perfect square"
+            );
+    }
+
     // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
 
   } catch ( const logic_error& e ) {
@@ -448,6 +455,8 @@ istream& operator>>( std::istream& in, Lattice::type& lat )
     lat = Lattice::type::chain1d;
   } else if ( token == "2dsquare" ) {
     lat = Lattice::type::square2d;
+  } else if ( token == "2dsquare2layer" ) {
+    lat = Lattice::type::square2d2layer;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

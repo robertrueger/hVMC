@@ -25,19 +25,19 @@ nn-hopping = 1.0
 2nd-nn-hopping = 0.0
 
 # 3rd nearest-neighbor hopping matrix element t''
-3rd-nn-hopping = 0.0
+3rd-nn-hopping = 0.5
 
 # on-site energy U
 onsite-energy = 8.0
 
-# lattice type
-lattice = 2dsquare
+# lattice type (1dchain, 2dsquare, 2dsquare2layer)
+lattice = 2dsquare2layer
 
 # number of lattice sites
-num-lattice-sites = 100
+num-lattice-sites = 72
 
 # total number of electrons
-num-electrons = 100
+num-electrons = 72
 
 # symmetry of the pairing term (swave, dwave)
 pairing-symmetry = dwave
@@ -80,7 +80,7 @@ observable = dblocc
 analysis = ssfac
 
 # [opt+sim]: maximum hopping distance for electronic configuration updates
-update-hop-maxdistance = 2
+update-hop-maxdistance = 3
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
 num-mcs-equil = 100

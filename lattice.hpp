@@ -37,7 +37,8 @@ class Lattice {
     // the lattice type
     enum class type {
         chain1d,
-        square2d
+        square2d,
+        square2d2layer
     };
 
     // the number of lattice sites

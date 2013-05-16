@@ -24,6 +24,7 @@
 
 #include "lattice_1dchain.hpp"
 #include "lattice_2dsquare.hpp"
+#include "lattice_2dsqr2layer.hpp"
 #include "varparam.hpp"
 #include "obs_all.hpp"
 
@@ -101,8 +102,19 @@ shared_ptr<Lattice> prepare_lattice( const Options& opts )
     return make_shared<Lattice1DChain>(
              opts["phys.num-lattice-sites"].as<unsigned int>()
            );
-  } else {
+
+  } else if ( opts["phys.lattice"].as<Lattice::type>()
+                == Lattice::type::square2d )  {
     return make_shared<Lattice2DSquare>(
+             opts["phys.num-lattice-sites"].as<unsigned int>()
+           );
+
+  } else {
+    assert(
+      opts["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d2layer
+    );
+
+    return make_shared<Lattice2DSquare2Layer>(
              opts["phys.num-lattice-sites"].as<unsigned int>()
            );
   }
