@@ -283,9 +283,9 @@ set<Lattice::irridxrel> Lattice2DSquare2Layer::get_all_irridxrels() const
 Lattice::irridxrel Lattice2DSquare2Layer::get_maxdist_irridxrel() const
 {
   if ( S % 2 == 0 ) {
-    return L_layer / 2 + S / 2 + L_layer;
+    return L_layer / 2 + S / 2 /*+ L_layer*/;
   } else {
-    return L_layer / 2 + L_layer;
+    return L_layer / 2 /*+ L_layer*/;
   }
 }
 
@@ -353,4 +353,46 @@ double Lattice2DSquare2Layer::pairsym_modifier(
   // still here? no meaningful decision yet??? --> this is a bug ...
   assert( false );
   return 0.0; // <-- should never be reached; only to suppress compiler warning
+}
+
+
+
+Eigen::VectorXi Lattice2DSquare2Layer::get_random_site_occ(
+   unsigned int Npu, unsigned int Npd, mt19937& rng ) const
+{
+  // make sure Npu and Npd are even numbers,
+  // so that we can distribute them evenly among the planes
+  assert( Npu % 2 == 0 && Npd % 2 == 0 );
+
+  Eigen::VectorXi site_occ = Eigen::VectorXi::Zero( 2 * L );
+
+  // distribute half of the Npu particles randomly in each plane
+  while ( site_occ.segment( 0, L_layer ).sum()
+            < static_cast<int>( Npu / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( 0, L_layer - 1 )( rng )
+    ] = 1;
+  }
+  while ( site_occ.segment( L_layer, L_layer ).sum()
+            < static_cast<int>( Npu / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( L_layer, L - 1 )( rng )
+    ] = 1;
+  }
+
+  // distribute half of the Npd particles randomly in each plane
+  while ( site_occ.segment( L, L_layer ).sum()
+            < static_cast<int>( Npd / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( L, L + L_layer - 1 )( rng )
+    ] = 1;
+  }
+  while ( site_occ.segment( L + L_layer, L_layer ).sum()
+            < static_cast<int>( Npd / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( L + L_layer, 2 * L - 1 )( rng )
+    ] = 1;
+  }
+
+  return site_occ;
 }

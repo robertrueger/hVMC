@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <set>
+#include <random>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -77,6 +78,14 @@ class Lattice {
     virtual double pairsym_modifier(
         optpairsym_t sym, spindex i, spindex j
     ) const = 0;
+
+    // method to generate a random particle distribution
+    // (this is part of the lattice class because there might be special
+    // requirements for a random particle distribution, e.g.: the two layered
+    // Hubbard model requires each plane to have the same number of particles)
+    virtual Eigen::VectorXi get_random_site_occ(
+      unsigned int Npu, unsigned int Npd, std::mt19937& rng
+    ) const;
 };
 
 #endif // LATTICE_H_INCLUDED

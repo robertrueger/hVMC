@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <set>
+#include <random>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -70,6 +71,9 @@ class Lattice2DSquare2Layer final : public Lattice {
     std::vector<Eigen::VectorXd> get_qvectors() const;
 
     double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
+
+    Eigen::VectorXi get_random_site_occ(
+      unsigned int Npu, unsigned int Npd, std::mt19937& rng ) const override;
 };
 
 #endif // LATTICE_2DSQUARE_2LAYER_H_INCLUDED

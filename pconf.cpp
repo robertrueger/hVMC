@@ -66,18 +66,8 @@ void ParticleConfiguration::reconstr_particle_pos()
 
 void ParticleConfiguration::distribute_random()
 {
-  // clear all sites
-  site_occ.setZero();
-
-  // randomly distribute Npu/Npd particles per spin direction
-  while ( site_occ.head( lat->L ).sum() < static_cast<int>( Npu ) ) {
-    site_occ[ uniform_int_distribution<Lattice::index>( 0, lat->L - 1 )( rng ) ]
-      = PARTICLE_OCCUPATION_FULL;
-  }
-  while ( site_occ.tail( lat->L ).sum() < static_cast<int>( Npd ) ) {
-    site_occ[ uniform_int_distribution<Lattice::index>( 0, lat->L - 1 )( rng )
-              + lat->L ] = PARTICLE_OCCUPATION_FULL;
-  }
+  // let the lattice generate a new random configuration
+  site_occ = lat->get_random_site_occ( Npu, Npd, rng );
 
 #if VERBOSE >= 2
   cout << "ParticleConfiguration::distribute_random() : new config is" << endl;

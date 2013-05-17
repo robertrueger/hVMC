@@ -51,7 +51,7 @@ pairing-symmetry = dwave
 # vpar-ovwrt-D0 =
 vpar-ovwrt-D1 = 0.5
 # vpar-ovwrt-D2 =
-# vpar-ovwrt-D3 =
+vpar-ovwrt-D3 = 0.0
 # vpar-ovwrt-mu =
 # vpar-ovwrt-J0 =
 
@@ -104,7 +104,7 @@ num-binmcs = 100
 # Delta" += 32
 # mu += 64
 # Jastrow += 128
-optimizers = 200
+optimizers = 232
 
 # [opt]: controls the SR convergence: vpar += dt * dvpar
 sr-dt = 0.5
