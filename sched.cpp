@@ -494,43 +494,24 @@ void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
     cout << res;
   }
 
-  // write simulation results to human readable files
+  // write simulation results to files
   res.write_to_files( opts["calc.working-dir"].as<fs::path>() );
-
-  // write results to a machine readable file
-  ofstream res_file( (
-    opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
-  ).string() );
-  ar::text_oarchive res_archive( res_file );
-  res_archive << res;
 }
 
 
 
 void sched_master_ana( const Options& opts )
 {
-  // read the old MCCResults from disk
-  if ( fs::exists(
-         opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
-       ) == false ) {
-    cout << "ERROR: no simulation result file found" << endl;
-    return;
-  }
-  ifstream res_file( (
-    opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
-  ).string() );
-  ar::text_iarchive res_archive( res_file );
-  MCCResults res;
-  res_archive >> res;
-
   // figure out the analysis we want to perform ...
   const vector<analysis_t>& anamod_v
     = opts["calc.analysis"].as< vector<analysis_t> >();
   const set<analysis_t> anamod( anamod_v.begin(), anamod_v.end() );
 
-  // ... and finally perform the analysis
+  // ... and hand over control to the analysis modules
   if ( anamod.count( ANALYSIS_STATIC_STRUCTURE_FACTOR ) ) {
-    analysis_static_structure_factor( opts, res );
+    analysis_static_structure_factor(
+      opts, opts["calc.working-dir"].as<fs::path>()
+    );
   }
 }
 

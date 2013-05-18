@@ -34,7 +34,7 @@ class ObservableSpinSpinCorrelation final : public ObservableCorrelation
 {
   protected:
 
-    Eigen::MatrixXd get_current(
+    Eigen::VectorXd get_current(
       const HubbardModelVMC& model, ObservableCache& cache
     ) const;
 

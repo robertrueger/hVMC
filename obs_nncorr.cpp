@@ -21,7 +21,7 @@
 
 using namespace std;
 
-Eigen::MatrixXd ObservableDensityDensityCorrelation::get_current(
+Eigen::VectorXd ObservableDensityDensityCorrelation::get_current(
   const HubbardModelVMC& model, ObservableCache& cache ) const
 {
   if ( !cache.n ) {

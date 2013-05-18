@@ -21,10 +21,10 @@
 
 using namespace std;
 
-Eigen::MatrixXd ObservableSpinSpinCorrelation::get_current(
+Eigen::VectorXd ObservableSpinSpinCorrelation::get_current(
   const HubbardModelVMC& model, ObservableCache& cache ) const
 {
-  if ( !cache.n ) {
+  if ( !cache.s ) {
     cache.s = model.s();
   }
   return cache.s.get().cast<double>();

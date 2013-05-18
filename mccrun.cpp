@@ -212,7 +212,6 @@ MCCResults mccrun_master(
   for ( const unique_ptr<Observable>& o : obscalc ) {
     o->collect_and_write_results( mpicomm, results );
   }
-  results.success = true;
   return results;
 }
 

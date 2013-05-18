@@ -41,7 +41,7 @@ class ObservableCorrelation : public Observable
     unsigned int binmean_count;
 
     // methods that are specialized to the actual correlation being measured
-    virtual Eigen::MatrixXd get_current(
+    virtual Eigen::VectorXd get_current(
       const HubbardModelVMC& model, ObservableCache& cache
     ) const = 0;
     virtual void save_to_results(
