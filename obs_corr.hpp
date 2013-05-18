@@ -17,22 +17,40 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBS_DBLOCC_H_INCLUDED
-#define OBS_DBLOCC_H_INCLUDED
+#ifndef OBS_CORRELATION_H_INCLUDED
+#define OBS_CORRELATION_H_INCLUDED
 
 #include "obs.hpp"
 
-#include <vector>
+#include <boost/mpi/communicator.hpp>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
+#include <eigen3/Eigen/Core>
 
-class ObservableDoubleOccupancy final : public Observable
+#include "hmodvmc.hpp"
+#include "mccresults.hpp"
+
+class ObservableCorrelation : public Observable
 {
-  private:
+  protected:
 
-    std::vector<double> dblocc_currentbin;
-    std::vector<double> dblocc_binmeans;
+    Eigen::MatrixXd thisbin_sum;
+    unsigned int thisbin_count;
+
+    Eigen::MatrixXd binmean_sum;
+    unsigned int binmean_count;
+
+    // methods that are specialized to the actual correlation being measured
+    virtual Eigen::MatrixXd get_current(
+      const HubbardModelVMC& model, ObservableCache& cache
+    ) const = 0;
+    virtual void save_to_results(
+      const Eigen::MatrixXd& corrresult, MCCResults& results
+    ) const = 0;
 
   public:
+
+    ObservableCorrelation( unsigned int L );
 
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 
@@ -46,4 +64,4 @@ class ObservableDoubleOccupancy final : public Observable
     void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
 };
 
-#endif // OBS_DBLOCC_H_INCLUDED
+#endif // OBS_CORRELATION_H_INCLUDED

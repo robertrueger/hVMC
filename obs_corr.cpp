@@ -17,7 +17,9 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "obs_dkerg.hpp"
+#include "obs_corr.hpp"
+
+#include <vector>
 
 #if VERBOSE >= 1
 # include <iostream>
@@ -32,61 +34,53 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaKEnergy::ObservableDeltaKEnergy(
-  unsigned int num_vpar, unsigned int optimizers_init )
-  : optimizers( optimizers_init ),
-    thisbin_DkE_sum( Eigen::VectorXd::Zero( num_vpar ) ),
+ObservableCorrelation::ObservableCorrelation(
+  unsigned int L )
+  : thisbin_sum( Eigen::MatrixXd::Zero( L, L ) ),
     thisbin_count( 0 ),
-    binmean_DkE_sum( Eigen::VectorXd::Zero( num_vpar ) ),
+    binmean_sum( Eigen::MatrixXd::Zero( L, L ) ),
     binmean_count( 0 ) { }
 
 
-void ObservableDeltaKEnergy::measure(
+void ObservableCorrelation::measure(
   const HubbardModelVMC& model, ObservableCache& cache )
 {
-  if ( !cache.DeltaK ) {
-    cache.DeltaK = model.Delta_k( optimizers );
-  }
-  if ( !cache.E ) {
-    cache.E = model.E_l();
-  }
-  const Eigen::VectorXd& DkE_current = cache.DeltaK.get() * cache.E.get();
+  const Eigen::MatrixXd& current = get_current( model, cache );
 
-  thisbin_DkE_sum += DkE_current;
+  thisbin_sum += current * current.transpose();
   ++thisbin_count;
 
 #if VERBOSE >= 1
-  cout << "ObservableDeltaKEnergy::measure() : thisbin_DkE_sum = " << endl
-       << thisbin_DkE_sum.transpose() << endl;
+  cout << "ObservableCorrelation::measure() : thisbin_sum = "
+       << endl << thisbin_sum << endl;
 #endif
 }
 
 
-void ObservableDeltaKEnergy::completebin()
+void ObservableCorrelation::completebin()
 {
-  binmean_DkE_sum += thisbin_DkE_sum / static_cast<double>( thisbin_count );
+  binmean_sum += thisbin_sum / static_cast<double>( thisbin_count );
   ++binmean_count;
 
-  thisbin_DkE_sum.setZero();
+  thisbin_sum.setZero();
   thisbin_count = 0;
 }
 
 
-void ObservableDeltaKEnergy::collect_and_write_results(
+void ObservableCorrelation::collect_and_write_results(
   const mpi::communicator& mpicomm,
   MCCResults& results ) const
 {
   assert( mpicomm.rank() == 0 );
 
-  vector<Eigen::VectorXd> binmeans_collector(
-      mpicomm.size(),
-      Eigen::MatrixXd( binmean_DkE_sum.rows(), binmean_DkE_sum.cols() )
+  vector<Eigen::MatrixXd> binmeans_collector(
+    mpicomm.size(), Eigen::MatrixXd( binmean_sum.rows(), binmean_sum.cols() )
   );
-  mpi::gather( mpicomm, binmean_DkE_sum, binmeans_collector, 0 );
+  mpi::gather( mpicomm, binmean_sum, binmeans_collector, 0 );
   vector<unsigned int> binmeans_collector_count;
   mpi::gather( mpicomm, binmean_count, binmeans_collector_count, 0 );
 
-  results.Deltak_E
+  Eigen::MatrixXd corrresult
     = accumulate(
         binmeans_collector.begin() + 1,
         binmeans_collector.end(),
@@ -98,14 +92,16 @@ void ObservableDeltaKEnergy::collect_and_write_results(
           0
         )
       );
+
+  save_to_results( corrresult, results );
 }
 
 
-void ObservableDeltaKEnergy::send_results_to_master(
+void ObservableCorrelation::send_results_to_master(
   const mpi::communicator& mpicomm ) const
 {
   assert( mpicomm.rank() != 0 );
 
-  mpi::gather( mpicomm, binmean_DkE_sum, 0 );
+  mpi::gather( mpicomm, binmean_sum, 0 );
   mpi::gather( mpicomm, binmean_count, 0 );
 }

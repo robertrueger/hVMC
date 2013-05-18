@@ -21,37 +21,31 @@
 #define OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
 
 #include "obs.hpp"
-
-#include <vector>
+#include "obs_corr.hpp"
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
+#include "hmodvmc.hpp"
+#include "mccresults.hpp"
 
-class ObservableDensityDensityCorrelation final : public Observable
+
+class ObservableDensityDensityCorrelation final : public ObservableCorrelation
 {
-  private:
+  protected:
 
-    Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> thisbin_nncorr_sum;
-    unsigned int thisbin_count;
+    Eigen::MatrixXd get_current(
+      const HubbardModelVMC& model, ObservableCache& cache
+    ) const;
 
-    Eigen::MatrixXd binmean_nncorr_sum;
-    unsigned int binmean_count;
+    void save_to_results(
+      const Eigen::MatrixXd& corrresult, MCCResults& results
+    ) const;
 
   public:
 
-    ObservableDensityDensityCorrelation( unsigned int L );
-
-    void measure( const HubbardModelVMC& model, ObservableCache& cache );
-
-    void completebin();
-
-    void collect_and_write_results(
-      const boost::mpi::communicator& mpicomm,
-      MCCResults& results
-    ) const;
-
-    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
+    ObservableDensityDensityCorrelation( unsigned int L )
+      : ObservableCorrelation( L ) { };
 };
 
 #endif // OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED

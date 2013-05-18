@@ -23,6 +23,7 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/optional.hpp>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "hmodvmc.hpp"
@@ -59,10 +60,6 @@ class Observable
 {
   public:
 
-    const observables_t type;
-
-    Observable( observables_t type_init )
-      : type( type_init ) { }
     virtual ~Observable() { };
 
     virtual void measure(
