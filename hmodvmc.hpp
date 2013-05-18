@@ -101,6 +101,7 @@ class HubbardModelVMC final
     Eigen::VectorXd Delta_k( unsigned int optimizers ) const;
     double dblocc_dens() const;
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
+    Eigen::VectorXi s() const;
 
     // floating point precision control
     FPDevStat get_W_devstat() const;

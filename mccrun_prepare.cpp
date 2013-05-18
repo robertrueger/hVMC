@@ -179,5 +179,15 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
     );
   }
 
+  if ( obs.count( OBSERVABLE_SPIN_SPIN_CORRELATION ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>(
+        new ObservableSpinSpinCorrelation(
+          opts["phys.num-lattice-sites"].as<unsigned int>()
+        )
+      )
+    );
+  }
+
   return obscalc;
 }

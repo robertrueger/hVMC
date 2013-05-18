@@ -36,7 +36,8 @@ enum observables_t {
   OBSERVABLE_DELTAK_DELTAKPRIME,
   OBSERVABLE_DELTAK_E,
   OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY,
-  OBSERVABLE_DENSITY_DENSITY_CORRELATION
+  OBSERVABLE_DENSITY_DENSITY_CORRELATION,
+  OBSERVABLE_SPIN_SPIN_CORRELATION
 };
 
 
@@ -46,12 +47,14 @@ struct ObservableCache final
   boost::optional<Eigen::VectorXd> DeltaK;
   boost::optional<double> dblocc;
   boost::optional< Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> > n;
+  boost::optional< Eigen::VectorXi > s;
 
   void clear() {
     E = boost::none;
     DeltaK = boost::none;
     dblocc = boost::none;
     n = boost::none;
+    s = boost::none;
   }
 };
 

@@ -17,22 +17,22 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "obs_nncorr.hpp"
+#include "obs_sscorr.hpp"
 
 using namespace std;
 
-Eigen::MatrixXd ObservableDensityDensityCorrelation::get_current(
+Eigen::MatrixXd ObservableSpinSpinCorrelation::get_current(
   const HubbardModelVMC& model, ObservableCache& cache ) const
 {
   if ( !cache.n ) {
-    cache.n = model.n();
+    cache.s = model.s();
   }
-  return cache.n.get().cast<double>();
+  return cache.s.get().cast<double>();
 }
 
 
-void ObservableDensityDensityCorrelation::save_to_results(
+void ObservableSpinSpinCorrelation::save_to_results(
   const Eigen::MatrixXd& corrresult, MCCResults& results ) const
 {
-  results.nncorr = corrresult;
+  results.sscorr = corrresult;
 }

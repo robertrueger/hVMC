@@ -87,6 +87,7 @@ struct MCCResults {
   boost::optional< Eigen::VectorXd > Deltak_E;
   boost::optional< UncertainQuantity<double> > dblocc;
   boost::optional< Eigen::MatrixXd > nncorr;
+  boost::optional< Eigen::MatrixXd > sscorr;
 
   void write_to_files( const boost::filesystem::path& dir ) const;
 
@@ -101,6 +102,7 @@ struct MCCResults {
     ar & Deltak_E;
     ar & dblocc;
     ar & nncorr;
+    ar & sscorr;
   }
 };
 std::ostream& operator<<( std::ostream& out, const MCCResults& res );

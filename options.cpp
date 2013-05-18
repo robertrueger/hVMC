@@ -522,6 +522,8 @@ istream& operator>>( std::istream& in, observables_t& obs )
     obs = OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY;
   } else if ( token == "nncorr" ) {
     obs = OBSERVABLE_DENSITY_DENSITY_CORRELATION;
+  } else if ( token == "sscorr" ) {
+    obs = OBSERVABLE_SPIN_SPIN_CORRELATION;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

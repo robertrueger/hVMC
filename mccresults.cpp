@@ -62,6 +62,11 @@ void MCCResults::write_to_files( const fs::path& dir ) const
     ofstream nncorr_file( ( dir / "sim_res_nncorr.txt" ).string() );
     nncorr_file << nncorr.get() << endl;
   }
+
+  if ( sscorr ) {
+    ofstream sscorr_file( ( dir / "sim_res_sscorr.txt" ).string() );
+    sscorr_file << sscorr.get() << endl;
+  }
 }
 
 
@@ -109,6 +114,12 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
     out << endl
         << "nncorr = " << endl
         << res.nncorr.get() << endl;
+  }
+
+  if ( res.sscorr ) {
+    out << endl
+        << "sscorr = " << endl
+        << res.sscorr.get() << endl;
   }
 
   out << endl;

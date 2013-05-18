@@ -293,6 +293,13 @@ Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
 
 
 
+Eigen::VectorXi HubbardModelVMC::s() const
+{
+  return ( pconf.npu().array() - 1 + pconf.npd().array() );
+}
+
+
+
 FPDevStat HubbardModelVMC::get_W_devstat() const
 {
   return W.get_devstat();
