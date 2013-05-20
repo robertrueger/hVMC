@@ -234,9 +234,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
     Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
     for ( unsigned int k = 0; k < pconf.Np; ++k ) {
       const Lattice::spindex k_pos = pconf.get_particle_pos( k );
-      for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
-        G( k_pos, l ) = W( l, k );
-      }
+      G.row( k_pos ) = W.get_raw().col( k );
     }
 
     for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {

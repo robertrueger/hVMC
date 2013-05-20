@@ -72,6 +72,7 @@ class WMatrix final
     bool init_and_check();
     void update( const ParticleHop& hop );
 
+    const Eigen::MatrixXfp& get_raw() const;
     fptype operator()( unsigned int i, unsigned int j ) const;
 
     FPDevStat get_devstat() const;
