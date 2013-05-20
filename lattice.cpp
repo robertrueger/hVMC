@@ -25,11 +25,14 @@ Lattice::index Lattice::get_index_from_spindex( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
 
-  if ( get_spindex_type( l ) == Lattice::spindex_type::down ) {
-    return l - L;
-  } else {
-    return l;
-  }
+  return l % L;
+
+  // this is a branchless version of:
+  // if ( get_spindex_type( l ) == Lattice::spindex_type::down ) {
+  //   return l - L;
+  // } else {
+  //   return l;
+  // }
 }
 
 
@@ -37,11 +40,14 @@ Lattice::spindex Lattice::get_linked_spindex( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
 
-  if ( get_spindex_type( l ) == Lattice::spindex_type::up ) {
-    return l + L;
-  } else {
-    return l - L;
-  }
+  return l + ( 1 - static_cast<int>( 2 * ( l / L ) ) ) * L;
+
+  // this is a branchless version of:
+  // if ( get_spindex_type( l ) == Lattice::spindex_type::up ) {
+  //   return l + L;
+  // } else {
+  //   return l - L;
+  // }
 }
 
 
