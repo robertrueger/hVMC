@@ -57,10 +57,9 @@ void TVector::init()
 
 
 
-double TVector::operator()( unsigned int i ) const
+const Eigen::VectorXd& TVector::get() const
 {
-  assert( i < lat->L );
-  return T( i );
+  return T;
 }
 
 

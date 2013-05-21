@@ -115,12 +115,12 @@ bool HubbardModelVMC::metstep()
       = std::exp(
           ( phop.l < lat->L ? 1.0 : -1.0 ) *
           (
-            T( lat->get_index_from_spindex( phop.l ) )
-            - T( lat->get_index_from_spindex( phop.k_pos ) )
+            T.get()( lat->get_index_from_spindex( phop.l ) )
+            - T.get()( lat->get_index_from_spindex( phop.k_pos ) )
           ) + v.onsite() - v( phop.l, phop.k_pos )
         );
 
-    const double R_s = W( phop.l, phop.k );
+    const double R_s = W.get()( phop.l, phop.k );
 
     const double accept_prob = R_j * R_j * R_s * R_s;
 
@@ -190,12 +190,12 @@ double HubbardModelVMC::E_l() const
                   ? 1.0 : -1.0
                 ) *
                 (
-                  T( lat->get_index_from_spindex( *l_it ) )
-                  - T( lat->get_index_from_spindex( k_pos ) )
+                  T.get()( lat->get_index_from_spindex( *l_it ) )
+                  - T.get()( lat->get_index_from_spindex( k_pos ) )
                 ) + v.onsite() - v( *l_it, k_pos )
               );
 
-          sum_Xnn += R_j * W( *l_it, k );
+          sum_Xnn += R_j * W.get()( *l_it, k );
 
         }
       }
@@ -234,7 +234,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
     Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
     for ( unsigned int k = 0; k < pconf.Np; ++k ) {
       const Lattice::spindex k_pos = pconf.get_particle_pos( k );
-      G.row( k_pos ) = W.get_raw().col( k );
+      G.row( k_pos ) = W.get().col( k );
     }
 
     for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {

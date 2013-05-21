@@ -81,17 +81,9 @@ bool WMatrix::init_and_check()
 
 
 
-const Eigen::MatrixXfp& WMatrix::get_raw() const
+const Eigen::MatrixXfp& WMatrix::get() const
 {
   return *W_active;
-}
-
-
-
-fptype WMatrix::operator()( unsigned int i, unsigned int j ) const
-{
-  assert( i < 2 * lat->L && j < pconf.Np );
-  return ( *W_active )( i, j );
 }
 
 

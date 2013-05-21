@@ -59,7 +59,7 @@ class TVector final
     void init();
     void update( const ParticleHop& hop );
 
-    double operator()( unsigned int i ) const;
+    const Eigen::VectorXd& get() const;
 
     FPDevStat get_devstat() const;
 
