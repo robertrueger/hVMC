@@ -50,10 +50,10 @@ int main( int argc, char* argv[] )
   const Options& opts = read_options( argc, argv, mpicomm.rank() == 0 );
   // TODO: output all options if verbose (Robert Rueger, 2012-11-02 13:31)
 
-  // create output directory
-  fs::create_directory( opts["calc.working-dir"].as<fs::path>() );
-
   if ( mpicomm.rank() == 0 ) { // this process is the master
+    // create output directory
+    fs::create_directory( opts["calc.working-dir"].as<fs::path>() );
+
     sched_master( opts, mpicomm );
   } else { // this process is a slave
     sched_slave( opts, mpicomm );

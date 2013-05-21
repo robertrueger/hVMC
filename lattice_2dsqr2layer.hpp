@@ -17,11 +17,12 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LATTICE_2DSQUARE_H_INCLUDED
-#define LATTICE_2DSQUARE_H_INCLUDED
+#ifndef LATTICE_2DSQUARE_2LAYER_H_INCLUDED
+#define LATTICE_2DSQUARE_2LAYER_H_INCLUDED
 
 #include <vector>
 #include <set>
+#include <random>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -29,27 +30,34 @@
 #include "macros.h"
 #include "lattice.hpp"
 
-class Lattice2DSquare : public Lattice {
+
+class Lattice2DSquare2Layer : public Lattice {
 
   private:
 
-    // side length of the square lattice of L sites
-    unsigned int S;
+    // number of sites per layer
+    const unsigned int L_layer;
 
+    // side length of the square lattice of L sites
+    const unsigned int S;
+
+    // first and second nearest neighbor in the same plane
     void get_1nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
     void get_2nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
-    void get_3nn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
+    // corresponding site in the other plane (treated as third n.n.)
+    void get_opn( unsigned int l, std::vector<unsigned int>* outbuf ) const;
 
     // functions to calculate positions on the lattice from spindices
     int x( Lattice::spindex l ) const;
     int y( Lattice::spindex l ) const;
+    int z( Lattice::spindex l ) const;
 
     // functions to calculate position differences wrapped around the PBC
     int d( int p1, int p2 ) const;
 
   public:
 
-    Lattice2DSquare( unsigned int L_init );
+    Lattice2DSquare2Layer( unsigned int L_init );
 
     void get_Xnn(
       spindex l, unsigned int X, std::vector<spindex>* outbuf
@@ -63,6 +71,9 @@ class Lattice2DSquare : public Lattice {
     std::vector<Eigen::VectorXd> get_qvectors() const;
 
     double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
+
+    Eigen::VectorXi get_random_site_occ(
+      unsigned int Npu, unsigned int Npd, std::mt19937& rng ) const;
 };
 
-#endif // LATTICE_2DSQUARE_H_INCLUDED
+#endif // LATTICE_2DSQUARE_2LAYER_H_INCLUDED

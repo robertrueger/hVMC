@@ -32,8 +32,9 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime( unsigned int num_vpar )
-  : Observable( OBSERVABLE_DELTAK_DELTAKPRIME ),
+ObservableDeltaKDeltaKPrime::ObservableDeltaKDeltaKPrime(
+  unsigned int num_vpar, unsigned int optimizers_init )
+  : optimizers( optimizers_init ),
     thisbin_DkDkp_sum( Eigen::MatrixXd::Zero( num_vpar, num_vpar ) ),
     thisbin_count( 0 ),
     binmean_DkDkp_sum( Eigen::MatrixXd::Zero( num_vpar, num_vpar ) ),
@@ -44,7 +45,7 @@ void ObservableDeltaKDeltaKPrime::measure(
   const HubbardModelVMC& model, ObservableCache& cache )
 {
   if ( !cache.DeltaK ) {
-    cache.DeltaK = model.Delta_k();
+    cache.DeltaK = model.Delta_k( optimizers );
   }
   const Eigen::VectorXd& Dk_current = cache.DeltaK.get();
 
@@ -74,7 +75,10 @@ void ObservableDeltaKDeltaKPrime::collect_and_write_results(
 {
   assert( mpicomm.rank() == 0 );
 
-  vector<Eigen::MatrixXd> binmeans_collector;
+  vector<Eigen::MatrixXd> binmeans_collector(
+      mpicomm.size(),
+      Eigen::MatrixXd( binmean_DkDkp_sum.rows(), binmean_DkDkp_sum.cols() )
+  );
   mpi::gather( mpicomm, binmean_DkDkp_sum, binmeans_collector, 0 );
   vector<unsigned int> binmeans_collector_count;
   mpi::gather( mpicomm, binmean_count, binmeans_collector_count, 0 );

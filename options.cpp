@@ -75,8 +75,8 @@ Options read_options( int argc, char* argv[], bool is_master )
     "on-site energy U" )
 
   ( "phys.lattice,l",
-    po::value<lattice_t>()->required(),
-    "lattice type (1dchain, 2dsquare)" )
+    po::value<Lattice::type>()->required(),
+    "lattice type (1dchain, 2dsquare, 2dsquare2layer)" )
 
   ( "phys.num-lattice-sites,L",
     po::value<unsigned int>()->required(),
@@ -86,9 +86,45 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<unsigned int>()->required(),
     "total number of electrons" )
 
+  ( "phys.pairing-symmetry,y",
+    po::value<optpairsym_t>()->default_value( OPTION_PAIRING_SYMMETRY_SWAVE ),
+    "symmetry of the pairing term (swave, dwave)" )
+
   ( "phys.vpar-file,P",
     po::value<fs::path>(),
-    "file to load the variational parameters from" );
+    "file to load the variational parameters from" )
+
+  ( "phys.vpar-ovwrt-t2",
+    po::value<double>(),
+    "variational parameter overwrite: t'" )
+
+  ( "phys.vpar-ovwrt-t3",
+    po::value<double>(),
+    "variational parameter overwrite: t''" )
+
+  ( "phys.vpar-ovwrt-D0",
+    po::value<double>(),
+    "variational parameter overwrite: Delta_onsite" )
+
+  ( "phys.vpar-ovwrt-D1",
+    po::value<double>(),
+    "variational parameter overwrite: Delta" )
+
+  ( "phys.vpar-ovwrt-D2",
+    po::value<double>(),
+    "variational parameter overwrite: Delta'" )
+
+  ( "phys.vpar-ovwrt-D3",
+    po::value<double>(),
+    "variational parameter overwrite: Delta""'" )
+
+  ( "phys.vpar-ovwrt-mu",
+    po::value<double>(),
+    "variational parameter overwrite: mu" )
+
+  ( "phys.vpar-ovwrt-J0",
+    po::value<double>(),
+    "variational parameter overwrite: J_00" );
 
   po::options_description calcset( "calculation settings" );
   calcset.add_options()
@@ -129,9 +165,17 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<unsigned int>(),
     "[opt+sim]: random number generator seed" )
 
+  ( "calc.optimizers,Z",
+    po::value<unsigned int>()->default_value( 255 ),
+    "[opt]: which variational parameters to optimize" )
+
   ( "calc.sr-dt,d",
     po::value<double>()->default_value( 1.0 ),
     "[opt]: controls the SR convergence: vpar += dt * dvpar" )
+
+  ( "calc.sr-dt-Jboost,J",
+    po::value<double>()->default_value( 1.0 ),
+    "[opt]: factor to boost the convergence speed of the Jastrow" )
 
   ( "calc.sr-mkthreshold,T",
     po::value<double>()->default_value( 0.5 ),
@@ -327,9 +371,16 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
-    if ( vm["phys.lattice"].as<lattice_t>() == LATTICE_2DSQUARE &&
+    if ( vm["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d &&
          !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() ) ) {
       throw logic_error( "the number of lattice sites must be a perfect square" );
+    }
+
+    if ( vm["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d2layer &&
+         !is_perfect_square( vm["phys.num-lattice-sites"].as<unsigned int>() / 2 ) ) {
+      throw logic_error(
+              "the number of lattice sites must be two times a perfect square"
+            );
     }
 
     // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
@@ -358,6 +409,19 @@ Options read_options( int argc, char* argv[], bool is_master )
       );
     }
 
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
+         vm["calc.optimizers"].as<unsigned int>() == 0 ) {
+      throw logic_error( "you need to optimize at least one variational parameter" );
+    }
+
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
+         vm["calc.optimizers"].as<unsigned int>() > 255 ) {
+      throw logic_error(
+        "hVMC only has 7+Jastrow variational parameters "
+        "-> calc.optimizers can not be larger than 255"
+      );
+    }
+
     if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_SIMULATION &&
          vm.count( "calc.observable" ) == 0 ) {
       throw logic_error( "you need to measure at least one observable" );
@@ -383,14 +447,16 @@ Options read_options( int argc, char* argv[], bool is_master )
 }
 
 
-istream& operator>>( std::istream& in, lattice_t& lat )
+istream& operator>>( std::istream& in, Lattice::type& lat )
 {
   string token;
   in >> token;
   if ( token == "1dchain" ) {
-    lat = LATTICE_1DCHAIN;
+    lat = Lattice::type::chain1d;
   } else if ( token == "2dsquare" ) {
-    lat = LATTICE_2DSQUARE;
+    lat = Lattice::type::square2d;
+  } else if ( token == "2dsquare2layer" ) {
+    lat = Lattice::type::square2d2layer;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }
@@ -408,6 +474,20 @@ istream& operator>>( std::istream& in, optmode_t& m )
     m = OPTION_MODE_SIMULATION;
   } else if ( token == "ana" || token == "analysis" ) {
     m = OPTION_MODE_ANALYSIS;
+  } else {
+    throw po::validation_error( po::validation_error::invalid_option_value );
+  }
+  return in;
+}
+
+istream& operator>>( std::istream& in, optpairsym_t& s )
+{
+  string token;
+  in >> token;
+  if ( token == "s" || token == "swave" ) {
+    s = OPTION_PAIRING_SYMMETRY_SWAVE;
+  } else if ( token == "d" || token == "dwave" ) {
+    s = OPTION_PAIRING_SYMMETRY_DWAVE;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }
@@ -442,6 +522,8 @@ istream& operator>>( std::istream& in, observables_t& obs )
     obs = OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY;
   } else if ( token == "nncorr" ) {
     obs = OBSERVABLE_DENSITY_DENSITY_CORRELATION;
+  } else if ( token == "sscorr" ) {
+    obs = OBSERVABLE_SPIN_SPIN_CORRELATION;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

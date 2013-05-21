@@ -53,10 +53,10 @@ ifeq ($(BUILD), DEBUG)
   CXXFLAGS += -g
   DEFINES  += -DVERBOSE=1
 else ifeq ($(BUILD), PROFILE)
-  CXXFLAGS += -march=native -O2 -g
+  CXXFLAGS += -march=native -O3 -g
   DEFINES  += -DNDEBUG
 else
-  CXXFLAGS += -march=native -O2 -flto
+  CXXFLAGS += -march=native -O3 -flto
   LDFLAGS  += -fuse-linker-plugin -s
   DEFINES  += -DNDEBUG
 endif

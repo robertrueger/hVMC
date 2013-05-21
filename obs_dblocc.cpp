@@ -27,9 +27,6 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableDoubleOccupancy::ObservableDoubleOccupancy()
-  : Observable( OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY ) { }
-
 
 void ObservableDoubleOccupancy::measure(
   const HubbardModelVMC& model, ObservableCache& cache )

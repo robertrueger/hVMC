@@ -32,6 +32,8 @@ class ObservableDeltaK : public Observable
 {
   private:
 
+    unsigned int optimizers;
+
     Eigen::VectorXd thisbin_Dk_sum;
     unsigned int thisbin_count;
 
@@ -40,7 +42,7 @@ class ObservableDeltaK : public Observable
 
   public:
 
-    ObservableDeltaK( unsigned int num_vpar );
+    ObservableDeltaK( unsigned int num_vpar, unsigned int optimizers_init );
 
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 

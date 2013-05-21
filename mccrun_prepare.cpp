@@ -25,6 +25,7 @@
 
 #include "lattice_1dchain.hpp"
 #include "lattice_2dsquare.hpp"
+#include "lattice_2dsqr2layer.hpp"
 #include "varparam.hpp"
 #include "obs_all.hpp"
 
@@ -40,24 +41,30 @@ HubbardModelVMC prepare_model(
   mt19937 rng = prepare_rng( opts, mpicomm );
   shared_ptr<Lattice> lat = prepare_lattice( opts );
 
+  // slice vpar vector into the different components
+  const vector<double> t_vpar
+    = { opts["phys.nn-hopping"].as<double>(), vpar[0], vpar[1] };
+  const vector<double> Delta_vpar( vpar.data() + 2, vpar.data() + 6 );
+  const double mu_vpar = vpar[6];
+
+  const DeterminantalWavefunction detwf
+    = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
+                   t_vpar,
+                   Delta_vpar, opts["phys.pairing-symmetry"].as<optpairsym_t>(),
+                   mu_vpar );
+
+  if ( mpicomm.rank() == 0 && detwf.is_openshell() ) {
+    cout << endl;
+    cout << "   WARNING: Open shell detected!" << endl;
+    cout << endl;
+  }
+
+  Jastrow v( lat, vpar.tail( vpar.size() - 7 ) );
+
   vector<double> t(3);
   t[0] = opts["phys.nn-hopping"].as<double>();
   t[1] = opts["phys.2nd-nn-hopping"].as<double>();
   t[2] = opts["phys.3rd-nn-hopping"].as<double>();
-
-  SingleParticleOrbitals detwf = prepare_detwf( lat, opts );
-  if ( detwf.E( detwf.M.cols() ) - detwf.E( detwf.M.cols() - 1 ) < 0.00001f ) {
-    if ( mpicomm.rank() == 0 ) {
-      cout << endl;
-      cout << "   WARNING: Open shell detected!" << endl;
-      cout << "     E_fermi = " << detwf.E( detwf.M.cols() - 1 ) << endl;
-      cout << "     Orbital below = " << detwf.E( detwf.M.cols() - 2 ) << endl;
-      cout << "     Orbital above = " << detwf.E( detwf.M.cols() ) << endl;
-      cout << endl;
-    }
-  }
-
-  Jastrow v( lat, vpar );
 
   return HubbardModelVMC(
     rng,
@@ -93,28 +100,26 @@ mt19937 prepare_rng(
 
 shared_ptr<Lattice> prepare_lattice( const Options& opts )
 {
-  if ( opts["phys.lattice"].as<lattice_t>() == LATTICE_1DCHAIN ) {
+  if ( opts["phys.lattice"].as<Lattice::type>() == Lattice::type::chain1d ) {
     return make_shared<Lattice1DChain>(
              opts["phys.num-lattice-sites"].as<unsigned int>()
            );
-  } else {
+
+  } else if ( opts["phys.lattice"].as<Lattice::type>()
+                == Lattice::type::square2d )  {
     return make_shared<Lattice2DSquare>(
              opts["phys.num-lattice-sites"].as<unsigned int>()
            );
+
+  } else {
+    assert(
+      opts["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d2layer
+    );
+
+    return make_shared<Lattice2DSquare2Layer>(
+             opts["phys.num-lattice-sites"].as<unsigned int>()
+           );
   }
-}
-
-
-SingleParticleOrbitals prepare_detwf(
-  const shared_ptr<Lattice>& lat, const Options& opts )
-{
-  vector<double> t(3);
-  t[0] = opts["phys.nn-hopping"].as<double>();
-  t[1] = opts["phys.2nd-nn-hopping"].as<double>();
-  t[2] = opts["phys.3rd-nn-hopping"].as<double>();
-
-  return
-    wf_tight_binding( t, opts["phys.num-electrons"].as<unsigned int>(), lat );
 }
 
 
@@ -130,7 +135,10 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
   if ( obs.count( OBSERVABLE_DELTAK ) ) {
     obscalc.push_back(
       unique_ptr<Observable>(
-        new ObservableDeltaK( get_num_vpars( opts ) )
+        new ObservableDeltaK(
+          get_num_vpars( opts ),
+          opts["calc.optimizers"].as<unsigned int>()
+        )
       )
     );
   }
@@ -138,7 +146,10 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
   if ( obs.count( OBSERVABLE_DELTAK_DELTAKPRIME ) ) {
     obscalc.push_back(
       unique_ptr<Observable>(
-        new ObservableDeltaKDeltaKPrime( get_num_vpars( opts ) )
+        new ObservableDeltaKDeltaKPrime(
+          get_num_vpars( opts ),
+          opts["calc.optimizers"].as<unsigned int>()
+        )
       )
     );
   }
@@ -146,7 +157,10 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
   if ( obs.count( OBSERVABLE_DELTAK_E ) ) {
     obscalc.push_back(
       unique_ptr<Observable>(
-        new ObservableDeltaKEnergy( get_num_vpars( opts ) )
+        new ObservableDeltaKEnergy(
+          get_num_vpars( opts ),
+          opts["calc.optimizers"].as<unsigned int>()
+        )
       )
     );
   }
@@ -161,6 +175,16 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
     obscalc.push_back(
       unique_ptr<Observable>(
         new ObservableDensityDensityCorrelation(
+          opts["phys.num-lattice-sites"].as<unsigned int>()
+        )
+      )
+    );
+  }
+
+  if ( obs.count( OBSERVABLE_SPIN_SPIN_CORRELATION ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>(
+        new ObservableSpinSpinCorrelation(
           opts["phys.num-lattice-sites"].as<unsigned int>()
         )
       )

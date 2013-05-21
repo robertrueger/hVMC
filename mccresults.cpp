@@ -22,45 +22,78 @@
 #include <iostream>
 #include <fstream>
 
+#include <boost/archive/text_oarchive.hpp>
+
+#include "serialization_eigen.hpp"
+
 using namespace std;
 namespace fs = boost::filesystem;
+namespace ar  = boost::archive;
 
 
 void MCCResults::write_to_files( const fs::path& dir ) const
 {
-  {
-    ofstream success_file( ( dir / "sim_success.txt" ).string() );
-    success_file << success << endl;
-  }
-
   if ( E ) {
-    ofstream E_file( ( dir / "sim_res_E.txt" ).string() );
-    E_file << E->mean << " " << E->sigma << endl;
+    ofstream E_txtfile( ( dir / "sim_res_E.txt" ).string() );
+    E_txtfile << E->mean << " " << E->sigma << endl;
+
+    ofstream E_datfile( ( dir / "sim_res_E.dat" ).string() );
+    ar::text_oarchive E_archive( E_datfile );
+    E_archive << E.get();
   }
 
   if ( Deltak ) {
-    ofstream Dk_file( ( dir / "sim_res_Dk.txt" ).string() );
-    Dk_file << Deltak->transpose() << endl;
+    ofstream Dk_txtfile( ( dir / "sim_res_Dk.txt" ).string() );
+    Dk_txtfile << Deltak->transpose() << endl;
+
+    ofstream Dk_datfile( ( dir / "sim_res_Dk.dat" ).string() );
+    ar::text_oarchive Dk_archive( Dk_datfile );
+    Dk_archive << Deltak.get();
   }
 
   if ( Deltak_Deltakprime ) {
     ofstream DkDkp_file( ( dir / "sim_res_DkDkp.txt" ).string() );
     DkDkp_file << Deltak_Deltakprime.get() << endl;
+
+    ofstream DkDkp_datfile( ( dir / "sim_res_DkDkp.dat" ).string() );
+    ar::text_oarchive DkDkp_archive( DkDkp_datfile );
+    DkDkp_archive << Deltak_Deltakprime.get();
   }
 
   if ( Deltak_E ) {
-    ofstream DkE_file( ( dir / "sim_res_DkE.txt" ).string() );
-    DkE_file << Deltak_E->transpose() << endl;
+    ofstream DkE_txtfile( ( dir / "sim_res_DkE.txt" ).string() );
+    DkE_txtfile << Deltak_E->transpose() << endl;
+
+    ofstream DkE_datfile( ( dir / "sim_res_DkE.dat" ).string() );
+    ar::text_oarchive DkE_archive( DkE_datfile );
+    DkE_archive << Deltak_E.get();
   }
 
   if ( dblocc ) {
-    ofstream dblocc_file( ( dir / "sim_res_dblocc.txt" ).string() );
-    dblocc_file << dblocc->mean << " " << dblocc->sigma << endl;
+    ofstream dblocc_txtfile( ( dir / "sim_res_dblocc.txt" ).string() );
+    dblocc_txtfile << dblocc->mean << " " << dblocc->sigma << endl;
+
+    ofstream dblocc_datfile( ( dir / "sim_res_dblocc.dat" ).string() );
+    ar::text_oarchive dblocc_archive( dblocc_datfile );
+    dblocc_archive << dblocc.get();
   }
 
   if ( nncorr ) {
-    ofstream nncorr_file( ( dir / "sim_res_nncorr.txt" ).string() );
-    nncorr_file << nncorr.get() << endl;
+    ofstream nncorr_txtfile( ( dir / "sim_res_nncorr.txt" ).string() );
+    nncorr_txtfile << nncorr.get() << endl;
+
+    ofstream nncorr_datfile( ( dir / "sim_res_nncorr.dat" ).string() );
+    ar::text_oarchive nncorr_archive( nncorr_datfile );
+    nncorr_archive << nncorr.get();
+  }
+
+  if ( sscorr ) {
+    ofstream sscorr_txtfile( ( dir / "sim_res_sscorr.txt" ).string() );
+    sscorr_txtfile << sscorr.get() << endl;
+
+    ofstream sscorr_datfile( ( dir / "sim_res_sscorr.dat" ).string() );
+    ar::text_oarchive sscorr_archive( sscorr_datfile );
+    sscorr_archive << sscorr.get();
   }
 }
 
@@ -68,12 +101,6 @@ void MCCResults::write_to_files( const fs::path& dir ) const
 std::ostream& operator<<( std::ostream& out, const MCCResults& res )
 {
   out << endl;
-
-  if ( res.success ) {
-    out << "Monte Carlo cycle successful!" << endl;
-  } else {
-    out << "Monte Carlo cycle NOT successful!" << endl;
-  }
 
   if ( res.E ) {
     out << endl
@@ -109,6 +136,12 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
     out << endl
         << "nncorr = " << endl
         << res.nncorr.get() << endl;
+  }
+
+  if ( res.sscorr ) {
+    out << endl
+        << "sscorr = " << endl
+        << res.sscorr.get() << endl;
   }
 
   out << endl;

@@ -19,65 +19,213 @@
 
 #include "detwf.hpp"
 
-#include <iostream>
-
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Eigenvalues>
 
 using namespace std;
 
 
-SingleParticleOrbitals wf_tight_binding(
-  const vector<double>& t,
-  unsigned int N, const shared_ptr<Lattice>& lat )
+SingleParticleHamiltonian::SingleParticleHamiltonian( unsigned int L_init )
+  : L( L_init ), int_H( Eigen::MatrixXfp::Zero( 2 * L, 2 * L ) ) { }
+
+
+void SingleParticleHamiltonian::add_anyterm(  const Eigen::MatrixXfp& term )
 {
-  // make sure we pass the right number of variational parameters
-  assert( t.size() == 3  );
+  int_H += term;
+}
 
-  Eigen::MatrixXfp H_tb_nospin = Eigen::MatrixXfp::Zero( lat->L, lat->L );
 
-  vector<unsigned int> l_Xnn;
-  for ( unsigned int l = 0; l < lat->L; ++l ) {
-    for ( unsigned int X = 1; X <= 3; ++X ) {
-      lat->get_Xnn( l, X, &l_Xnn );
-      for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-        H_tb_nospin( l, *it ) += -1.f * t[X - 1];
+void SingleParticleHamiltonian::add_vparterm(
+  const Eigen::MatrixXfp& mask, fptype vpar )
+{
+  int_H += vpar * mask;
+  int_V.push_back( mask );
+}
+
+
+const Eigen::MatrixXfp& SingleParticleHamiltonian::H() const
+{
+  return int_H;
+}
+
+
+const vector<Eigen::MatrixXfp>& SingleParticleHamiltonian::V() const
+{
+  return int_V;
+}
+
+
+DeterminantalWavefunction::DeterminantalWavefunction(
+  const SingleParticleHamiltonian& spHam_init, unsigned int Np_init )
+  : int_spHam( spHam_init ), Np( Np_init ),
+    int_U( 2 * int_spHam.L, 2 * int_spHam.L ),
+    int_epsilon( 2 * int_spHam.L )
+{
+  // diagonalize single particle Hamiltonian
+  {
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(
+      int_spHam.H().cast<double>()
+    );
+    assert( solver.info() == Eigen::Success );
+    int_U = solver.eigenvectors().cast<fptype>();
+    int_epsilon = solver.eigenvalues().cast<fptype>();
+  }
+
+  // define perturbation theory mask
+  Eigen::ArrayXfp ptmask
+    = Eigen::ArrayXfp::Zero( 2 * int_spHam.L,  2 * int_spHam.L );
+  for ( Lattice::index eta = 0; eta < 2 * int_spHam.L; ++eta ) {
+    for ( Lattice::index nu = 0; nu < 2 * int_spHam.L; ++nu ) {
+      if ( eta >= Np && nu < Np ) {
+        ptmask( eta, nu ) = 1.f / ( int_epsilon( nu ) - int_epsilon( eta ) );
+      } else {
+        ptmask( eta, nu ) = 0.f;
       }
     }
   }
 
-#if VERBOSE >= 2
-  cout << "wf_tight_binding() : spinless Hamiltonian in single particle basis ="
-       << endl << H_tb_nospin << endl;
-#endif
-
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> eigensolver( H_tb_nospin );
-  assert( eigensolver.info() == Eigen::Success );
-
-  assert( N % 2 == 0 );
-
-/*
-  Eigen::MatrixXfp M = Eigen::MatrixXfp::Zero( 2 * lat->L, N );
-  for ( unsigned int k = 0; k < N / 2; ++k ) {
-    M.col( 2 * k ).head( lat->L )     = eigensolver.eigenvectors().col( k );
-    M.col( 2 * k + 1 ).tail( lat->L ) = eigensolver.eigenvectors().col( k );
+  // calculate the A matrices of the variational parameters
+  for ( auto it = int_spHam.V().begin(); it != int_spHam.V().end(); ++it ) {
+    int_A.push_back(
+      int_U *
+      ( ( int_U.adjoint() * *it * int_U  ).array() * ptmask ).matrix()
+      * int_U.adjoint()
+    );
   }
-  Eigen::VectorXfp E = Eigen::VectorXfp::Zero( 2 * lat->L );
-  for ( unsigned int k = 0; k < lat->L; ++k ) {
-    E( 2 * k )     = eigensolver.eigenvalues()( k );
-    E( 2 * k + 1 ) = eigensolver.eigenvalues()( k );
+}
+
+
+bool DeterminantalWavefunction::is_openshell() const
+{
+  return ( int_epsilon( Np ) - int_epsilon( Np - 1 ) < 0.0001 );
+}
+
+
+const SingleParticleHamiltonian& DeterminantalWavefunction::spHam() const
+{
+  return int_spHam;
+}
+
+
+const Eigen::MatrixXfp& DeterminantalWavefunction::U() const
+{
+  return int_U;
+}
+
+
+Eigen::Block<const Eigen::MatrixXfp> DeterminantalWavefunction::M() const
+{
+  // TODO: return ColsBlockXpr ??? (Robert Rueger, 2013-04-25 14:20)
+  return int_U.topLeftCorner( int_U.rows(), Np );
+}
+
+
+const Eigen::VectorXfp& DeterminantalWavefunction::epsilon() const
+{
+  return int_epsilon;
+}
+
+
+const vector<Eigen::MatrixXfp>& DeterminantalWavefunction::A() const
+{
+  return int_A;
+}
+
+
+
+DeterminantalWavefunction build_detwf(
+  const std::shared_ptr<Lattice>& lat, unsigned int Ne,
+  const std::vector<double>& t,
+  const std::vector<double>& Delta, optpairsym_t pairsym,
+  double mu )
+{
+  // check if we have the correct number of variational parameters
+  assert( t.size() == 3 );
+  assert( Delta.size() == 4 );
+
+
+  SingleParticleHamiltonian spHam( lat->L );
+  Eigen::MatrixXfp spHam_mask = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
+
+  // nearest neighbour hopping
+  // (NOT a variational parameters, as it determines the energy scale!)
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+    vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, 1 );
+    for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+      spHam_mask( l, *it ) =
+        ( lat->get_spindex_type( l ) == Lattice::spindex_type::up ) ? -1.f : 1.f;
+    }
   }
-*/
+  spHam.add_anyterm( t[0] * spHam_mask );
+  spHam_mask.setZero();
 
-  const Eigen::MatrixXfp& M
-    = eigensolver.eigenvectors().topLeftCorner( lat->L, N / 2 );
+  // 2nd and 3rd nearest neighbor hopping
+  for ( unsigned int X = 2; X <= 3; ++X ) {
+    for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+      vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
+      for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+        spHam_mask( l, *it ) =
+          ( lat->get_spindex_type( l ) == Lattice::spindex_type::up ) ? -1.f : 1.f;
+      }
+    }
+    spHam.add_vparterm( spHam_mask, t[X - 1] );
+    spHam_mask.setZero();
+  }
 
-#if VERBOSE >= 2
-  cout << "wf_tight_binding() : M = " << endl << M << endl
-       << "wf_tight_binding() : slater determinant ground state energy = "
-       << 2.f * eigensolver.eigenvalues().head( N / 2 ).sum()  << endl;
-#endif
+  // onsite BCS pairing
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+    spHam_mask( l, lat->get_linked_spindex( l ) ) = +1.f;
+  }
+  spHam.add_vparterm( spHam_mask, Delta[0] );
+  spHam_mask.setZero();
 
-  //return SingleParticleOrbitals( M, E, false );
-  return SingleParticleOrbitals( M, eigensolver.eigenvalues(), true );
+  // 1st, 2nd and 3rd nearest neighbor BCS pairing
+  for ( unsigned int X = 1; X <= 3; ++X ) {
+    for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+      vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
+      for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+        spHam_mask( l, lat->get_linked_spindex( *it ) )
+          = +1.f * lat->pairsym_modifier( pairsym, l, *it );
+      }
+    }
+    spHam.add_vparterm( spHam_mask, Delta[X] );
+    spHam_mask.setZero();
+  }
+
+  // chemical potential
+  spHam_mask.diagonal().head( lat->L ).array() -= 1.f;
+  spHam_mask.diagonal().tail( lat->L ).array() += 1.f;
+  spHam.add_vparterm( spHam_mask, mu );
+  spHam_mask.setZero();
+
+
+  // determine how many particles we have after the p.-h. transformation
+  assert( Ne % 2 == 0 );
+  const unsigned int Np = Ne / 2 + ( lat->L - Ne / 2 );
+
+  return DeterminantalWavefunction( spHam, Np );
+}
+
+
+
+double calc_tbdetwf_chempot(
+  const std::shared_ptr<Lattice>& lat, unsigned int Ne,
+  const std::vector<double>& t )
+{
+  Eigen::MatrixXfp H_tb_nopht = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
+
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+    for ( unsigned int X = 1; X <= 3; ++X ) {
+      vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
+      for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
+        H_tb_nopht( l, *it ) -= t[X - 1];
+      }
+    }
+  }
+
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXfp> H_tb_nopht_solver( H_tb_nopht );
+  assert( H_tb_nopht_solver.info() == Eigen::Success );
+
+  return 0.5 * ( H_tb_nopht_solver.eigenvalues()( Ne )
+                 + H_tb_nopht_solver.eigenvalues()( Ne - 1 ) );
 }

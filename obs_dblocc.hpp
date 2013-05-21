@@ -34,8 +34,6 @@ class ObservableDoubleOccupancy : public Observable
 
   public:
 
-    ObservableDoubleOccupancy();
-
     void measure( const HubbardModelVMC& model, ObservableCache& cache );
 
     void completebin();

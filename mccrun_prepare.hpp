@@ -47,10 +47,6 @@ std::mt19937 prepare_rng(
 
 std::shared_ptr<Lattice> prepare_lattice( const Options& opts );
 
-SingleParticleOrbitals prepare_detwf(
-  const std::shared_ptr<Lattice>& lat, const Options& opts
-);
-
 std::vector< std::unique_ptr<Observable> > prepare_obscalcs(
   const std::set<observables_t>& obs, const Options& opts
 );

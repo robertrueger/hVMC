@@ -21,20 +21,70 @@
 using namespace std;
 
 
-unsigned int Lattice::get_spinup_site( unsigned int l ) const
+Lattice::index Lattice::get_index_from_spindex( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
-  return l >= L ? l - L : l;
+
+  return l % L;
+
+  // this is a branchless version of:
+  // if ( get_spindex_type( l ) == Lattice::spindex_type::down ) {
+  //   return l - L;
+  // } else {
+  //   return l;
+  // }
 }
 
 
-unsigned int Lattice::get_spinlinked_site( unsigned int l ) const
+Lattice::spindex Lattice::get_linked_spindex( Lattice::spindex l ) const
+{
+  assert( l < 2 * L );
+
+  return l + ( 1 - static_cast<int>( 2 * ( l / L ) ) ) * L;
+
+  // this is a branchless version of:
+  // if ( get_spindex_type( l ) == Lattice::spindex_type::up ) {
+  //   return l + L;
+  // } else {
+  //   return l - L;
+  // }
+}
+
+
+Lattice::spindex_type Lattice::get_spindex_type( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
 
   if ( l < L ) {
-    return l + L;
+    return Lattice::spindex_type::up;
   } else {
-    return l - L;
+    return Lattice::spindex_type::down;
   }
+}
+
+
+vector<Lattice::spindex> Lattice::get_Xnn( Lattice::spindex l, unsigned int X ) const
+{
+  vector<Lattice::spindex> Xnn;
+  get_Xnn( l, X, &Xnn );
+  return Xnn;
+}
+
+
+Eigen::VectorXi Lattice::get_random_site_occ(
+  unsigned int Npu, unsigned int Npd, mt19937& rng ) const
+{
+  // this is the default distribution if the lattice has no special needs:
+  // it will just randomly distribute Npu/Npd particles per spin direction
+
+  Eigen::VectorXi site_occ = Eigen::VectorXi::Zero( 2 * L );
+
+  while ( site_occ.head( L ).sum() < static_cast<int>( Npu ) ) {
+    site_occ[ uniform_int_distribution<Lattice::index>( 0, L - 1 )( rng ) ] = 1;
+  }
+  while ( site_occ.tail( L ).sum() < static_cast<int>( Npd ) ) {
+    site_occ[ uniform_int_distribution<Lattice::index>( L, 2 * L - 1 )( rng ) ] = 1;
+  }
+
+  return site_occ;
 }

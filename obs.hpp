@@ -23,6 +23,7 @@
 #include <boost/mpi/communicator.hpp>
 #include <boost/optional.hpp>
 
+#define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
 #include "hmodvmc.hpp"
@@ -35,7 +36,8 @@ enum observables_t {
   OBSERVABLE_DELTAK_DELTAKPRIME,
   OBSERVABLE_DELTAK_E,
   OBSERVABLE_DOUBLE_OCCUPANCY_DENSITY,
-  OBSERVABLE_DENSITY_DENSITY_CORRELATION
+  OBSERVABLE_DENSITY_DENSITY_CORRELATION,
+  OBSERVABLE_SPIN_SPIN_CORRELATION
 };
 
 
@@ -45,12 +47,14 @@ struct ObservableCache
   boost::optional<Eigen::VectorXd> DeltaK;
   boost::optional<double> dblocc;
   boost::optional< Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> > n;
+  boost::optional< Eigen::VectorXi > s;
 
   void clear() {
     E = boost::none;
     DeltaK = boost::none;
     dblocc = boost::none;
     n = boost::none;
+    s = boost::none;
   }
 };
 
@@ -59,10 +63,6 @@ class Observable
 {
   public:
 
-    const observables_t type;
-
-    Observable( observables_t type_init )
-      : type( type_init ) { }
     virtual ~Observable() { };
 
     virtual void measure(

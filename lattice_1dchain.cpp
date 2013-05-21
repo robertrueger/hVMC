@@ -30,13 +30,12 @@ using namespace std;
 
 
 Lattice1DChain::Lattice1DChain( unsigned int L_init )
-  : Lattice( LATTICE_1DCHAIN, L_init ) { }
+  : Lattice( L_init ) { }
 
 
 
 void Lattice1DChain::get_Xnn(
-  unsigned int l, unsigned int X,
-  vector<unsigned int>* outbuf ) const
+  Lattice::spindex l, unsigned int X, std::vector<Lattice::spindex>* outbuf ) const
 {
   assert( l < 2 * L );
   assert( X == 1 || X == 2 || X == 3 );
@@ -60,56 +59,57 @@ void Lattice1DChain::get_Xnn(
 
 
 
-unsigned int Lattice1DChain::reduce_idxrel( unsigned int i, unsigned int j ) const
+Lattice::irridxrel Lattice1DChain::reduce_idxrel(
+  Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( i < 2 * L );
   assert( j < 2 * L );
-  assert( ( i < L && j < L ) || ( i >= L && j >= L ) );
+  assert( get_spindex_type( i ) == get_spindex_type( j ) );
 
   const unsigned int d = j > i ? j - i : i - j;
-  const unsigned int result = min( d, L - d );
+  const Lattice::irridxrel result = min( d, L - d );
 
 #if VERBOSE >= 2
   cout << "Lattice1DChain::reduce_idxrel() : reduction "
        << "(" << i << "," << j << ") -> " << result << endl;
 #endif
 
-  assert( irreducible_idxrel_list().count( result ) == 1 );
+  assert( get_all_irridxrels().count( result ) == 1 );
 
   return result;
 }
 
 
 
-set<unsigned int> Lattice1DChain::irreducible_idxrel_list() const
+set<Lattice::irridxrel> Lattice1DChain::get_all_irridxrels() const
 {
-  set<unsigned int> irr_idxrels;
+  set<Lattice::irridxrel> allrels;
   for ( unsigned int d = 0; d <= L - d; ++d ) {
     assert( d < L );
-    irr_idxrels.insert( d );
+    allrels.insert( d );
   }
 
 #if VERBOSE >= 2
   cout << "Lattice1DChain::irreducible_idxrel_list() : "
        << "list of irreducible index relations =" << endl;
-  for ( auto it = irr_idxrels.begin(); it != irr_idxrels.end(); ++it ) {
+  for ( auto it = allrels.begin(); it != allrels.end(); ++it ) {
     cout << *it << endl;
   }
 #endif
 
-  return irr_idxrels;
+  return allrels;
 }
 
 
 
-unsigned int Lattice1DChain::irreducible_idxrel_maxdist() const
+Lattice::irridxrel Lattice1DChain::get_maxdist_irridxrel() const
 {
   return L / 2;
 }
 
 
 
-Eigen::VectorXd Lattice1DChain::r( unsigned int i, unsigned int j ) const
+Eigen::VectorXd Lattice1DChain::r( Lattice::index i, Lattice::index j ) const
 {
   assert( i < L );
   assert( j < L );
@@ -133,4 +133,13 @@ vector<Eigen::VectorXd> Lattice1DChain::get_qvectors() const
   }
 
   return allq;
+}
+
+
+
+double Lattice1DChain::pairsym_modifier(
+  optpairsym_t, Lattice::spindex, Lattice::spindex ) const
+{
+  // s- or d-wave symmetry doesn't make a difference in 1D ...
+  return 1.0;
 }

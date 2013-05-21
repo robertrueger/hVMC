@@ -17,7 +17,7 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lattice_2dsquare.hpp"
+#include "lattice_2dsqr2layer.hpp"
 
 #include <algorithm>
 
@@ -25,35 +25,43 @@
 # include <iostream>
 #endif
 
-# include "utils.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
 
 
-Lattice2DSquare::Lattice2DSquare( unsigned int L_init )
-  : Lattice( L_init ), S( uintsqrt( L_init ) )
+Lattice2DSquare2Layer::Lattice2DSquare2Layer( unsigned int L_init )
+  : Lattice( L_init ), L_layer( L_init / 2 ), S( uintsqrt( L_init / 2 ) )
 {
-  assert( is_perfect_square( L_init ) );
+  assert( L_init % 2 == 0 );
+  assert( is_perfect_square( L_init / 2 ) );
 }
 
 
 
-int Lattice2DSquare::x( Lattice::spindex l ) const
+int Lattice2DSquare2Layer::x( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
-  // we don't have to convert the spindex to an index first, because
+  // we don't have to convert the spindex to an index first
+  // or care about which plane we are in, because
   // it does not make any difference for the position in x
   return l % S;
 }
 
-int Lattice2DSquare::y( Lattice::spindex l ) const
+int Lattice2DSquare2Layer::y( Lattice::spindex l ) const
 {
   assert( l < 2 * L );
-  return get_index_from_spindex( l ) / S;
+  return ( l % L_layer ) / S;
 }
 
-int Lattice2DSquare::d( int p1, int p2 ) const
+int Lattice2DSquare2Layer::z( Lattice::spindex l ) const
+{
+  assert( l < 2 * L );
+  return ( l % L ) / L_layer;
+}
+
+int Lattice2DSquare2Layer::d( int p1, int p2 ) const
 {
   assert( p1 >= 0 && p2 >= 0 );
 
@@ -72,7 +80,7 @@ int Lattice2DSquare::d( int p1, int p2 ) const
 
 
 
-void Lattice2DSquare::get_Xnn(
+void Lattice2DSquare2Layer::get_Xnn(
   Lattice::spindex l, unsigned int X, std::vector<Lattice::spindex>* outbuf ) const
 {
   assert( l < 2 * L );
@@ -84,11 +92,12 @@ void Lattice2DSquare::get_Xnn(
     get_2nn( l, outbuf );
   } else { /* X == 3 */
     assert( X == 3 );
-    get_3nn( l, outbuf );
+    // corresponding sites in the other plane are treated as 3rd n.n.
+    get_opn( l, outbuf );
   }
 }
 
-void Lattice2DSquare::get_1nn(
+void Lattice2DSquare2Layer::get_1nn(
   Lattice::spindex l, vector<Lattice::spindex>* outbuf ) const
 {
   outbuf->resize( 4 );
@@ -112,20 +121,20 @@ void Lattice2DSquare::get_1nn(
 
   // add bottom neighbor
   if ( yl == 0 ) {
-    ( *outbuf )[2] = l + L - S;
+    ( *outbuf )[2] = l + L_layer - S;
   } else {
     ( *outbuf )[2] = l - S;
   }
 
   // add top neighbor
   if ( yl == S - 1 ) {
-    ( *outbuf )[3] = l + S - L;
+    ( *outbuf )[3] = l + S - L_layer;
   } else {
     ( *outbuf )[3] = l + S;
   }
 }
 
-void Lattice2DSquare::get_2nn(
+void Lattice2DSquare2Layer::get_2nn(
   Lattice::spindex l, vector<Lattice::spindex>* outbuf ) const
 {
   outbuf->resize( 4 );
@@ -138,14 +147,14 @@ void Lattice2DSquare::get_2nn(
     // in left column
     if ( yl == 0 ) {
       // bottom left corner
-      ( *outbuf )[0] = l + L - 1;
+      ( *outbuf )[0] = l + L_layer - 1;
     } else {
       ( *outbuf )[0] = l - 1;
     }
   } else if ( yl == 0 ) {
     // in bottom row
     // (but NOT in bottom left corner!)
-    ( *outbuf )[0] = l + L - S - 1;
+    ( *outbuf )[0] = l + L_layer - S - 1;
   } else {
     // in the center
     ( *outbuf )[0] = l - S - 1;
@@ -156,14 +165,14 @@ void Lattice2DSquare::get_2nn(
     // in right column
     if ( yl == 0 ) {
       // bottom right corner
-      ( *outbuf )[1] = l + L + 1 - 2 * S;
+      ( *outbuf )[1] = l + L_layer + 1 - 2 * S;
     } else {
       ( *outbuf )[1] = l + 1 - 2 * S;
     }
   } else if ( yl == 0 ) {
     // in bottom row
     // (but NOT in bottom right corner!)
-    ( *outbuf )[1] = l + L + 1 - S;
+    ( *outbuf )[1] = l + L_layer + 1 - S;
   } else {
     // in the center
     ( *outbuf )[1] = l + 1 - S;
@@ -174,14 +183,14 @@ void Lattice2DSquare::get_2nn(
     // in right column
     if ( yl == S - 1 ) {
       // top right corner
-      ( *outbuf )[2] = l + 1 - L;
+      ( *outbuf )[2] = l + 1 - L_layer;
     } else {
       ( *outbuf )[2] = l + 1;
     }
   } else if ( yl == S - 1 ) {
     // in top row
     // (but NOT in top right corner!)
-    ( *outbuf )[2] = l + S + 1 - L;
+    ( *outbuf )[2] = l + S + 1 - L_layer;
   } else {
     // in the center
     ( *outbuf )[2] = l + S + 1;
@@ -192,60 +201,36 @@ void Lattice2DSquare::get_2nn(
     // in left column
     if ( yl == S - 1 ) {
       // top left corner
-      ( *outbuf )[3] = l + 2 * S - 1 - L ;
+      ( *outbuf )[3] = l + 2 * S - 1 - L_layer;
     } else {
       ( *outbuf )[3] = l + 2 * S - 1;
     }
   } else if ( yl == S - 1 ) {
     // in top row
     // (but NOT in top left corner!)
-    ( *outbuf )[3] = l + S - 1 - L;
+    ( *outbuf )[3] = l + S - 1 - L_layer;
   } else {
     // in the center
     ( *outbuf )[3] = l + S - 1;
   }
 }
 
-void Lattice2DSquare::get_3nn(
+void Lattice2DSquare2Layer::get_opn(
   Lattice::spindex l, vector<Lattice::spindex>* outbuf ) const
 {
-  outbuf->resize( 4 );
+  outbuf->resize( 1 );
 
-  const unsigned int xl = x( l );
-  const unsigned int yl = y( l );
-
-  // add left neighbor
-  if ( xl <= 1  ) {
-    ( *outbuf )[0] = l + S - 2;
+  if ( z( l ) == 0 ) {
+    ( *outbuf )[0] = l + L_layer;
   } else {
-    ( *outbuf )[0] = l - 2;
-  }
-
-  // add right neighbor
-  if ( xl >= S - 2 ) {
-    ( *outbuf )[1] = l + 2 - S;
-  } else {
-    ( *outbuf )[1] = l + 2;
-  }
-
-  // add bottom neighbor
-  if ( yl <= 1 ) {
-    ( *outbuf )[2] = l + L - 2 * S;
-  } else {
-    ( *outbuf )[2] = l - 2 * S;
-  }
-
-  // add top neighbor
-  if ( yl >= S - 2 ) {
-    ( *outbuf )[3] = l + 2 * S - L;
-  } else {
-    ( *outbuf )[3] = l + 2 * S;
+    assert( z( l ) == 1 );
+    ( *outbuf )[0] = l - L_layer;
   }
 }
 
 
 
-Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
+Lattice::irridxrel Lattice2DSquare2Layer::reduce_idxrel(
   Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( i < 2 * L );
@@ -261,12 +246,21 @@ Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
     swap( dx, dy );
   }
 
-  return dx + S * dy;
+  // calculate the irreducible index relation if i and j were in the same plane
+  Lattice::irridxrel iir = dx + S * dy;
+
+  // if they are in different planes, we obviously need a different
+  // irreducible index relation as if they were in the same plane
+  if ( z( i ) != z( j ) ) {
+    iir += L_layer;
+  }
+
+  return iir;
 }
 
 
 
-set<Lattice::irridxrel> Lattice2DSquare::get_all_irridxrels() const
+set<Lattice::irridxrel> Lattice2DSquare2Layer::get_all_irridxrels() const
 {
   set<Lattice::irridxrel> allrels;
   for ( Lattice::index i = 0; i < L; ++i ) {
@@ -274,7 +268,7 @@ set<Lattice::irridxrel> Lattice2DSquare::get_all_irridxrels() const
   }
 
 #if VERBOSE >= 1
-  cout << "Lattice2DSquare::irreducible_idxrel_list() : "
+  cout << "Lattice2DSquare2Layer::irreducible_idxrel_list() : "
        << "list of irreducible index relations =" << endl;
   for ( auto it = allrels.begin(); it != allrels.end(); ++it ) {
     cout << *it << endl;
@@ -286,18 +280,18 @@ set<Lattice::irridxrel> Lattice2DSquare::get_all_irridxrels() const
 
 
 
-Lattice::irridxrel Lattice2DSquare::get_maxdist_irridxrel() const
+Lattice::irridxrel Lattice2DSquare2Layer::get_maxdist_irridxrel() const
 {
   if ( S % 2 == 0 ) {
-    return L / 2 + S / 2;
+    return L_layer / 2 + S / 2 /*+ L_layer*/;
   } else {
-    return L / 2;
+    return L_layer / 2 /*+ L_layer*/;
   }
 }
 
 
 
-Eigen::VectorXd Lattice2DSquare::r( Lattice::index i, Lattice::index j ) const
+Eigen::VectorXd Lattice2DSquare2Layer::r( Lattice::index i, Lattice::index j ) const
 {
   assert( i < L );
   assert( j < L );
@@ -310,7 +304,7 @@ Eigen::VectorXd Lattice2DSquare::r( Lattice::index i, Lattice::index j ) const
 
 
 
-vector<Eigen::VectorXd> Lattice2DSquare::get_qvectors() const
+vector<Eigen::VectorXd> Lattice2DSquare2Layer::get_qvectors() const
 {
   vector<Eigen::VectorXd> allq;
   allq.reserve( S * S / 4 );
@@ -329,7 +323,7 @@ vector<Eigen::VectorXd> Lattice2DSquare::get_qvectors() const
 
 
 
-double Lattice2DSquare::pairsym_modifier(
+double Lattice2DSquare2Layer::pairsym_modifier(
   optpairsym_t sym, Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( get_spindex_type( i ) == get_spindex_type( j ) );
@@ -350,16 +344,55 @@ double Lattice2DSquare::pairsym_modifier(
     } else if ( ( dx == 1 || dx == -1 ) && ( dy == 1 || dy == -1 ) ) {
       // second nearest neighbors along diagonal
       return 0.0;
-    } else if ( ( dx == 2 || dx == -2 ) && dy == 0 ) {
-      // third nearest neighbors along x-axis
+    } else if ( dx == 0 && dy == 0 && ( z( i ) != z( j ) ) ) {
+      // different planes
       return 1.0;
-    } else if ( dx == 0 && ( dy == 2 || dy == -2 ) ) {
-      // third nearest neighbors along y-axis
-      return -1.0;
     }
   }
 
   // still here? no meaningful decision yet??? --> this is a bug ...
   assert( false );
   return 0.0; // <-- should never be reached; only to suppress compiler warning
+}
+
+
+
+Eigen::VectorXi Lattice2DSquare2Layer::get_random_site_occ(
+   unsigned int Npu, unsigned int Npd, mt19937& rng ) const
+{
+  // make sure Npu and Npd are even numbers,
+  // so that we can distribute them evenly among the planes
+  assert( Npu % 2 == 0 && Npd % 2 == 0 );
+
+  Eigen::VectorXi site_occ = Eigen::VectorXi::Zero( 2 * L );
+
+  // distribute half of the Npu particles randomly in each plane
+  while ( site_occ.segment( 0, L_layer ).sum()
+            < static_cast<int>( Npu / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( 0, L_layer - 1 )( rng )
+    ] = 1;
+  }
+  while ( site_occ.segment( L_layer, L_layer ).sum()
+            < static_cast<int>( Npu / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( L_layer, L - 1 )( rng )
+    ] = 1;
+  }
+
+  // distribute half of the Npd particles randomly in each plane
+  while ( site_occ.segment( L, L_layer ).sum()
+            < static_cast<int>( Npd / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( L, L + L_layer - 1 )( rng )
+    ] = 1;
+  }
+  while ( site_occ.segment( L + L_layer, L_layer ).sum()
+            < static_cast<int>( Npd / 2 ) ) {
+    site_occ[
+      uniform_int_distribution<Lattice::index>( L + L_layer, 2 * L - 1 )( rng )
+    ] = 1;
+  }
+
+  return site_occ;
 }

@@ -32,7 +32,7 @@
 #include "fpctrl.hpp"
 #include "lattice.hpp"
 #include "jastrow.hpp"
-#include "econf.hpp"
+#include "pconf.hpp"
 #include "wmatrix.hpp"
 #include "tvector.hpp"
 
@@ -50,7 +50,7 @@ class HubbardModelVMC
     const std::shared_ptr<Lattice> lat;
 
     // wavefunction and Jastrow
-    const SingleParticleOrbitals detwf;
+    const DeterminantalWavefunction detwf;
     const Jastrow v;
 
     // Hubbard model parameters
@@ -61,7 +61,7 @@ class HubbardModelVMC
 
     // ----- dependent and internal objects -----
 
-    ElectronConfiguration econf;
+    ParticleConfiguration pconf;
 
     WMatrix W;
     TVector T;
@@ -82,9 +82,9 @@ class HubbardModelVMC
     HubbardModelVMC(
       const std::mt19937& rng_init,
       const std::shared_ptr<Lattice>& lat_init,
-      const SingleParticleOrbitals& detwf_init,
+      const DeterminantalWavefunction& detwf_init,
       const Jastrow& v_init,
-      unsigned int N_init,
+      unsigned int Ne_init,
       unsigned int update_hop_maxdist_init,
       const std::vector<double>& t_init, double U_init,
       double W_deviation_target,
@@ -98,9 +98,10 @@ class HubbardModelVMC
 
     // observable measurements
     double E_l() const;
-    Eigen::VectorXd Delta_k() const;
+    Eigen::VectorXd Delta_k( unsigned int optimizers ) const;
     double dblocc_dens() const;
     Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> n() const;
+    Eigen::VectorXi s() const;
 
     // floating point precision control
     FPDevStat get_W_devstat() const;

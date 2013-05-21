@@ -22,28 +22,41 @@
 nn-hopping = 1.0
 
 # 2nd nearest-neighbor hopping matrix element t'
-2nd-nn-hopping = -0.75
+2nd-nn-hopping = 0.0
 
 # 3rd nearest-neighbor hopping matrix element t''
-3rd-nn-hopping = 0.0
+3rd-nn-hopping = 0.5
 
 # on-site energy U
-onsite-energy = 1.0
+onsite-energy = 8.0
 
-# lattice type
-lattice = 1dchain
+# lattice type (1dchain, 2dsquare, 2dsquare2layer)
+lattice = 2dsquare2layer
 
 # number of lattice sites
-num-lattice-sites = 120
+num-lattice-sites = 72
 
 # total number of electrons
-num-electrons = 120
+num-electrons = 72
+
+# symmetry of the pairing term (swave, dwave)
+pairing-symmetry = dwave
 
 # file to load the variational parameters from
 #vpar-file =
 
+# variational parameter overwrite
+# vpar-ovwrt-t2 =
+# vpar-ovwrt-t3 =
+# vpar-ovwrt-D0 =
+vpar-ovwrt-D1 = 0.5
+# vpar-ovwrt-D2 =
+vpar-ovwrt-D3 = 0.0
+# vpar-ovwrt-mu =
+# vpar-ovwrt-J0 =
 
-[calc] ####################### SIMULATION SETTINGS ##############################
+
+[calc] ###################### CALCULATION SETTINGS #############################
 
 # simulation mode (optimization, simulation, analysis)
 #mode = opt
@@ -60,6 +73,7 @@ observable = E
 #observable = DkE
 observable = dblocc
 #observable = nncorr
+#observable = sscorr
 
 # [ana]: selected analysis modules
 # available modules: ssfac
@@ -67,7 +81,7 @@ observable = dblocc
 analysis = ssfac
 
 # [opt+sim]: maximum hopping distance for electronic configuration updates
-update-hop-maxdistance = 2
+update-hop-maxdistance = 3
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
 num-mcs-equil = 100
@@ -81,8 +95,23 @@ num-binmcs = 100
 # [opt+sim]: random number generator seed
 # rng-seed = 1337133789
 
+# [opt]: which variational parameters to optimize
+# BITFIELD!
+# t' += 1
+# t" += 2
+# Delta_onsite += 4
+# Delta += 8
+# Delta' += 16
+# Delta" += 32
+# mu += 64
+# Jastrow += 128
+optimizers = 232
+
 # [opt]: controls the SR convergence: vpar += dt * dvpar
-sr-dt = 20
+sr-dt = 0.5
+
+# [opt]: factor to boost the convergence speed of the Jastrow
+sr-dt-Jboost = 5
 
 # [opt]: Mann-Kendall threshold for convergence detection
 sr-mkthreshold = 0.5
@@ -91,7 +120,7 @@ sr-mkthreshold = 0.5
 sr-max-refinements = 1
 
 # [opt]: number of SR cycles to average the converged variational parameters
-sr-averaging-cycles = 50
+sr-averaging-cycles = 100
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################

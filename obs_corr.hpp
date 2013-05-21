@@ -17,11 +17,12 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
-#define OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
+#ifndef OBS_CORRELATION_H_INCLUDED
+#define OBS_CORRELATION_H_INCLUDED
 
 #include "obs.hpp"
-#include "obs_corr.hpp"
+
+#include <boost/mpi/communicator.hpp>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -29,23 +30,38 @@
 #include "hmodvmc.hpp"
 #include "mccresults.hpp"
 
-
-class ObservableDensityDensityCorrelation : public ObservableCorrelation
+class ObservableCorrelation : public Observable
 {
   protected:
 
-    Eigen::VectorXd get_current(
-      const HubbardModelVMC& model, ObservableCache& cache
-    ) const;
+    Eigen::MatrixXd thisbin_sum;
+    unsigned int thisbin_count;
 
-    void save_to_results(
+    Eigen::MatrixXd binmean_sum;
+    unsigned int binmean_count;
+
+    // methods that are specialized to the actual correlation being measured
+    virtual Eigen::VectorXd get_current(
+      const HubbardModelVMC& model, ObservableCache& cache
+    ) const = 0;
+    virtual void save_to_results(
       const Eigen::MatrixXd& corrresult, MCCResults& results
-    ) const;
+    ) const = 0;
 
   public:
 
-    ObservableDensityDensityCorrelation( unsigned int L )
-      : ObservableCorrelation( L ) { };
+    ObservableCorrelation( unsigned int L );
+
+    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+
+    void completebin();
+
+    void collect_and_write_results(
+      const boost::mpi::communicator& mpicomm,
+      MCCResults& results
+    ) const;
+
+    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
 };
 
-#endif // OBS_DENSITY_DENSITY_CORRELATION_H_INCLUDED
+#endif // OBS_CORRELATION_H_INCLUDED

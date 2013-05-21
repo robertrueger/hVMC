@@ -24,12 +24,14 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <iterator>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
+//#include <eigen3/Eigen/Eigenvalues>
 
 #include <boost/chrono.hpp>
 #include <boost/mpi/collectives.hpp>
@@ -95,12 +97,23 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   obs.insert( OBSERVABLE_DELTAK_DELTAKPRIME );
   obs.insert( OBSERVABLE_DELTAK_E );
 
-  // create datastructures to store the history of E
-  // and the variational parameters during the optimization
+  // vector to store evolution of the variational parameters during the opt.
   vector<Eigen::VectorXd> vpar_hist;
   vpar_hist.push_back( vpar );
 
-  // open output files for the energy and the variational parameters
+  // clear folder for the machine readable variational parameter snapshots
+  fs::remove_all(       opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
+  fs::create_directory( opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
+  // initial variational parameters -> first snapshot
+  {
+    ofstream vpar_init_file( (
+      opts["calc.working-dir"].as<fs::path>() / "vpar_hist" / "0.dat"
+    ).string() );
+    ar::text_oarchive vpar_init_archive( vpar_init_file );
+    vpar_init_archive << vpar;
+  }
+
+  // open human readable output files for the energy and the variational parameters
   ofstream vpar_hist_file( (
     opts["calc.working-dir"].as<fs::path>() / "opt_vpar_hist.txt"
   ).string(), ios::app );
@@ -108,6 +121,13 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   ofstream E_hist_file( (
     opts["calc.working-dir"].as<fs::path>() / "opt_E_hist.txt"
   ).string(), ios::app );
+
+  // write the initial variational parameters to the evolution file
+  vpar_hist_file << "0 " << vpar.transpose() << endl;
+  // ... and to stdout if verbose
+  if ( opts.count( "verbose" ) ) {
+    cout << "initial vpar = " << endl << vpar.transpose() << endl << endl;
+  }
 
   // optimization settings
   const unsigned int sr_bins_init = opts["calc.num-bins"].as<unsigned int>();
@@ -117,6 +137,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   const unsigned int sr_averaging_cycles
     = opts["calc.sr-averaging-cycles"].as<unsigned int>();
   const double sr_nodrift_threshold = opts["calc.sr-mkthreshold"].as<double>();
+  const double sr_Jboost = opts["calc.sr-dt-Jboost"].as<double>();
 
   // helper variables
   unsigned int sr_bins = sr_bins_init;
@@ -167,9 +188,141 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       res.Deltak_Deltakprime.get() - res.Deltak.get() * res.Deltak->transpose();
     const Eigen::VectorXd f =
       res.Deltak.get() * res.E->mean - res.Deltak_E.get();
-    const Eigen::VectorXd dvpar =
-      ( S + 0.01 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
+
+/*
+    // ---- SORELLA METHOD
+
+    // calculate the required change of the variational parameters
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> S_esolver( S + 0.001 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) );
+    assert( S_esolver.info() == Eigen::Success );
+    Eigen::VectorXd gamma
+      =   ( S_esolver.eigenvectors().adjoint() * f ).array()
+        / S_esolver.eigenvalues().array();
+    for ( unsigned int i = 0; i < vpar.size(); ++i ) {
+      if ( S_esolver.eigenvalues()( i ) / S_esolver.eigenvalues()( vpar.size() - 1 ) < 1.0E-10 ) {
+        gamma( i ) = 0;
+      }
+    }
+    Eigen::VectorXd dvpar = S_esolver.eigenvectors() * gamma;
+*/
+
+
+    // ---- TOCCHIO METHOD
+
+    Eigen::VectorXd dvpar =
+      ( S + 0.0001 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
       .fullPivLu().solve( f );
+
+/*
+    // ---- ATTACCALITE METHOD
+
+    // calculate eigenvalues of S
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> S_esolver( S );
+    assert( S_esolver.info() == Eigen::Success );
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : eigenvalues of S =" << endl
+         << S_esolver.eigenvalues().transpose() << endl;
+#endif
+
+    // count the number of eigenvalues where the sqrt is smaller than epsilon
+    const unsigned int p = ( S_esolver.eigenvalues().array().sqrt() <= 0.001 ).count();
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : number of eigenvalues below threshold = " << p << endl;
+#endif
+
+    // define a reduced matrix S
+    Eigen::MatrixXd S_red = S;
+    // ... and a vector that keeps track of which variational parameter
+    // ends up in which row/column of the S_red matrix and our final solution
+    std::vector<unsigned int> red_vpartracker( vpar.size() );
+    for ( unsigned int i = 0; i < vpar.size(); ++i ) {
+      red_vpartracker.at( i ) = i;
+    }
+
+    // loop that removes rows and columns from S; reduces S to S_red
+    for ( unsigned int k = 0; k < p; ++k ) {
+
+      // invert S_red
+      Eigen::MatrixXd S_red_inv = S_red.fullPivLu().inverse();
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : S_red_inv =" << endl << S_red_inv << endl;
+#endif
+
+      // find index i of the largest diagonal element of S_red_inv
+      unsigned int i_max = 0;
+      for ( unsigned int i = 1; i < S_red_inv.diagonal().size(); ++i ) {
+        if ( S_red_inv.diagonal()( i ) > S_red_inv.diagonal()( i_max ) ) {
+          i_max = i;
+        }
+      }
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : largest diagonal element of S_red_inv = "
+           << S_red_inv.diagonal()( i_max ) << " (at position " << i_max << ")" << endl;
+#endif
+
+      // remove the i-th row and column from S_red
+      for ( unsigned int j = i_max + 1; j < S_red.rows(); ++j ) {
+        S_red.row( j - 1 ) = S_red.row( j );
+      }
+      for ( unsigned int j = i_max + 1; j < S_red.cols(); ++j ) {
+        S_red.col( j - 1 ) = S_red.col( j );
+      }
+      S_red.conservativeResize( S_red.rows() - 1, S_red.cols() - 1 );
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : new S_red =" << endl << S_red << endl;
+#endif
+
+      // shift the variational parameter tracker
+      red_vpartracker.erase( red_vpartracker.begin() + i_max );
+      assert( static_cast<unsigned int>( red_vpartracker.size() ) == S_red.rows() );
+      assert( static_cast<unsigned int>( red_vpartracker.size() ) == S_red.cols() );
+
+#if VERBOSE >= 1
+      cout << "sched_master_opt() : new vpartracker = " << endl;
+      for ( auto it = red_vpartracker.begin(); it != red_vpartracker.end(); ++it ) {
+        cout << *it << " ";
+      }
+      cout << endl;
+#endif
+    }
+
+    // build the reduced force vector
+    Eigen::VectorXd f_red( S_red.cols() );
+    for ( unsigned int i = 0; i < f_red.size(); ++i ) {
+     f_red( i ) = f( red_vpartracker.at( i ) );
+    }
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : f_red =" << endl << f_red.transpose() << endl;
+#endif
+
+    // calculate the change of the reduced set of vpars by solving S_red * dv_red = f_red
+    const Eigen::VectorXd dvpar_red =
+      ( S_red + 0.0001 * Eigen::MatrixXd::Identity( S_red.rows(), S_red.cols() ) )
+      .fullPivLu().solve( f_red );
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : dvpar_red =" << endl << dvpar_red.transpose() << endl;
+#endif
+
+    // build change vector from reduced change vector (filling in the gaps with 0)
+    Eigen::VectorXd dvpar = Eigen::VectorXd::Zero( vpar.size() );
+    for ( unsigned int i = 0; i < dvpar_red.size(); ++i ) {
+      dvpar( red_vpartracker.at( i ) ) = dvpar_red( i );
+    }
+
+#if VERBOSE >= 1
+    cout << "sched_master_opt() : dvpar =" << endl << dvpar.transpose() << endl;
+#endif
+*/
+
+    // Jastrow convergence speed boost
+    dvpar.tail( dvpar.size() - 7 ) *= sr_Jboost;
 
     // update variational parameters
     vpar += sr_dt * dvpar;
@@ -199,6 +352,18 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     }
     if ( sr_num_vpar_converged == vpar.size() ) {
       sr_all_converged = true;
+    }
+
+    // take the machine readable snapshot of the vpars
+    {
+      // determine the file name
+      stringstream fname;
+      fname << sr_cycles << ".dat";
+      ofstream vpar_current_file( (
+        opts["calc.working-dir"].as<fs::path>() / "vpar_hist" / fname.str()
+      ).string() );
+      ar::text_oarchive vpar_current_archive( vpar_current_file );
+      vpar_current_archive << vpar;
     }
 
     // output the vpars and the energy to their files
@@ -330,43 +495,24 @@ void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
     cout << res;
   }
 
-  // write simulation results to human readable files
+  // write simulation results to files
   res.write_to_files( opts["calc.working-dir"].as<fs::path>() );
-
-  // write results to a machine readable file
-  ofstream res_file( (
-    opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
-  ).string() );
-  ar::text_oarchive res_archive( res_file );
-  res_archive << res;
 }
 
 
 
 void sched_master_ana( const Options& opts )
 {
-  // read the old MCCResults from disk
-  if ( fs::exists(
-         opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
-       ) == false ) {
-    cout << "ERROR: no simulation result file found" << endl;
-    return;
-  }
-  ifstream res_file( (
-    opts["calc.working-dir"].as<fs::path>() / "sim_res.dat"
-  ).string() );
-  ar::text_iarchive res_archive( res_file );
-  MCCResults res;
-  res_archive >> res;
-
   // figure out the analysis we want to perform ...
   const vector<analysis_t>& anamod_v
     = opts["calc.analysis"].as< vector<analysis_t> >();
   const set<analysis_t> anamod( anamod_v.begin(), anamod_v.end() );
 
-  // ... and finally perform the analysis
+  // ... and hand over control to the analysis modules
   if ( anamod.count( ANALYSIS_STATIC_STRUCTURE_FACTOR ) ) {
-    analysis_static_structure_factor( opts, res );
+    analysis_static_structure_factor(
+      opts, opts["calc.working-dir"].as<fs::path>()
+    );
   }
 }
 

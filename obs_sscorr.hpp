@@ -17,45 +17,35 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef JASTROW_H_INCLUDED
-#define JASTROW_H_INCLUDED
+#ifndef OBS_SPIN_SPIN_CORRELATION_H_INCLUDED
+#define OBS_SPIN_SPIN_CORRELATION_H_INCLUDED
 
-#include <vector>
-#include <memory>
+#include "obs.hpp"
+#include "obs_corr.hpp"
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "macros.h"
-#include "lattice.hpp"
-#include "varparam.hpp"
+#include "hmodvmc.hpp"
+#include "mccresults.hpp"
 
 
-class Jastrow
+class ObservableSpinSpinCorrelation : public ObservableCorrelation
 {
+  protected:
 
-  private:
+    Eigen::VectorXd get_current(
+      const HubbardModelVMC& model, ObservableCache& cache
+    ) const;
 
-    const std::shared_ptr<Lattice> lat;
-
-    std::vector<double> iir_v;
-
-    unsigned int num_vpar;
-    std::vector<unsigned int> iir_vparnum;
+    void save_to_results(
+      const Eigen::MatrixXd& corrresult, MCCResults& results
+    ) const;
 
   public:
 
-    Jastrow(
-      const std::shared_ptr<Lattice>& lat_init,
-      const Eigen::VectorXd& v_init
-    );
-
-    double operator()( Lattice::spindex i, Lattice::spindex j ) const;
-    double onsite() const;
-    void set( Lattice::spindex i, Lattice::spindex j, double v_new  );
-
-    unsigned int get_num_vpar() const;
-    unsigned int get_vparnum( Lattice::irridxrel iir ) const;
+    ObservableSpinSpinCorrelation( unsigned int L )
+      : ObservableCorrelation( L ) { };
 };
 
-#endif // JASTROW_H_INCLUDED
+#endif // OBS_SPIN_SPIN_CORRELATION_H_INCLUDED

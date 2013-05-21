@@ -23,6 +23,8 @@
 # include <iostream>
 #endif
 
+#include "fptype.hpp"
+
 using namespace std;
 
 
@@ -30,9 +32,9 @@ using namespace std;
 HubbardModelVMC::HubbardModelVMC(
   const mt19937& rng_init,
   const shared_ptr<Lattice>& lat_init,
-  const SingleParticleOrbitals& detwf_init,
+  const DeterminantalWavefunction& detwf_init,
   const Jastrow& v_init,
-  unsigned int N_init,
+  unsigned int Ne_init,
   unsigned int update_hop_maxdist_init,
   const vector<double>& t_init,
   double U_init,
@@ -44,17 +46,15 @@ HubbardModelVMC::HubbardModelVMC(
     lat( lat_init ), detwf( detwf_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
-    econf( ElectronConfiguration( lat, N_init, rng ) ),
-    W( WMatrix( lat.get(), detwf, econf,
-                W_deviation_target, updates_until_W_recalc ) ),
-    T( TVector( lat.get(), v, econf,
-                T_deviation_target, updates_until_T_recalc ) )
+    pconf( lat, Ne_init, rng ),
+    W( lat.get(), detwf, pconf, W_deviation_target, updates_until_W_recalc ),
+    T( lat.get(), v, pconf, T_deviation_target, updates_until_T_recalc )
 {
   while ( true ) {
 
-    econf.distribute_random();
+    pconf.distribute_random();
 
-#if VERBOSE >= 2
+#if VERBOSE >= 1
     cout << "HubbardModelVMC::HubbardModelVMC() : checking newly generated "
          << "state for enough overlap" << endl;
 #endif
@@ -69,7 +69,7 @@ HubbardModelVMC::HubbardModelVMC(
 
   T.init();
 
-#if VERBOSE >= 2
+#if VERBOSE >= 1
   cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
        << "overlap! -> initial state selection completed!" << endl;
 #endif
@@ -97,7 +97,7 @@ void HubbardModelVMC::mcs()
 bool HubbardModelVMC::metstep()
 {
   // let the electron configuration propose a random hop
-  const ElectronHop& phop = econf.propose_random_hop( update_hop_maxdist );
+  const ParticleHop& phop = pconf.propose_random_hop( update_hop_maxdist );
 
 
   // check if the hop is possible (hopto site must be empty)
@@ -111,11 +111,16 @@ bool HubbardModelVMC::metstep()
 
   } else { // hop possible!
 
-    const double R_j = T( lat->get_spinup_site( phop.l ) )
-                       / T( lat->get_spinup_site( phop.k_pos ) )
-                       * v.exp_onsite() / v.exp( phop.l, phop.k_pos );
+    const double R_j
+      = std::exp(
+          ( phop.l < lat->L ? 1.0 : -1.0 ) *
+          (
+            T.get()( lat->get_index_from_spindex( phop.l ) )
+            - T.get()( lat->get_index_from_spindex( phop.k_pos ) )
+          ) + v.onsite() - v( phop.l, phop.k_pos )
+        );
 
-    const double R_s = W( phop.l, phop.k );
+    const double R_s = W.get()( phop.l, phop.k );
 
     const double accept_prob = R_j * R_j * R_s * R_s;
 
@@ -133,7 +138,7 @@ bool HubbardModelVMC::metstep()
       cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;
 #endif
 
-      econf.do_hop( phop );
+      pconf.do_hop( phop );
 
       W.update( phop );
       T.update( phop );
@@ -159,10 +164,10 @@ double HubbardModelVMC::E_l() const
   double E_l_kin = 0.0;
 
   // loop over different elektrons k
-  for ( unsigned int k = 0; k < econf.N(); ++k ) {
+  for ( unsigned int k = 0; k < pconf.Np; ++k ) {
 
-    const unsigned int k_pos = econf.get_electron_pos( k );
-    assert( econf.get_site_occ( k_pos ) == ELECTRON_OCCUPATION_FULL );
+    const Lattice::spindex k_pos = pconf.get_particle_pos( k );
+    assert( pconf.get_site_occ( k_pos ) == PARTICLE_OCCUPATION_FULL );
 
     // loop over different neighbor orders X
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
@@ -172,29 +177,38 @@ double HubbardModelVMC::E_l() const
 
       double sum_Xnn = 0.0;
       lat->get_Xnn( k_pos, X, &k_pos_Xnn );
-
-      // calculate part of R_j that is constant for this X and k
       assert( k_pos_Xnn.size() != 0 );
-      const double R_j_constXk =
-        v.exp_onsite() / v.exp( k_pos_Xnn[0], k_pos )
-        / T( lat->get_spinup_site( k_pos ) );
-      // (it is possible to do the idxrel reduction only for one of the
-      // neighbours as it is guaranteed to be the same for all of them)
 
       // loop over different neighbours l of order X
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
-        if ( econf.get_site_occ( *l_it ) == ELECTRON_OCCUPATION_EMPTY ) {
-          const double R_j = T( lat->get_spinup_site( *l_it ) ) * R_j_constXk;
-          sum_Xnn += R_j * W( *l_it, k );
+        if ( pconf.get_site_occ( *l_it ) == PARTICLE_OCCUPATION_EMPTY ) {
+
+          const double R_j
+            = std::exp(
+                (
+                  ( lat->get_spindex_type( k_pos ) == Lattice::spindex_type::up )
+                  ? 1.0 : -1.0
+                ) *
+                (
+                  T.get()( lat->get_index_from_spindex( *l_it ) )
+                  - T.get()( lat->get_index_from_spindex( k_pos ) )
+                ) + v.onsite() - v( *l_it, k_pos )
+              );
+
+          sum_Xnn += R_j * W.get()( *l_it, k );
+
         }
       }
-      E_l_kin -= t[X - 1] * sum_Xnn;
+      // reverse sign of spin down part due to particle-hole-transformation
+      E_l_kin +=
+        ( lat->get_spindex_type( k_pos ) == Lattice::spindex_type::up ? -1.0 : 1.0 )
+        * t[X - 1] * sum_Xnn;
 
     }
   }
 
   const double E_l_result =
-    ( E_l_kin + U * econf.get_num_dblocc() ) /
+    ( E_l_kin + U * ( pconf.npu().array() * ( 1 - pconf.npd().array() ) ).sum() ) /
     static_cast<double>( lat->L );
 
 #if VERBOSE >= 2
@@ -206,31 +220,56 @@ double HubbardModelVMC::E_l() const
 
 
 
-Eigen::VectorXd HubbardModelVMC::Delta_k() const
+Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
 {
-  Eigen::VectorXd sum = Eigen::VectorXd::Zero( v.get_num_vpar() );
+  assert( optimizers > 0 && optimizers < 256 );
 
-  for ( unsigned int i = 0; i < lat->L; ++i ) {
-    for ( unsigned int j = i; j < lat->L; ++j ) {
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 7 + v.get_num_vpar() );
 
-      unsigned int irr_idxrel = lat->reduce_idxrel( i, j );
-      double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
+  // ----- first seven variational parameters are from the determinantal part
 
-      if ( irr_idxrel != lat->irreducible_idxrel_maxdist() ) {
-        unsigned int vparnum = v.get_vparnum( irr_idxrel );
-        sum( vparnum )
-        += dblcount_correction *
-           ( econf.get_site_occ( i ) + econf.get_site_occ( i + lat->L ) ) *
-           ( econf.get_site_occ( j ) + econf.get_site_occ( j + lat->L ) );
+  if ( optimizers != 128 ) {
+    // only do it if we are optimizing any determinantal parameter
+
+    Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
+    for ( unsigned int k = 0; k < pconf.Np; ++k ) {
+      const Lattice::spindex k_pos = pconf.get_particle_pos( k );
+      G.row( k_pos ) = W.get().col( k );
+    }
+
+    for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {
+      if ( ( optimizers >> vpar ) % 2 == 1 ) {
+        result( vpar ) = ( detwf.A()[vpar].array() * G ).sum();
+      }
+    }
+  }
+
+  // ----- everything except the first 7 are Jastrow parameters
+
+  if ( optimizers >= 128 ) {
+    // only do it if we are optimizing the Jastrow
+
+    for ( Lattice::index i = 0; i < lat->L; ++i ) {
+      for ( Lattice::index j = i; j < lat->L; ++j ) {
+
+        const Lattice::irridxrel ij_iir = lat->reduce_idxrel( i, j );
+        const double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
+
+        if ( ij_iir != lat->get_maxdist_irridxrel() ) {
+          result( 7 + v.get_vparnum( ij_iir ) )
+          += dblcount_correction *
+             ( pconf.get_site_occ( i ) - pconf.get_site_occ( i + lat->L ) ) *
+             ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
+        }
       }
     }
   }
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::Delta_k() = " << endl << sum.transpose() << endl;
+  cout << "HubbardModelVMC::Delta_k() = " << endl << result.transpose() << endl;
 #endif
 
-  return sum;
+  return result;
 }
 
 
@@ -238,15 +277,23 @@ Eigen::VectorXd HubbardModelVMC::Delta_k() const
 double HubbardModelVMC::dblocc_dens() const
 {
   return
-    static_cast<double>( econf.get_num_dblocc() ) /
-    static_cast<double>( lat->L );
+    static_cast<double>(
+        ( pconf.npu().array() * ( 1 - pconf.npd().array() ) ).sum()
+    ) / static_cast<double>( lat->L );
 }
 
 
 
 Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
 {
-  return econf.n();
+  return ( pconf.npu().array() + 1 - pconf.npd().array() ).cast<unsigned int>();
+}
+
+
+
+Eigen::VectorXi HubbardModelVMC::s() const
+{
+  return ( pconf.npu().array() - 1 + pconf.npd().array() );
 }
 
 

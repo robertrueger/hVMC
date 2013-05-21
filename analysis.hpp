@@ -20,6 +20,8 @@
 #ifndef ANALYSIS_H_INCLUDED
 #define ANALYSIS_H_INCLUDED
 
+#include <boost/filesystem.hpp>
+
 #include "options.hpp"
 #include "mccresults.hpp"
 
@@ -30,7 +32,7 @@ enum analysis_t {
 
 
 void analysis_static_structure_factor(
-  const Options& opts, const MCCResults& res
+  const Options& opts, const boost::filesystem::path& res
 );
 
 #endif // ANALYSIS_H_INCLUDED

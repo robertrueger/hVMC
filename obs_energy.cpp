@@ -27,8 +27,6 @@ using namespace std;
 namespace mpi = boost::mpi;
 
 
-ObservableEnergy::ObservableEnergy() : Observable( OBSERVABLE_E ) { }
-
 
 void ObservableEnergy::measure(
   const HubbardModelVMC& model, ObservableCache& cache )

@@ -32,6 +32,7 @@ typedef float fptype;
 
 namespace Eigen {
   typedef Matrix<fptype, Dynamic, Dynamic> MatrixXfp;
+  typedef Array<fptype, Dynamic, Dynamic> ArrayXfp;
   typedef Matrix<fptype, Dynamic, 1> VectorXfp;
 }
 

@@ -25,7 +25,6 @@
 
 #include <set>
 #include <algorithm>
-#include <cmath>
 
 using namespace std;
 
@@ -34,72 +33,60 @@ Jastrow::Jastrow(
   const shared_ptr<Lattice>& lat_init, const Eigen::VectorXd& v_init )
   : lat( lat_init )
 {
-  std::set<unsigned int> irr_idxrels = lat->irreducible_idxrel_list();
-  assert( !irr_idxrels.empty() );
+  std::set<Lattice::irridxrel> iirs = lat->get_all_irridxrels();
+  assert( !iirs.empty() );
 
   // find maximum j in v_0j
-  const unsigned int max_j_expv =
-    *( max_element( irr_idxrels.begin(), irr_idxrels.end() ) );
+  const unsigned int max_j_v = *( max_element( iirs.begin(), iirs.end() ) );
   // resize internal vector so that it can hold all needed Jastrows
-  idxrel_expv.resize( max_j_expv + 1 );
+  iir_v.resize( max_j_v + 1 );
 
   // delete irreducible index relation corresponding to the largest distance
-  irr_idxrels.erase( lat->irreducible_idxrel_maxdist() );
+  iirs.erase( lat->get_maxdist_irridxrel() );
 
   // find maximum j in v_0j if the largest distance v is missing
-  const unsigned int max_j_vparnum =
-    *( max_element( irr_idxrels.begin(), irr_idxrels.end() ) );
-  // resize vector: irreducible idxrel -> variational parameter number
-  idxrel_vparnum.resize( max_j_vparnum + 1 );
+  const unsigned int max_j_vparnum = *( max_element( iirs.begin(), iirs.end() ) );
+  // resize vector that maps irreducible irridxrel -> variational parameter number
+  iir_vparnum.resize( max_j_vparnum + 1 );
   // save the total number of variational parameters
-  num_vpar = irr_idxrels.size();
+  num_vpar = iirs.size();
 
   // write the variational parameters from v_init to the right elements of
-  // idxrel_expv (make sure the total number is correct first)
-  assert( static_cast<unsigned int>( v_init.size() ) == irr_idxrels.size() );
+  // iir_v (make sure the total number is correct first)
+  assert( static_cast<unsigned int>( v_init.size() ) == iirs.size() );
   unsigned int reader = 0;
-  for ( auto irr_idxrel_it = irr_idxrels.begin();
-        irr_idxrel_it != irr_idxrels.end();
-        ++irr_idxrel_it ) {
-    idxrel_expv.at(    *irr_idxrel_it ) = std::exp( v_init( reader ) );
-    idxrel_vparnum.at( *irr_idxrel_it ) = reader;
+  for ( auto iirs_it = iirs.begin(); iirs_it != iirs.end(); ++iirs_it ) {
+    iir_v.at(       *iirs_it ) = v_init( reader );
+    iir_vparnum.at( *iirs_it ) = reader;
     ++reader;
   }
   assert( reader == v_init.size() );
 
-  // set the parameter corresponding to the largest distance to 1
-  idxrel_expv.at( lat->irreducible_idxrel_maxdist() ) = 1.0;
+  // set the parameter corresponding to the largest distance to 0
+  iir_v.at( lat->get_maxdist_irridxrel() ) = 0.0;
 }
 
 
 
-double Jastrow::operator()( unsigned int i, unsigned int j ) const
+double Jastrow::operator()( Lattice::spindex i, Lattice::spindex j ) const
 {
-  assert( idxrel_expv.size() > lat->reduce_idxrel( i, j ) );
-  return std::log( idxrel_expv[ lat->reduce_idxrel( i, j ) ] );
+  assert( iir_v.size() > lat->reduce_idxrel( i, j ) );
+  return iir_v[ lat->reduce_idxrel( i, j ) ];
 }
 
 
 
-double Jastrow::exp( unsigned int i, unsigned int j ) const
+double Jastrow::onsite() const
 {
-  assert( idxrel_expv.size() > lat->reduce_idxrel( i, j ) );
-  return idxrel_expv[ lat->reduce_idxrel( i, j ) ];
+  assert( iir_v.size() > 0 );
+  return iir_v[0];
 }
 
 
 
-double Jastrow::exp_onsite() const
+void Jastrow::set( Lattice::spindex i, Lattice::spindex j, double v_new )
 {
-  assert( idxrel_expv.size() > 0 );
-  return idxrel_expv[0];
-}
-
-
-
-void Jastrow::set( unsigned int i, unsigned int j, double v_new )
-{
-  idxrel_expv.at( lat->reduce_idxrel( i, j ) ) = std::exp( v_new );
+  iir_v.at( lat->reduce_idxrel( i, j ) ) = v_new;
 }
 
 
@@ -111,8 +98,8 @@ unsigned int Jastrow::get_num_vpar() const
 
 
 
-unsigned int Jastrow::get_vparnum( unsigned int irr_idxrel ) const
+unsigned int Jastrow::get_vparnum( unsigned int iir ) const
 {
-  assert( idxrel_vparnum.size() > irr_idxrel );
-  return idxrel_vparnum[ irr_idxrel ];
+  assert( iir_vparnum.size() > iir );
+  return iir_vparnum[ iir ];
 }

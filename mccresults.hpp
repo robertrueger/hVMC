@@ -79,29 +79,15 @@ struct UncertainQuantity {
 
 struct MCCResults {
 
-  bool success;
-
   boost::optional< UncertainQuantity<double> > E;
   boost::optional< Eigen::VectorXd > Deltak;
   boost::optional< Eigen::MatrixXd > Deltak_Deltakprime;
   boost::optional< Eigen::VectorXd > Deltak_E;
   boost::optional< UncertainQuantity<double> > dblocc;
   boost::optional< Eigen::MatrixXd > nncorr;
+  boost::optional< Eigen::MatrixXd > sscorr;
 
   void write_to_files( const boost::filesystem::path& dir ) const;
-
-  // make MCCResults serializable
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize( Archive& ar, const unsigned int ) {
-    ar & success;
-    ar & E;
-    ar & Deltak;
-    ar & Deltak_Deltakprime;
-    ar & Deltak_E;
-    ar & dblocc;
-    ar & nncorr;
-  }
 };
 std::ostream& operator<<( std::ostream& out, const MCCResults& res );
 
