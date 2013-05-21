@@ -43,11 +43,11 @@ class WMatrix
     Eigen::MatrixXfp* W_active;
     Eigen::MatrixXfp* W_inactive;
 
+    // temporary vectors that are large enough to hold one row/col of W
 #ifdef USE_CBLAS
-    // a temporary vectors that are large enough to hold one row/col of W
     Eigen::VectorXfp tempWcol;
-    Eigen::VectorXfp tempWrow;
 #endif
+    Eigen::VectorXfp tempWrow;
 
     const unsigned int updates_until_recalc;
     unsigned int updates_since_recalc;
