@@ -53,8 +53,8 @@ WMatrix::WMatrix(
     W_inactive( &W_2 ),
 #ifdef USE_CBLAS
     tempWcol( 2 * lat->L ),
-    tempWrow( pconf.Np ),
 #endif
+    tempWrow( pconf.Np ),
     updates_until_recalc( updates_until_recalc_init ),
     updates_since_recalc( 0 ),
     devstat( FPDevStat( deviation_target ) ) { }
@@ -182,14 +182,15 @@ void WMatrix::calc_new()
 
 void WMatrix::calc_qupdated( const ParticleHop& hop )
 {
-  unsigned int k         = hop.k;
-  Lattice::spindex l     = hop.l;
-  Lattice::spindex k_pos = hop.k_pos;
+  unsigned int k     = hop.k;
+  Lattice::spindex l = hop.l;
+
+  tempWrow = W_active->row( l );
+  tempWrow( k ) -= 1.f;
 
 #ifdef USE_CBLAS
 
   tempWcol = W_active->col( k );
-  tempWrow = W_active->row( l ) - W_active->row( k_pos );
 
 #ifdef USE_FP_DBLPREC
   cblas_dger(
@@ -221,8 +222,7 @@ void WMatrix::calc_qupdated( const ParticleHop& hop )
   *W_inactive = *W_active;
 
   W_inactive->noalias() -=
-    ( W_active->col( k ) / ( *W_active )( l, k ) )
-    * ( W_active->row( l ) - W_active->row( k_pos ) );
+    ( W_active->col( k ) / ( *W_active )( l, k ) ) * tempWrow;
 
   swap( W_inactive, W_active );
 
