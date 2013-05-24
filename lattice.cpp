@@ -71,20 +71,20 @@ vector<Lattice::spindex> Lattice::get_Xnn( Lattice::spindex l, unsigned int X ) 
 }
 
 
-Eigen::VectorXi Lattice::get_random_site_occ(
+Eigen::VectorXi Lattice::get_random_spindex_occ(
   unsigned int Npu, unsigned int Npd, mt19937& rng ) const
 {
   // this is the default distribution if the lattice has no special needs:
   // it will just randomly distribute Npu/Npd particles per spin direction
 
-  Eigen::VectorXi site_occ = Eigen::VectorXi::Zero( 2 * L );
+  Eigen::VectorXi spindex_occ = Eigen::VectorXi::Zero( 2 * L );
 
-  while ( site_occ.head( L ).sum() < static_cast<int>( Npu ) ) {
-    site_occ[ uniform_int_distribution<Lattice::index>( 0, L - 1 )( rng ) ] = 1;
+  while ( spindex_occ.head( L ).sum() < static_cast<int>( Npu ) ) {
+    spindex_occ[ uniform_int_distribution<Lattice::index>( 0, L - 1 )( rng ) ] = 1;
   }
-  while ( site_occ.tail( L ).sum() < static_cast<int>( Npd ) ) {
-    site_occ[ uniform_int_distribution<Lattice::index>( L, 2 * L - 1 )( rng ) ] = 1;
+  while ( spindex_occ.tail( L ).sum() < static_cast<int>( Npd ) ) {
+    spindex_occ[ uniform_int_distribution<Lattice::index>( L, 2 * L - 1 )( rng ) ] = 1;
   }
 
-  return site_occ;
+  return spindex_occ;
 }

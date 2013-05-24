@@ -166,8 +166,8 @@ double HubbardModelVMC::E_l() const
   // loop over different elektrons k
   for ( unsigned int k = 0; k < pconf.Np; ++k ) {
 
-    const Lattice::spindex k_pos = pconf.get_particle_pos( k );
-    assert( pconf.get_site_occ( k_pos ) == PARTICLE_OCCUPATION_FULL );
+    const Lattice::spindex k_pos = pconf.get_particlenum_pos()[ k ];
+    assert( pconf.get_spindex_occ()( k_pos ) == PARTICLE_OCCUPATION_FULL );
 
     // loop over different neighbor orders X
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
@@ -181,7 +181,7 @@ double HubbardModelVMC::E_l() const
 
       // loop over different neighbours l of order X
       for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
-        if ( pconf.get_site_occ( *l_it ) == PARTICLE_OCCUPATION_EMPTY ) {
+        if ( pconf.get_spindex_occ()( *l_it ) == PARTICLE_OCCUPATION_EMPTY ) {
 
           const double R_j
             = std::exp(
@@ -208,7 +208,10 @@ double HubbardModelVMC::E_l() const
   }
 
   const double E_l_result =
-    ( E_l_kin + U * ( pconf.npu().array() * ( 1 - pconf.npd().array() ) ).sum() ) /
+    ( E_l_kin + U * (
+        pconf.get_spindex_occ().head( lat->L ).array() *
+        ( 1 - pconf.get_spindex_occ().tail( lat->L ).array() )
+      ).sum() ) /
     static_cast<double>( lat->L );
 
 #if VERBOSE >= 2
@@ -233,7 +236,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
 
     Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
     for ( unsigned int k = 0; k < pconf.Np; ++k ) {
-      const Lattice::spindex k_pos = pconf.get_particle_pos( k );
+      const Lattice::spindex k_pos = pconf.get_particlenum_pos()[ k ];
       G.row( k_pos ) = W.get().col( k );
     }
 
@@ -258,8 +261,8 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
         if ( ij_iir != lat->get_maxdist_irridxrel() ) {
           result( 7 + v.get_vparnum( ij_iir ) )
           += dblcount_correction *
-             ( pconf.get_site_occ( i ) - pconf.get_site_occ( i + lat->L ) ) *
-             ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
+             ( pconf.get_spindex_occ()( i ) - pconf.get_spindex_occ()( i + lat->L ) ) *
+             ( pconf.get_spindex_occ()( j ) - pconf.get_spindex_occ()( j + lat->L ) );
         }
       }
     }
@@ -278,7 +281,10 @@ double HubbardModelVMC::dblocc_dens() const
 {
   return
     static_cast<double>(
-        ( pconf.npu().array() * ( 1 - pconf.npd().array() ) ).sum()
+      (
+        pconf.get_spindex_occ().head( lat->L ).array() *
+        ( 1 - pconf.get_spindex_occ().tail( lat->L ).array() )
+      ).sum()
     ) / static_cast<double>( lat->L );
 }
 
@@ -286,14 +292,20 @@ double HubbardModelVMC::dblocc_dens() const
 
 Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
 {
-  return ( pconf.npu().array() + 1 - pconf.npd().array() ).cast<unsigned int>();
+  return (
+    pconf.get_spindex_occ().head( lat->L ).array() +
+    1 - pconf.get_spindex_occ().tail( lat->L).array()
+  ).cast<unsigned int>();
 }
 
 
 
 Eigen::VectorXi HubbardModelVMC::s() const
 {
-  return ( pconf.npu().array() - 1 + pconf.npd().array() );
+  return (
+   pconf.get_spindex_occ().head( lat->L ).array() -
+   1 + pconf.get_spindex_occ().tail( lat->L).array()
+  );
 }
 
 

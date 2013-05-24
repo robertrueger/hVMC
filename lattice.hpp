@@ -83,7 +83,7 @@ class Lattice {
     // (this is part of the lattice class because there might be special
     // requirements for a random particle distribution, e.g.: the two layered
     // Hubbard model requires each plane to have the same number of particles)
-    virtual Eigen::VectorXi get_random_site_occ(
+    virtual Eigen::VectorXi get_random_spindex_occ(
       unsigned int Npu, unsigned int Npd, std::mt19937& rng
     ) const;
 };
