@@ -309,6 +309,12 @@ Eigen::VectorXi HubbardModelVMC::s() const
 }
 
 
+Eigen::VectorXi HubbardModelVMC::particleconf() const
+{
+  return pconf.get_spindex_occ();
+}
+
+
 
 FPDevStat HubbardModelVMC::get_W_devstat() const
 {

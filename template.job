@@ -74,6 +74,7 @@ observable = E
 observable = dblocc
 #observable = nncorr
 #observable = sscorr
+observable = pconfs
 
 # [ana]: selected analysis modules
 # available modules: ssfac

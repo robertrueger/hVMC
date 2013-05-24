@@ -189,5 +189,11 @@ vector< unique_ptr<Observable> > prepare_obscalcs(
     );
   }
 
+  if ( obs.count( OBSERVABLE_PARTICLE_CONFIGURATIONS ) ) {
+    obscalc.push_back(
+      unique_ptr<Observable>( new ObservableParticleConfigurations() )
+    );
+  }
+
   return obscalc;
 }

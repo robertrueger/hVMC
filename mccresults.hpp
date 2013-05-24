@@ -86,6 +86,7 @@ struct MCCResults {
   boost::optional< UncertainQuantity<double> > dblocc;
   boost::optional< Eigen::MatrixXd > nncorr;
   boost::optional< Eigen::MatrixXd > sscorr;
+  boost::optional< std::vector<Eigen::VectorXi> > pconfs;
 
   void write_to_files( const boost::filesystem::path& dir ) const;
 };

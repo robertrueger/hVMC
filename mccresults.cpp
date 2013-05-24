@@ -23,6 +23,7 @@
 #include <fstream>
 
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include "serialization_eigen.hpp"
 
@@ -95,6 +96,17 @@ void MCCResults::write_to_files( const fs::path& dir ) const
     ar::text_oarchive sscorr_archive( sscorr_datfile );
     sscorr_archive << sscorr.get();
   }
+
+  if ( pconfs ) {
+    ofstream pconfs_txtfile( ( dir / "sim_res_pconfs.txt" ).string() );
+    for ( auto it = pconfs.get().begin(); it != pconfs.get().end(); ++it ) {
+      pconfs_txtfile << it->transpose() << endl;
+    }
+
+    ofstream pconfs_datfile( ( dir / "sim_res_pconfs.dat" ).string() );
+    ar::text_oarchive pconfs_archive( pconfs_datfile );
+    pconfs_archive << pconfs.get();
+  }
 }
 
 
@@ -142,6 +154,16 @@ std::ostream& operator<<( std::ostream& out, const MCCResults& res )
     out << endl
         << "sscorr = " << endl
         << res.sscorr.get() << endl;
+  }
+
+  if ( res.pconfs ) {
+    cout << endl
+         << "pconfs = " << endl;
+    for ( auto it = res.pconfs.get().begin();
+          it != res.pconfs.get().end();
+          ++it ) {
+      cout << it->transpose() << endl;
+    }
   }
 
   out << endl;
