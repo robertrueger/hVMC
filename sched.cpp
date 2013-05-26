@@ -36,6 +36,7 @@
 
 #include <boost/mpi/collectives.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/serialization/optional.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/filesystem.hpp>
@@ -95,6 +96,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   obs.insert( OBSERVABLE_DELTAK );
   obs.insert( OBSERVABLE_DELTAK_DELTAKPRIME );
   obs.insert( OBSERVABLE_DELTAK_E );
+  obs.insert( OBSERVABLE_PARTICLE_CONFIGURATIONS );
 
   // vector to store evolution of the variational parameters during the opt.
   vector<Eigen::VectorXd> vpar_hist;
@@ -148,6 +150,10 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   unsigned int sr_fullconv_cycles = 0;
   vector< MannKendall<double> > sr_vpar_mk( vpar.size() );
 
+  // particle configuration cache
+  // (configurations from the last SR iteration used to initialize the next one)
+  vector<Eigen::VectorXi> pconf_cache;
+
   bool finished = false;
   while ( !finished ) {
 
@@ -163,8 +169,17 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     mpi::broadcast( mpicomm, vpar, 0 );
     mpi::broadcast( mpicomm, obs,  0 );
 
-    // run master part of the Monte Carlo cycle
-    const MCCResults& res = mccrun_master( opts, vpar, sr_bins, obs, mpicomm );
+    // tell the slaves if we have some good initial confs cached
+    bool use_initial_pconf = false; //pconf_cache.empty();
+    mpi::broadcast( mpicomm, use_initial_pconf, 0 );
+
+    MCCResults res;
+    if ( use_initial_pconf ) {
+      // TODO: send a random conf to each slave (Robert Rueger, 2013-05-26 12:20)
+    } else {
+      // run master part of the Monte Carlo cycle without initial pconf
+      res = mccrun_master( opts, vpar, sr_bins, obs, mpicomm );
+    }
 
     // stop the stopwatch and calculate the elapsed time
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
@@ -188,137 +203,9 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     const Eigen::VectorXd f =
       res.Deltak.get() * res.E->mean - res.Deltak_E.get();
 
-/*
-    // ---- SORELLA METHOD
-
-    // calculate the required change of the variational parameters
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> S_esolver( S + 0.001 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) );
-    assert( S_esolver.info() == Eigen::Success );
-    Eigen::VectorXd gamma
-      =   ( S_esolver.eigenvectors().adjoint() * f ).array()
-        / S_esolver.eigenvalues().array();
-    for ( unsigned int i = 0; i < vpar.size(); ++i ) {
-      if ( S_esolver.eigenvalues()( i ) / S_esolver.eigenvalues()( vpar.size() - 1 ) < 1.0E-10 ) {
-        gamma( i ) = 0;
-      }
-    }
-    Eigen::VectorXd dvpar = S_esolver.eigenvectors() * gamma;
-*/
-
-
-    // ---- TOCCHIO METHOD
-
     Eigen::VectorXd dvpar =
       ( S + 0.0001 * Eigen::MatrixXd::Identity( S.rows(), S.cols() ) )
       .fullPivLu().solve( f );
-
-/*
-    // ---- ATTACCALITE METHOD
-
-    // calculate eigenvalues of S
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> S_esolver( S );
-    assert( S_esolver.info() == Eigen::Success );
-
-#if VERBOSE >= 1
-    cout << "sched_master_opt() : eigenvalues of S =" << endl
-         << S_esolver.eigenvalues().transpose() << endl;
-#endif
-
-    // count the number of eigenvalues where the sqrt is smaller than epsilon
-    const unsigned int p = ( S_esolver.eigenvalues().array().sqrt() <= 0.001 ).count();
-
-#if VERBOSE >= 1
-    cout << "sched_master_opt() : number of eigenvalues below threshold = " << p << endl;
-#endif
-
-    // define a reduced matrix S
-    Eigen::MatrixXd S_red = S;
-    // ... and a vector that keeps track of which variational parameter
-    // ends up in which row/column of the S_red matrix and our final solution
-    std::vector<unsigned int> red_vpartracker( vpar.size() );
-    for ( unsigned int i = 0; i < vpar.size(); ++i ) {
-      red_vpartracker.at( i ) = i;
-    }
-
-    // loop that removes rows and columns from S; reduces S to S_red
-    for ( unsigned int k = 0; k < p; ++k ) {
-
-      // invert S_red
-      Eigen::MatrixXd S_red_inv = S_red.fullPivLu().inverse();
-
-#if VERBOSE >= 1
-      cout << "sched_master_opt() : S_red_inv =" << endl << S_red_inv << endl;
-#endif
-
-      // find index i of the largest diagonal element of S_red_inv
-      unsigned int i_max = 0;
-      for ( unsigned int i = 1; i < S_red_inv.diagonal().size(); ++i ) {
-        if ( S_red_inv.diagonal()( i ) > S_red_inv.diagonal()( i_max ) ) {
-          i_max = i;
-        }
-      }
-
-#if VERBOSE >= 1
-      cout << "sched_master_opt() : largest diagonal element of S_red_inv = "
-           << S_red_inv.diagonal()( i_max ) << " (at position " << i_max << ")" << endl;
-#endif
-
-      // remove the i-th row and column from S_red
-      for ( unsigned int j = i_max + 1; j < S_red.rows(); ++j ) {
-        S_red.row( j - 1 ) = S_red.row( j );
-      }
-      for ( unsigned int j = i_max + 1; j < S_red.cols(); ++j ) {
-        S_red.col( j - 1 ) = S_red.col( j );
-      }
-      S_red.conservativeResize( S_red.rows() - 1, S_red.cols() - 1 );
-
-#if VERBOSE >= 1
-      cout << "sched_master_opt() : new S_red =" << endl << S_red << endl;
-#endif
-
-      // shift the variational parameter tracker
-      red_vpartracker.erase( red_vpartracker.begin() + i_max );
-      assert( static_cast<unsigned int>( red_vpartracker.size() ) == S_red.rows() );
-      assert( static_cast<unsigned int>( red_vpartracker.size() ) == S_red.cols() );
-
-#if VERBOSE >= 1
-      cout << "sched_master_opt() : new vpartracker = " << endl;
-      for ( auto it = red_vpartracker.begin(); it != red_vpartracker.end(); ++it ) {
-        cout << *it << " ";
-      }
-      cout << endl;
-#endif
-    }
-
-    // build the reduced force vector
-    Eigen::VectorXd f_red( S_red.cols() );
-    for ( unsigned int i = 0; i < f_red.size(); ++i ) {
-     f_red( i ) = f( red_vpartracker.at( i ) );
-    }
-
-#if VERBOSE >= 1
-    cout << "sched_master_opt() : f_red =" << endl << f_red.transpose() << endl;
-#endif
-
-    // calculate the change of the reduced set of vpars by solving S_red * dv_red = f_red
-    const Eigen::VectorXd dvpar_red =
-      ( S_red + 0.0001 * Eigen::MatrixXd::Identity( S_red.rows(), S_red.cols() ) )
-      .fullPivLu().solve( f_red );
-
-#if VERBOSE >= 1
-    cout << "sched_master_opt() : dvpar_red =" << endl << dvpar_red.transpose() << endl;
-#endif
-
-    // build change vector from reduced change vector (filling in the gaps with 0)
-    Eigen::VectorXd dvpar = Eigen::VectorXd::Zero( vpar.size() );
-    for ( unsigned int i = 0; i < dvpar_red.size(); ++i ) {
-      dvpar( red_vpartracker.at( i ) ) = dvpar_red( i );
-    }
-
-#if VERBOSE >= 1
-    cout << "sched_master_opt() : dvpar =" << endl << dvpar.transpose() << endl;
-#endif
-*/
 
     // Jastrow convergence speed boost
     dvpar.tail( dvpar.size() - 7 ) *= sr_Jboost;
@@ -332,6 +219,9 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     for ( unsigned int k = 0; k < vpar.size(); ++k ) {
       sr_vpar_mk[k].push_back( vpar[k] );
     }
+
+    // update particle configuration cache
+    pconf_cache = res.pconfs.get();
 
     ++sr_cycles;
     ++sr_cycles_since_refinement;
@@ -471,12 +361,18 @@ void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
   mpi::broadcast( mpicomm, vpar, 0 );
   mpi::broadcast( mpicomm, obs,  0 );
 
+  // tell the slaves if we have some good initial confs cached
+  bool use_initial_pconf = false;
+  mpi::broadcast( mpicomm, use_initial_pconf, 0 );
+  // TODO: read from file or something??? (Robert Rueger, 2013-05-26 12:25)
+
   // run master part of the Monte Carlo cycle
-  const MCCResults& res = mccrun_master(
-                            opts, vpar,
-                            opts["calc.num-bins"].as<unsigned int>(),
-                            obs, mpicomm
-                          );
+  const MCCResults& res =
+    mccrun_master(
+      opts, vpar,
+      opts["calc.num-bins"].as<unsigned int>(),
+      obs, mpicomm
+    );
 
   // stop the stopwatch and calculate the elapsed time
   chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
@@ -531,9 +427,19 @@ void sched_slave( const Options& opts, const mpi::communicator& mpicomm )
       set<observables_t> obs;
       mpi::broadcast( mpicomm, obs,  0 );
 
-      // run slave part of the Monte Carlo cycle
-      mccrun_slave( opts, vpar, obs, mpicomm );
+      // check if master wants us to initialize the system in a specific pconf
+      bool use_initial_pconf;
+      mpi::broadcast( mpicomm, use_initial_pconf, 0 );
+      if ( use_initial_pconf ) {
+        Eigen::VectorXi initial_pconf;
+        mpicomm.recv( 0, MSGTAG_M_S_INITIAL_PARTICLE_CONFIGURATION, initial_pconf );
 
+        // run slave part of the Monte Carlo cycle with initial pconf
+        mccrun_slave( opts, vpar, obs, mpicomm, initial_pconf );
+      } else {
+        // run slave part of the Monte Carlo cycle without initial pconf
+        mccrun_slave( opts, vpar, obs, mpicomm );
+      }
     }
 
   } while ( schedmsg != SCHEDMSG_EXIT );

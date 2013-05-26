@@ -41,30 +41,42 @@ HubbardModelVMC::HubbardModelVMC(
   double W_deviation_target,
   unsigned int updates_until_W_recalc,
   double T_deviation_target,
-  unsigned int updates_until_T_recalc )
+  unsigned int updates_until_T_recalc,
+  boost::optional<const Eigen::VectorXi&> spindex_occ_init )
   : rng( rng_init ),
     lat( lat_init ), detwf( detwf_init ), v( v_init ),
     update_hop_maxdist( update_hop_maxdist_init ),
     t( t_init ), U( U_init ),
-    pconf( lat, Ne_init, rng ),
+    pconf( lat, Ne_init, rng, spindex_occ_init ),
+    proposed_pconf_accepted( false ),
     W( lat.get(), detwf, pconf, W_deviation_target, updates_until_W_recalc ),
     T( lat.get(), v, pconf, T_deviation_target, updates_until_T_recalc )
 {
-  while ( true ) {
+  bool pconf_has_overlap = W.init_and_check();
+  if ( spindex_occ_init ) {
+    // there was an inital configuration specified ...
+    proposed_pconf_accepted = pconf_has_overlap;
+#if VERBOSE >= 1
+    if ( proposed_pconf_accepted ) {
+      cout << "HubbardModelVMC::HubbardModelVMC() : "
+           << "proposed initial configuration accepted!" << endl;
+    } else {
+      cout << "HubbardModelVMC::HubbardModelVMC() : "
+           << "proposed initial configuration rejected!" << endl;
+    }
+#endif
+  }
 
-    pconf.distribute_random();
+  while ( pconf_has_overlap == false ) {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::HubbardModelVMC() : checking newly generated "
-         << "state for enough overlap" << endl;
+    cout << "HubbardModelVMC::HubbardModelVMC() : configuration does not have "
+         << "an overlap with the determinantal wavefunction -> "
+         << "generating a new configuration" << endl;
 #endif
 
-    // check determinantal part for enough overlap
-    if ( W.init_and_check() == false ) {
-      continue;
-    } else {
-      break;
-    }
+    pconf.distribute_random();
+    pconf_has_overlap = W.init_and_check();
   }
 
   T.init();
@@ -73,6 +85,13 @@ HubbardModelVMC::HubbardModelVMC(
   cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
        << "overlap! -> initial state selection completed!" << endl;
 #endif
+}
+
+
+
+bool HubbardModelVMC::check_proposed_pconf_accepted() const
+{
+  return proposed_pconf_accepted;
 }
 
 

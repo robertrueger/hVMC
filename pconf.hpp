@@ -24,6 +24,8 @@
 #include <random>
 #include <memory>
 
+#include <boost/optional.hpp>
+
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
@@ -92,7 +94,9 @@ class ParticleConfiguration final
 
     ParticleConfiguration(
       const std::shared_ptr<Lattice>& lat_init, unsigned int Ne_init,
-      std::mt19937& rng_init
+      std::mt19937& rng_init,
+      boost::optional<const Eigen::VectorXi&> spindex_occ_init
+        = boost::optional<const Eigen::VectorXi&>()
     );
 
     void distribute_random();

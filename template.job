@@ -94,7 +94,7 @@ num-bins = 100
 num-binmcs = 100
 
 # [opt+sim]: random number generator seed
-# rng-seed = 1337133789
+#rng-seed = 1337133789
 
 # [opt]: which variational parameters to optimize
 # BITFIELD!

@@ -34,12 +34,16 @@
 
 MCCResults mccrun_master(
   const Options& opts, const Eigen::VectorXd& vpar, unsigned int num_bins,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
+  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm,
+  boost::optional<const Eigen::VectorXi&> pconf_init
+    = boost::optional<const Eigen::VectorXi&>()
 );
 
 void mccrun_slave(
   const Options& opts, const Eigen::VectorXd& vpar,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm
+  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm,
+  boost::optional<const Eigen::VectorXi&> pconf_init
+    = boost::optional<const Eigen::VectorXi&>()
 );
 
 #endif // MCCRUN_H_INCLUDED

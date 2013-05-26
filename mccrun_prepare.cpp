@@ -34,7 +34,8 @@ namespace mpi = boost::mpi;
 
 HubbardModelVMC prepare_model(
   const Options& opts, const Eigen::VectorXd& vpar,
-  const mpi::communicator& mpicomm )
+  const mpi::communicator& mpicomm,
+  boost::optional<const Eigen::VectorXi&> spindex_occ_init )
 {
   mt19937 rng = prepare_rng( opts, mpicomm );
   shared_ptr<Lattice> lat = prepare_lattice( opts );
@@ -76,7 +77,8 @@ HubbardModelVMC prepare_model(
     opts["fpctrl.W-deviation-target"].as<double>(),
     opts["fpctrl.W-updates-until-recalc"].as<unsigned int>(),
     opts["fpctrl.T-deviation-target"].as<double>(),
-    opts["fpctrl.T-updates-until-recalc"].as<unsigned int>()
+    opts["fpctrl.T-updates-until-recalc"].as<unsigned int>(),
+    spindex_occ_init
   );
 }
 

@@ -28,15 +28,36 @@ using namespace std;
 
 
 ParticleConfiguration::ParticleConfiguration(
-  const shared_ptr<Lattice>& lat_init, unsigned int Ne_init,  mt19937& rng_init )
+  const shared_ptr<Lattice>& lat_init, unsigned int Ne_init,  mt19937& rng_init,
+  boost::optional<const Eigen::VectorXi&> spindex_occ_init )
   : lat( lat_init ),
     Ne( Ne_init ), Npu( Ne / 2 ), Npd( lat->L - Ne / 2 ), Np( Npu + Npd ),
-    spindex_occ( Eigen::VectorXi::Zero( 2 * lat->L ) ),
+    spindex_occ(
+      spindex_occ_init ?
+      spindex_occ_init.get() :
+      Eigen::VectorXi::Zero( 2 * lat->L )
+    ),
     particlenum_pos( Np ),
     rng( rng_init )
 {
   assert( Ne % 2 == 0 );
-  distribute_random();
+
+  if ( !spindex_occ_init ) {
+    // distribute everything randomly if no initial distribution was given
+    distribute_random();
+  } else {
+    // initial distribution was given
+
+    // make sure the given initial distribution was sane:
+    assert( spindex_occ.size() == 2 * lat->L );
+    assert( spindex_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
+    assert( spindex_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
+    assert( spindex_occ.sum() == static_cast<int>( Np ) );
+
+    // we need to construct the particlenum_pos
+    // (... the distribute_random method would have done it otherwise ...)
+    reconstr_particlenum_pos();
+  }
 }
 
 

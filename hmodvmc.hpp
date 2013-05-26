@@ -24,6 +24,8 @@
 #include <random>
 #include <memory>
 
+#include <boost/optional.hpp>
+
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
@@ -62,6 +64,7 @@ class HubbardModelVMC final
     // ----- dependent and internal objects -----
 
     ParticleConfiguration pconf;
+    bool proposed_pconf_accepted;
 
     WMatrix W;
     TVector T;
@@ -90,8 +93,14 @@ class HubbardModelVMC final
       double W_deviation_target,
       unsigned int updates_until_W_recalc,
       double T_deviation_target,
-      unsigned int updates_until_T_recalc
+      unsigned int updates_until_T_recalc,
+      boost::optional<const Eigen::VectorXi&> spindex_occ_init
+        = boost::optional<const Eigen::VectorXi&>()
     );
+
+    // method that returns whether the proposes configuration was accepted
+    // (if so, we assume that we won't have to equilibrate that long ...)
+    bool check_proposed_pconf_accepted() const;
 
     // Monte Carlo step
     void mcs();
