@@ -74,6 +74,7 @@ observable = E
 observable = dblocc
 #observable = nncorr
 #observable = sscorr
+observable = pconfs
 
 # [ana]: selected analysis modules
 # available modules: ssfac
@@ -84,7 +85,7 @@ analysis = ssfac
 update-hop-maxdistance = 3
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
-num-mcs-equil = 100
+num-mcs-equil = 2000
 
 # [opt+sim]: number of measurement bins
 num-bins = 100
@@ -93,7 +94,7 @@ num-bins = 100
 num-binmcs = 100
 
 # [opt+sim]: random number generator seed
-# rng-seed = 1337133789
+#rng-seed = 1337133789
 
 # [opt]: which variational parameters to optimize
 # BITFIELD!

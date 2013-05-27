@@ -24,6 +24,8 @@
 #include <random>
 #include <memory>
 
+#include <boost/optional.hpp>
+
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
@@ -75,8 +77,8 @@ class ParticleConfiguration
     const unsigned int Npu; // ... spin up particles
     const unsigned int Npd; /// ... spin down particles
     const unsigned int Np; // ... particles
-    Eigen::VectorXi site_occ;
-    std::vector<Lattice::spindex> particle_pos;
+    Eigen::VectorXi spindex_occ;
+    std::vector<Lattice::spindex> particlenum_pos;
 
   private:
 
@@ -86,13 +88,15 @@ class ParticleConfiguration
     // (in order to avoid allocating new ones all the time)
     mutable std::vector<Lattice::spindex> k_1nb, k_2nb, k_3nb;
 
-    void reconstr_particle_pos();
+    void reconstr_particlenum_pos();
 
   public:
 
     ParticleConfiguration(
       const std::shared_ptr<Lattice>& lat_init, unsigned int Ne_init,
-      std::mt19937& rng_init
+      std::mt19937& rng_init,
+      boost::optional<const Eigen::VectorXi&> spindex_occ_init
+        = boost::optional<const Eigen::VectorXi&>()
     );
 
     void distribute_random();
@@ -100,12 +104,8 @@ class ParticleConfiguration
     ParticleHop propose_random_hop( unsigned int update_hop_maxdist ) const;
     void do_hop( const ParticleHop& hop );
 
-    Lattice::spindex get_particle_pos( unsigned int k ) const;
-    ParticleOccupation_t get_site_occ( Lattice::spindex l ) const;
-
-    // particle configuration readers
-    Eigen::VectorXi npu() const;
-    Eigen::VectorXi npd() const;
+    const Eigen::VectorXi& get_spindex_occ() const;
+    const std::vector<Lattice::spindex>& get_particlenum_pos() const;
 };
 
 

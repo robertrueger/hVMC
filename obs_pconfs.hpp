@@ -17,33 +17,38 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MCCRUN_H_INCLUDED
-#define MCCRUN_H_INCLUDED
+#ifndef OBS_FINAL_PARTICLE_CONFIGURATION_H_INCLUDED
+#define OBS_FINAL_PARTICLE_CONFIGURATION_H_INCLUDED
 
-#include <set>
+#include "obs.hpp"
 
-#include <boost/mpi/communicator.hpp>
+#include <vector>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "options.hpp"
-#include "mccresults.hpp"
-#include "obs.hpp"
 
+class ObservableParticleConfigurations : public Observable
+{
+  private:
 
-MCCResults mccrun_master(
-  const Options& opts, const Eigen::VectorXd& vpar, unsigned int num_bins,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm,
-  boost::optional<const Eigen::VectorXi&> pconf_init
-    = boost::optional<const Eigen::VectorXi&>()
-);
+    bool thisbin_recorded;
+    std::vector<Eigen::VectorXi> site_occs;
 
-void mccrun_slave(
-  const Options& opts, const Eigen::VectorXd& vpar,
-  const std::set<observables_t>& obs, const boost::mpi::communicator& mpicomm,
-  boost::optional<const Eigen::VectorXi&> pconf_init
-    = boost::optional<const Eigen::VectorXi&>()
-);
+  public:
 
-#endif // MCCRUN_H_INCLUDED
+    ObservableParticleConfigurations();
+
+    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+
+    void completebin();
+
+    void collect_and_write_results(
+      const boost::mpi::communicator& mpicomm,
+      MCCResults& results
+    ) const;
+
+    void send_results_to_master( const boost::mpi::communicator& mpicomm ) const;
+};
+
+#endif // OBS_FINAL_PARTICLE_CONFIGURATION_H_INCLUDED

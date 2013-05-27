@@ -140,7 +140,8 @@ Eigen::VectorXd TVector::calc_new() const
   for ( Lattice::index i = 0; i < lat->L; ++i ) {
     for ( Lattice::index j = 0; j < lat->L; ++j ) {
       T_new( i ) +=
-        v( i, j ) * ( pconf.get_site_occ( j ) - pconf.get_site_occ( j + lat->L ) );
+        v( i, j ) * ( pconf.get_spindex_occ()[ j ] -
+                      pconf.get_spindex_occ()[ j + lat->L ] );
     }
   }
   return T_new;

@@ -24,6 +24,7 @@
 #include <memory>
 #include <random>
 
+#include <boost/optional.hpp>
 #include <boost/mpi/communicator.hpp>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
@@ -38,7 +39,9 @@
 
 HubbardModelVMC prepare_model(
   const Options& opts, const Eigen::VectorXd& vpar,
-  const boost::mpi::communicator& mpicomm
+  const boost::mpi::communicator& mpicomm,
+  boost::optional<const Eigen::VectorXi&> spindex_occ_init
+    = boost::optional<const Eigen::VectorXi&>()
 );
 
 std::mt19937 prepare_rng(

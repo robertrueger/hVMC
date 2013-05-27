@@ -357,42 +357,42 @@ double Lattice2DSquare2Layer::pairsym_modifier(
 
 
 
-Eigen::VectorXi Lattice2DSquare2Layer::get_random_site_occ(
+Eigen::VectorXi Lattice2DSquare2Layer::get_random_spindex_occ(
    unsigned int Npu, unsigned int Npd, mt19937& rng ) const
 {
   // make sure Npu and Npd are even numbers,
   // so that we can distribute them evenly among the planes
   assert( Npu % 2 == 0 && Npd % 2 == 0 );
 
-  Eigen::VectorXi site_occ = Eigen::VectorXi::Zero( 2 * L );
+  Eigen::VectorXi spindex_occ = Eigen::VectorXi::Zero( 2 * L );
 
   // distribute half of the Npu particles randomly in each plane
-  while ( site_occ.segment( 0, L_layer ).sum()
+  while ( spindex_occ.segment( 0, L_layer ).sum()
             < static_cast<int>( Npu / 2 ) ) {
-    site_occ[
+    spindex_occ[
       uniform_int_distribution<Lattice::index>( 0, L_layer - 1 )( rng )
     ] = 1;
   }
-  while ( site_occ.segment( L_layer, L_layer ).sum()
+  while ( spindex_occ.segment( L_layer, L_layer ).sum()
             < static_cast<int>( Npu / 2 ) ) {
-    site_occ[
+    spindex_occ[
       uniform_int_distribution<Lattice::index>( L_layer, L - 1 )( rng )
     ] = 1;
   }
 
   // distribute half of the Npd particles randomly in each plane
-  while ( site_occ.segment( L, L_layer ).sum()
+  while ( spindex_occ.segment( L, L_layer ).sum()
             < static_cast<int>( Npd / 2 ) ) {
-    site_occ[
+    spindex_occ[
       uniform_int_distribution<Lattice::index>( L, L + L_layer - 1 )( rng )
     ] = 1;
   }
-  while ( site_occ.segment( L + L_layer, L_layer ).sum()
+  while ( spindex_occ.segment( L + L_layer, L_layer ).sum()
             < static_cast<int>( Npd / 2 ) ) {
-    site_occ[
+    spindex_occ[
       uniform_int_distribution<Lattice::index>( L + L_layer, 2 * L - 1 )( rng )
     ] = 1;
   }
 
-  return site_occ;
+  return spindex_occ;
 }

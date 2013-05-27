@@ -235,7 +235,7 @@ Eigen::MatrixXfp WMatrix::calc_D() const
 {
   Eigen::MatrixXfp D( pconf.Np, pconf.Np );
   for ( unsigned int pid = 0; pid < pconf.Np; ++pid ) {
-    D.row( pid ) = detwf.M().row( pconf.get_particle_pos( pid ) );
+    D.row( pid ) = detwf.M().row( pconf.get_particlenum_pos()[ pid ] );
   }
 
 #if VERBOSE >= 3

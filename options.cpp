@@ -139,7 +139,8 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "calc.observable,O",
     po::value< std::vector<observables_t> >(),
-    "[sim]: measured observables (E, Dk, DkDkp, DkE, dblocc, nncorr)" )
+    "[sim]: measured observables "
+    "(E, Dk, DkDkp, DkE, dblocc, nncorr, sscorr, pconfs)" )
 
   ( "calc.analysis,A",
     po::value< std::vector<analysis_t> >(),
@@ -524,6 +525,8 @@ istream& operator>>( std::istream& in, observables_t& obs )
     obs = OBSERVABLE_DENSITY_DENSITY_CORRELATION;
   } else if ( token == "sscorr" ) {
     obs = OBSERVABLE_SPIN_SPIN_CORRELATION;
+  } else if ( token == "pconfs" ) {
+    obs = OBSERVABLE_PARTICLE_CONFIGURATIONS;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

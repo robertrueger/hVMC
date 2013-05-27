@@ -28,33 +28,54 @@ using namespace std;
 
 
 ParticleConfiguration::ParticleConfiguration(
-  const shared_ptr<Lattice>& lat_init, unsigned int Ne_init,  mt19937& rng_init )
+  const shared_ptr<Lattice>& lat_init, unsigned int Ne_init,  mt19937& rng_init,
+  boost::optional<const Eigen::VectorXi&> spindex_occ_init )
   : lat( lat_init ),
     Ne( Ne_init ), Npu( Ne / 2 ), Npd( lat->L - Ne / 2 ), Np( Npu + Npd ),
-    site_occ( Eigen::VectorXi::Zero( 2 * lat->L ) ),
-    particle_pos( Np ),
+    spindex_occ(
+      spindex_occ_init ?
+      spindex_occ_init.get() :
+      Eigen::VectorXi::Zero( 2 * lat->L )
+    ),
+    particlenum_pos( Np ),
     rng( rng_init )
 {
   assert( Ne % 2 == 0 );
-  distribute_random();
+
+  if ( !spindex_occ_init ) {
+    // distribute everything randomly if no initial distribution was given
+    distribute_random();
+  } else {
+    // initial distribution was given
+
+    // make sure the given initial distribution was sane:
+    assert( spindex_occ.size() == 2 * lat->L );
+    assert( spindex_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
+    assert( spindex_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
+    assert( spindex_occ.sum() == static_cast<int>( Np ) );
+
+    // we need to construct the particlenum_pos
+    // (... the distribute_random method would have done it otherwise ...)
+    reconstr_particlenum_pos();
+  }
 }
 
 
 
-void ParticleConfiguration::reconstr_particle_pos()
+void ParticleConfiguration::reconstr_particlenum_pos()
 {
-  particle_pos.clear();
+  particlenum_pos.clear();
   for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
-    if ( site_occ[l] == PARTICLE_OCCUPATION_FULL ) {
-      particle_pos.push_back( l );
+    if ( spindex_occ[l] == PARTICLE_OCCUPATION_FULL ) {
+      particlenum_pos.push_back( l );
     }
   }
-  assert( particle_pos.size() == Np );
+  assert( particlenum_pos.size() == Np );
 
 #if VERBOSE >= 2
-  cout << "ParticleConfiguration::reconstr_particle_pos() : particle positions are"
+  cout << "ParticleConfiguration::reconstr_particlenum_pos() : particle positions are"
        << endl;
-  for ( auto it = particle_pos.begin(); it != particle_pos.end(); ++it ) {
+  for ( auto it = particlenum_pos.begin(); it != particlenum_pos.end(); ++it ) {
     cout << *it << " ";
   }
   cout << endl;
@@ -67,19 +88,19 @@ void ParticleConfiguration::reconstr_particle_pos()
 void ParticleConfiguration::distribute_random()
 {
   // let the lattice generate a new random configuration
-  site_occ = lat->get_random_site_occ( Npu, Npd, rng );
+  spindex_occ = lat->get_random_spindex_occ( Npu, Npd, rng );
 
 #if VERBOSE >= 2
   cout << "ParticleConfiguration::distribute_random() : new config is" << endl;
-  cout << site_occ.head( lat->L ).transpose() << endl
-       << site_occ.tail( lat->L ).transpose() << endl;
+  cout << spindex_occ.head( lat->L ).transpose() << endl
+       << spindex_occ.tail( lat->L ).transpose() << endl;
 #endif
 
-  assert( site_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
-  assert( site_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
-  assert( site_occ.sum() == static_cast<int>( Np ) );
+  assert( spindex_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
+  assert( spindex_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
+  assert( spindex_occ.sum() == static_cast<int>( Np ) );
 
-  reconstr_particle_pos();
+  reconstr_particlenum_pos();
 }
 
 
@@ -92,16 +113,16 @@ ParticleHop ParticleConfiguration::propose_random_hop(
     = uniform_int_distribution<unsigned int>( 0, Np - 1 )( rng );
 
   // find the position of the kth particle
-  const Lattice::spindex k_pos = particle_pos[k];
+  const Lattice::spindex k_pos = particlenum_pos[k];
 
 #if VERBOSE >= 2
-  cout << site_occ.head( lat->L ).transpose() << endl
-       << site_occ.tail( lat->L ).transpose() << endl;
+  cout << spindex_occ.head( lat->L ).transpose() << endl
+       << spindex_occ.tail( lat->L ).transpose() << endl;
   cout << "ParticleConfiguration::propose_random_hop() : proposing to hop "
        << "particle " << k << " from " << k_pos << " to ";
 #endif
 
-  assert( site_occ[ k_pos ] == PARTICLE_OCCUPATION_FULL );
+  assert( spindex_occ[ k_pos ] == PARTICLE_OCCUPATION_FULL );
 
   // get nearest neighbors of site k_pos
   lat->get_Xnn( k_pos, 1, &k_1nb );
@@ -148,15 +169,15 @@ ParticleHop ParticleConfiguration::propose_random_hop(
     cout << *it << " ";
   }
   cout << "\b] ";
-  cout << l << " (" << ( site_occ[ l ] == PARTICLE_OCCUPATION_FULL ? "im" : "" )
+  cout << l << " (" << ( spindex_occ[ l ] == PARTICLE_OCCUPATION_FULL ? "im" : "" )
        << "possible" << ")" << endl;
 #endif
 
   assert( lat->get_spindex_type( k_pos ) == lat->get_spindex_type( l ) );
-  assert( site_occ[ l ] == PARTICLE_OCCUPATION_FULL ||
-          site_occ[ l ] == PARTICLE_OCCUPATION_EMPTY  );
+  assert( spindex_occ[ l ] == PARTICLE_OCCUPATION_FULL ||
+          spindex_occ[ l ] == PARTICLE_OCCUPATION_EMPTY  );
 
-  return ParticleHop( k, l, k_pos, site_occ[ l ] == PARTICLE_OCCUPATION_EMPTY );
+  return ParticleHop( k, l, k_pos, spindex_occ[ l ] == PARTICLE_OCCUPATION_EMPTY );
 }
 
 
@@ -164,55 +185,41 @@ ParticleHop ParticleConfiguration::propose_random_hop(
 void ParticleConfiguration::do_hop( const ParticleHop& hop )
 {
   assert( hop.possible );
-  assert( site_occ[ hop.k_pos ] == PARTICLE_OCCUPATION_FULL );
-  assert( site_occ[ hop.l ]     == PARTICLE_OCCUPATION_EMPTY );
+  assert( spindex_occ[ hop.k_pos ] == PARTICLE_OCCUPATION_FULL );
+  assert( spindex_occ[ hop.l ]     == PARTICLE_OCCUPATION_EMPTY );
   assert( lat->get_spindex_type( hop.k_pos ) == lat->get_spindex_type( hop.l ) );
 
-  site_occ[ hop.k_pos ] = PARTICLE_OCCUPATION_EMPTY;
-  site_occ[ hop.l ] = PARTICLE_OCCUPATION_FULL;
+  spindex_occ[ hop.k_pos ] = PARTICLE_OCCUPATION_EMPTY;
+  spindex_occ[ hop.l ] = PARTICLE_OCCUPATION_FULL;
 
-  particle_pos[ hop.k ] = hop.l;
+  particlenum_pos[ hop.k ] = hop.l;
 
 #if VERBOSE >= 2
   cout << "ParticleConfiguration::do_hop() : hopping particle #"
        << hop.k << " from " << hop.k_pos << " to " << hop.l << endl;
-  cout << site_occ.head( lat->L ).transpose() << endl
-       << site_occ.tail( lat->L ).transpose() << endl;
+  cout << spindex_occ.head( lat->L ).transpose() << endl
+       << spindex_occ.tail( lat->L ).transpose() << endl;
   cout << "ParticleConfiguration::do_hop() : particle positions are"
        << endl;
-  for ( auto it = particle_pos.begin(); it != particle_pos.end(); ++it ) {
+  for ( auto it = particlenum_pos.begin(); it != particlenum_pos.end(); ++it ) {
     cout << *it << " ";
   }
   cout << endl;
 #endif
 
-  assert( site_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
-  assert( site_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
-  assert( site_occ.sum() == static_cast<int>( Np ) );
+  assert( spindex_occ.head( lat->L ).sum() == static_cast<int>( Npu ) );
+  assert( spindex_occ.tail( lat->L ).sum() == static_cast<int>( Npd ) );
+  assert( spindex_occ.sum() == static_cast<int>( Np ) );
 }
 
 
-
-Lattice::spindex ParticleConfiguration::get_particle_pos( unsigned int k ) const
+const Eigen::VectorXi& ParticleConfiguration::get_spindex_occ() const
 {
-  return particle_pos[ k ];
+  return spindex_occ;
 }
 
 
-
-ParticleOccupation_t ParticleConfiguration::get_site_occ( Lattice::spindex l ) const
+const std::vector<Lattice::spindex>& ParticleConfiguration::get_particlenum_pos() const
 {
-  return static_cast<ParticleOccupation_t>( site_occ[ l ] );
-}
-
-
-
-Eigen::VectorXi ParticleConfiguration::npu() const
-{
-  return site_occ.head( lat->L );
-}
-
-Eigen::VectorXi ParticleConfiguration::npd() const
-{
-  return site_occ.tail( lat->L );
+  return particlenum_pos;
 }
