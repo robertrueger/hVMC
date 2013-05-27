@@ -28,6 +28,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <random>
 
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
@@ -154,6 +155,15 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   // (configurations from the last SR iteration used to initialize the next one)
   vector<Eigen::VectorXi> pconf_cache;
 
+  // make a random number generator
+  unsigned int rngseed;
+  if ( opts.count("calc.rng-seed") ) {
+    rngseed = opts["calc.rng-seed"].as<unsigned int>();
+  } else {
+    rngseed = chrono::system_clock::now().time_since_epoch().count();
+  }
+  mt19937 rng( rngseed );
+
   bool finished = false;
   while ( !finished ) {
 
@@ -170,12 +180,32 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     mpi::broadcast( mpicomm, obs,  0 );
 
     // tell the slaves if we have some good initial confs cached
-    bool use_initial_pconf = false; //pconf_cache.empty();
+    bool use_initial_pconf = !pconf_cache.empty();
     mpi::broadcast( mpicomm, use_initial_pconf, 0 );
 
     MCCResults res;
     if ( use_initial_pconf ) {
-      // TODO: send a random conf to each slave (Robert Rueger, 2013-05-26 12:20)
+
+      // send a random pconf from the cache to each slave
+      for ( int slave = 1; slave < mpicomm.size(); ++slave ) {
+        mpicomm.send(
+          slave,
+          MSGTAG_M_S_INITIAL_PARTICLE_CONFIGURATION,
+          pconf_cache[
+            uniform_int_distribution<unsigned int>( 0, pconf_cache.size() - 1 )( rng )
+          ]
+        );
+      }
+
+      // run master part of the Monte Carlo cycle without initial pconf
+      res =
+        mccrun_master(
+          opts, vpar, sr_bins, obs, mpicomm,
+          pconf_cache[
+            uniform_int_distribution<unsigned int>( 0, pconf_cache.size() - 1 )( rng )
+          ]
+       );
+
     } else {
       // run master part of the Monte Carlo cycle without initial pconf
       res = mccrun_master( opts, vpar, sr_bins, obs, mpicomm );

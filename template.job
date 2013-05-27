@@ -85,7 +85,7 @@ analysis = ssfac
 update-hop-maxdistance = 3
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
-num-mcs-equil = 100
+num-mcs-equil = 2000
 
 # [opt+sim]: number of measurement bins
 num-bins = 100

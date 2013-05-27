@@ -92,16 +92,30 @@ MCCResults mccrun_master(
 
   cout << ":: Equilibrating the system" << endl;
 
-  for (
-    unsigned int mcs = 0;
-    mcs < opts["calc.num-mcs-equil"].as<unsigned int>();
-    ++mcs ) {
+  unsigned int equil_mcs = opts["calc.num-mcs-equil"].as<unsigned int>();
+  if ( pconf_init && model.check_proposed_pconf_accepted() == true ) {
+    // the proposed initial configuration was accepted, lets assume that the
+    // initial state is already a good one and reduce the number of mcs required
+    // for equilibration!
+    equil_mcs /= 10;
+  }
+
+  for ( unsigned int mcs = 1; mcs <= equil_mcs; ++mcs ) {
     // take care of the slaves
     mpiquery_finished_work();
     mpiquery_work_requests();
 
     // perform a Monte Carlo step
     model.mcs();
+
+    // progress indicator
+    if ( opts.count("verbose") ) {
+      cout << '\r' << "     MCS " << mcs << "/" << equil_mcs << " (on master)";
+      cout.flush();
+    }
+  }
+  if ( opts.count("verbose") ) {
+    cout << endl;
   }
 
   unsigned int completed_bins_master = 0;
@@ -237,12 +251,12 @@ void mccrun_slave(
   ObservableCache obscache;
 
   // equilibrate the system
-
-  for (
-    unsigned int mcs = 0;
-    mcs < opts["calc.num-mcs-equil"].as<unsigned int>();
-    ++mcs )
-  {
+  unsigned int equil_mcs = opts["calc.num-mcs-equil"].as<unsigned int>();
+  if ( pconf_init && model.check_proposed_pconf_accepted() == true ) {
+    // same procedure as for master ...
+    equil_mcs /= 10;
+  }
+  for ( unsigned int mcs = 1; mcs <= equil_mcs; ++mcs ) {
     model.mcs();
   }
 
