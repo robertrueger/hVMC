@@ -88,7 +88,7 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "phys.pairing-symmetry,y",
     po::value<optpairsym_t>()->default_value( OPTION_PAIRING_SYMMETRY_SWAVE ),
-    "symmetry of the pairing term (swave, dwave)" )
+    "symmetry of the pairing term (swave, dwave, dwave_twisted)" )
 
   ( "phys.vpar-file,P",
     po::value<fs::path>(),
@@ -489,6 +489,8 @@ istream& operator>>( std::istream& in, optpairsym_t& s )
     s = OPTION_PAIRING_SYMMETRY_SWAVE;
   } else if ( token == "d" || token == "dwave" ) {
     s = OPTION_PAIRING_SYMMETRY_DWAVE;
+  } else if ( token == "dt" || token == "dwave_twisted" ) {
+    s = OPTION_PAIRING_SYMMETRY_DWAVE_TWISTED;
   } else {
     throw po::validation_error( po::validation_error::invalid_option_value );
   }

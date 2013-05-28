@@ -330,29 +330,43 @@ double Lattice2DSquare2Layer::pairsym_modifier(
 
   if ( sym == OPTION_PAIRING_SYMMETRY_SWAVE ) {
     return 1.0;
-  } else { // sym == OPTION_PAIRING_SYMMETRY_DWAVE
+  } else { // dwave or twisted dwave
 
     int dx = d( x( i ), x( j ) );
     int dy = d( y( i ), y( j ) );
 
-    if ( ( dx == 1 || dx == -1 ) && dy == 0 ) {
-      // nearest neighbors along x-axis
-      return 1.0;
-    } else if ( dx == 0 && ( dy == 1 || dy == -1 ) ) {
-      // nearest neighbors along y-axis
-      return -1.0;
-    } else if ( ( dx == 1 || dx == -1 ) && ( dy == 1 || dy == -1 ) ) {
-      // second nearest neighbors along diagonal
-      return 0.0;
-    } else if ( dx == 0 && dy == 0 && ( z( i ) != z( j ) ) ) {
+    if ( z( i ) != z( j ) ) {
+      assert( dx == 0 && dy == 0 );
       // different planes
+
       return 1.0;
+
+    } else {
+      assert( !( dx == 0 && dy == 0 ) );
+      // same plane
+
+      double modifier;
+
+      if ( ( dx == 1 || dx == -1 ) && dy == 0 ) {
+        // nearest neighbors along x-axis
+        modifier = 1.0;
+      } else if ( dx == 0 && ( dy == 1 || dy == -1 ) ) {
+        // nearest neighbors along y-axis
+        modifier = -1.0;
+      } else {
+        assert( ( dx == 1 || dx == -1 ) && ( dy == 1 || dy == -1 ) );
+        // second nearest neighbors along diagonal
+        modifier = 0.0;
+      }
+
+      // twisted dwave symmetry reverses the sign in the second plane
+      if ( sym == OPTION_PAIRING_SYMMETRY_DWAVE_TWISTED && z( i ) == 1 ) {
+        modifier *= -1.0;
+      }
+
+      return modifier;
     }
   }
-
-  // still here? no meaningful decision yet??? --> this is a bug ...
-  assert( false );
-  return 0.0; // <-- should never be reached; only to suppress compiler warning
 }
 
 

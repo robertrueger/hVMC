@@ -39,8 +39,8 @@ num-lattice-sites = 72
 # total number of electrons
 num-electrons = 72
 
-# symmetry of the pairing term (swave, dwave)
-pairing-symmetry = dwave
+# symmetry of the pairing term (swave, dwave, dwave_twisted)
+pairing-symmetry = dwave_twisted
 
 # file to load the variational parameters from
 #vpar-file =

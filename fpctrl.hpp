@@ -86,8 +86,8 @@ double calc_deviation(
   double exact_square_sum = exact.squaredNorm();
   double  diff_square_sum = ( approx - exact ).squaredNorm();
   return
-    diff_square_sum == 0.0 ?
-    0.0 :
+    exact_square_sum == 0.0 ?
+    sqrt( diff_square_sum ) :
     sqrt( diff_square_sum / exact_square_sum );
 }
 
