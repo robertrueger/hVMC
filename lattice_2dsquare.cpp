@@ -336,7 +336,7 @@ double Lattice2DSquare::pairsym_modifier(
 
   if ( sym == OPTION_PAIRING_SYMMETRY_SWAVE ) {
     return 1.0;
-  } else { // sym == OPTION_PAIRING_SYMMETRY_DWAVE
+  } else { // dwave or twisted dwave (doesn't make a difference for 1 plane)
 
     int dx = d( x( i ), x( j ) );
     int dy = d( y( i ), y( j ) );

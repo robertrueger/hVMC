@@ -30,7 +30,8 @@ enum optmode_t {
 
 enum optpairsym_t {
   OPTION_PAIRING_SYMMETRY_SWAVE,
-  OPTION_PAIRING_SYMMETRY_DWAVE
+  OPTION_PAIRING_SYMMETRY_DWAVE,
+  OPTION_PAIRING_SYMMETRY_DWAVE_TWISTED
 };
 
 typedef boost::program_options::variables_map Options;

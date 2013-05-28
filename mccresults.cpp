@@ -112,8 +112,6 @@ void MCCResults::write_to_files( const fs::path& dir ) const
 
 std::ostream& operator<<( std::ostream& out, const MCCResults& res )
 {
-  out << endl;
-
   if ( res.E ) {
     out << endl
         << "      E = " << res.E->mean << endl
