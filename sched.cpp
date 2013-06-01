@@ -374,6 +374,15 @@ void sched_master_sim( const Options& opts, const mpi::communicator& mpicomm )
   // prepare the initial variational parameters
   Eigen::VectorXd vpar = get_initial_varparam( opts );
 
+  // dump the used vpars to disk
+  {
+    ofstream vpar_file( (
+      opts["calc.working-dir"].as<fs::path>() / "sim_vpar.dat"
+    ).string() );
+    ar::text_oarchive vpar_archive( vpar_file );
+    vpar_archive << vpar;
+  }
+
   // add the observables you want to measure to the set
   set<observables_t> obs;
   obs.insert(
