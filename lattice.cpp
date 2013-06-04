@@ -80,10 +80,10 @@ Eigen::VectorXi Lattice::get_random_spindex_occ(
   Eigen::VectorXi spindex_occ = Eigen::VectorXi::Zero( 2 * L );
 
   while ( spindex_occ.head( L ).sum() < static_cast<int>( Npu ) ) {
-    spindex_occ[ uniform_int_distribution<Lattice::index>( 0, L - 1 )( rng ) ] = 1;
+    spindex_occ[ uniform_int_distribution<Lattice::spindex>( 0, L - 1 )( rng ) ] = 1;
   }
   while ( spindex_occ.tail( L ).sum() < static_cast<int>( Npd ) ) {
-    spindex_occ[ uniform_int_distribution<Lattice::index>( L, 2 * L - 1 )( rng ) ] = 1;
+    spindex_occ[ uniform_int_distribution<Lattice::spindex>( L, 2 * L - 1 )( rng ) ] = 1;
   }
 
   return spindex_occ;

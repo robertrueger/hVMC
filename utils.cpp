@@ -22,13 +22,9 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
-
-#ifdef OS_WINDOWS
-# include <windows.h>
-#endif
+#include <cmath>
 
 using namespace std;
-namespace fs = boost::filesystem;
 
 
 void ostream_setup( ostream& stream )
@@ -39,32 +35,12 @@ void ostream_setup( ostream& stream )
 }
 
 
-fs::path get_hVMC_dir()
-{
-#if defined(OS_LINUX)
-  char buff[1024];
-  ssize_t len = readlink( "/proc/self/exe", buff, sizeof( buff ) - 1 );
-  if ( len != -1 ) {
-    buff[len] = '\0';
-    return fs::path( buff ).branch_path();
-  } else {
-    throw runtime_error( "readlink(/proc/self/exe) failed" );
-  }
-#elif defined(OS_WINDOWS)
-  char buff[MAX_PATH];
-  GetModuleFileName( NULL, buff, MAX_PATH );
-  return fs::path( buff ).branch_path();
-#else
-#error "Platform not supported: no way to determine executable directory"
-#endif
-}
-
-
 unsigned int uintsqrt( unsigned int n ) {
  return static_cast<unsigned int>(
-   floor( sqrt( static_cast<double>( n ) ) + 0.5 )
+   std::floor( std::sqrt( static_cast<double>( n ) ) + 0.5 )
  );
 }
+
 
 bool is_perfect_square( unsigned int n )
 {

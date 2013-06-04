@@ -380,33 +380,41 @@ Eigen::VectorXi Lattice2DSquare2Layer::get_random_spindex_occ(
 
   Eigen::VectorXi spindex_occ = Eigen::VectorXi::Zero( 2 * L );
 
-  // distribute half of the Npu particles randomly in each plane
+  // let us assume for a moment that we are at half filling ...
+
+  // distribute one Npu particle per site randomly in the first plane
   while ( spindex_occ.segment( 0, L_layer ).sum()
-            < static_cast<int>( Npu / 2 ) ) {
+            < static_cast<int>( L_layer ) ) {
     spindex_occ[
-      uniform_int_distribution<Lattice::index>( 0, L_layer - 1 )( rng )
+      uniform_int_distribution<Lattice::spindex>( 0, L_layer - 1 )( rng )
     ] = 1;
   }
-  while ( spindex_occ.segment( L_layer, L_layer ).sum()
-            < static_cast<int>( Npu / 2 ) ) {
+  // distribute one Npd particle per site randomly in the first plane
+  while ( spindex_occ.segment( L, L_layer ).sum()
+            < static_cast<int>( L_layer ) ) {
     spindex_occ[
-      uniform_int_distribution<Lattice::index>( L_layer, L - 1 )( rng )
+      uniform_int_distribution<Lattice::spindex>( L, L + L_layer - 1 )( rng )
     ] = 1;
   }
 
-  // distribute half of the Npd particles randomly in each plane
-  while ( spindex_occ.segment( L, L_layer ).sum()
-            < static_cast<int>( Npd / 2 ) ) {
-    spindex_occ[
-      uniform_int_distribution<Lattice::index>( L, L + L_layer - 1 )( rng )
-    ] = 1;
+  // at half filling the first plane would be finished now,
+  // the configuration on the second plane can now be constructed by thinking
+  // about the t_perp -> infinity case: here we always have to have 2 electrons
+  // with opposite spin per dimer
+
+  for ( Lattice::spindex l = L_layer; l < L; ++l ) {
+    // put a spin up particle in the 2. plane if we don't have one in plane 1
+    spindex_occ[ l ] = ( spindex_occ[ l - L_layer ] == 0 ? 1 : 0 );
   }
-  while ( spindex_occ.segment( L + L_layer, L_layer ).sum()
-            < static_cast<int>( Npd / 2 ) ) {
-    spindex_occ[
-      uniform_int_distribution<Lattice::index>( L + L_layer, 2 * L - 1 )( rng )
-    ] = 1;
+  for ( Lattice::spindex l = L + L_layer; l < 2 * L; ++l ) {
+    // put a spin down particle in the 2. plane if we don't have one in plane 1
+    spindex_occ[ l ] = ( spindex_occ[ l - L_layer ] == 0 ? 1 : 0 );
   }
+
+  // we should now have a valid configuration at half filling!
+
+  // TODO: generalize to non half filling! (Robert Rueger, 2013-06-04 11:48)
+  assert( Npu == L / 2 && Npd == L / 2 );
 
   return spindex_occ;
 }

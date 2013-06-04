@@ -102,6 +102,9 @@ class HubbardModelVMC
     // (if so, we assume that we won't have to equilibrate that long ...)
     bool check_proposed_pconf_accepted() const;
 
+    // method to call once the equilibration is complete
+    void finalize_equilibration();
+
     // Monte Carlo step
     void mcs();
 

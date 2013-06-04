@@ -23,6 +23,7 @@
 #include <vector>
 #include <numeric>
 #include <iosfwd>
+#include <cmath>
 
 #include <boost/optional.hpp>
 #include <boost/filesystem/path.hpp>
@@ -63,8 +64,12 @@ struct UncertainQuantity {
         - mean * mean
       );
 
+    // if binmeans variance is negative this is floating point precision
+    // problem (cancellation when subtracting mean^2)
+    binmeans_variance = std::max( binmeans_variance, 0.0 );
+
     // uncertainty of the mean is sqrt(variance / num_bins)
-    sigma = sqrt( binmeans_variance / static_cast<Ti>( binmeans.size() ) );
+    sigma = std::sqrt( binmeans_variance / static_cast<Ti>( binmeans.size() ) );
   }
 
   // make UncertainQuantity serializable
