@@ -96,6 +96,14 @@ bool HubbardModelVMC::check_proposed_pconf_accepted() const
 
 
 
+void HubbardModelVMC::finalize_equilibration()
+{
+  verify( W.init_and_check() );
+  T.init();
+}
+
+
+
 void HubbardModelVMC::mcs()
 {
 #if VERBOSE >= 2

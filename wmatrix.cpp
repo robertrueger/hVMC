@@ -76,6 +76,9 @@ bool WMatrix::init_and_check()
   W_active->noalias()
     = lu_decomp.solve( detwf.M().transpose() ).transpose();
 
+  devstat.reset();
+  updates_since_recalc = 0;
+
   return true;
 }
 

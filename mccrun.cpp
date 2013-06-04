@@ -118,6 +118,8 @@ MCCResults mccrun_master(
     cout << endl;
   }
 
+  model.finalize_equilibration();
+
   unsigned int completed_bins_master = 0;
 
   cout << ":: Performing Monte Carlo cycle" << endl;
@@ -259,6 +261,7 @@ void mccrun_slave(
   for ( unsigned int mcs = 1; mcs <= equil_mcs; ++mcs ) {
     model.mcs();
   }
+  model.finalize_equilibration();
 
   // run this slaves part of the Monte Carlo cycle
 

@@ -60,6 +60,13 @@ struct FPDevStat final {
       mag1_misses( 0 ), mag1_hits( 0 ) { }
 
   void add( double dev );
+  void reset() {
+    recalcs = 0;
+    misses = 0;
+    hits = 0;
+    mag1_misses = 0;
+    mag1_hits = 0;
+  }
 
   // make FPDevStat serializable
   friend class boost::serialization::access;

@@ -49,6 +49,8 @@ TVector::TVector(
 void TVector::init()
 {
   T = calc_new();
+  devstat.reset();
+  updates_since_recalc = 0;
 
 #if VERBOSE >= 2
     cout << "TVector::init() : initial T = " << endl << T.transpose() << endl;
