@@ -132,7 +132,6 @@ sr-averaging-cycles = 1000
 # Delta' += 16
 # Delta" += 32
 # mu += 64
-# Jastrow += 128
 vpar-minabs-select = 40
 
 # [opt]: fixed minimum absolute value for the selected parameters
