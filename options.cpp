@@ -188,7 +188,15 @@ Options read_options( int argc, char* argv[], bool is_master )
 
   ( "calc.sr-averaging-cycles,A",
     po::value<unsigned int>()->default_value( 10 ),
-    "[opt]: number of SR cycles to average the converged variational parameters" );
+    "[opt]: number of SR cycles to average the converged variational parameters" )
+
+  ( "calc.vpar-minabs-select",
+    po::value<unsigned int>()->default_value( 0 ),
+    "[opt]: variational parameters that have a fixed minimum absolute value" )
+
+  ( "calc.vpar-minabs-value",
+    po::value<double>()->default_value( 0.001 ),
+    "[opt]: fixed minimum absolute value for the selected parameters" );
 
   po::options_description fpctrl( "[opt+sim]: floating point precision control" );
   fpctrl.add_options()
@@ -420,6 +428,14 @@ Options read_options( int argc, char* argv[], bool is_master )
       throw logic_error(
         "hVMC only has 7+Jastrow variational parameters "
         "-> calc.optimizers can not be larger than 255"
+      );
+    }
+
+    if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
+         vm["calc.vpar-minabs-select"].as<unsigned int>() > 127 ) {
+      throw logic_error(
+        "the minimum vpar threshold is only intended for the det. parameters "
+        "-> calc.vpar-minabs-select can not be larger than 127"
       );
     }
 

@@ -25,10 +25,10 @@ nn-hopping = 1.0
 2nd-nn-hopping = 0.0
 
 # 3rd nearest-neighbor hopping matrix element t''
-3rd-nn-hopping = 0.5
+3rd-nn-hopping = 0.2
 
 # on-site energy U
-onsite-energy = 8.0
+onsite-energy = 0.5
 
 # lattice type (1dchain, 2dsquare, 2dsquare2layer)
 lattice = 2dsquare2layer
@@ -40,7 +40,7 @@ num-lattice-sites = 72
 num-electrons = 72
 
 # symmetry of the pairing term (swave, dwave, dwave_twisted)
-pairing-symmetry = dwave_twisted
+pairing-symmetry = dwave
 
 # file to load the variational parameters from
 #vpar-file =
@@ -49,17 +49,17 @@ pairing-symmetry = dwave_twisted
 # vpar-ovwrt-t2 =
 # vpar-ovwrt-t3 =
 # vpar-ovwrt-D0 =
-vpar-ovwrt-D1 = 0.5
+vpar-ovwrt-D1 = 0.001
 # vpar-ovwrt-D2 =
-vpar-ovwrt-D3 = 0.0
-# vpar-ovwrt-mu =
+vpar-ovwrt-D3 = 0.001
+vpar-ovwrt-mu = 0.0
 # vpar-ovwrt-J0 =
 
 
 [calc] ###################### CALCULATION SETTINGS #############################
 
 # simulation mode (optimization, simulation, analysis)
-#mode = opt
+mode = opt
 
 # [opt+sim+ana]: input/output directory"
 working-dir = ./example/
@@ -106,22 +106,37 @@ num-binmcs = 100
 # Delta" += 32
 # mu += 64
 # Jastrow += 128
-optimizers = 232
+optimizers = 170
 
 # [opt]: controls the SR convergence: vpar += dt * dvpar
-sr-dt = 0.5
+sr-dt = 0.2
 
 # [opt]: factor to boost the convergence speed of the Jastrow
 sr-dt-Jboost = 5
 
 # [opt]: Mann-Kendall threshold for convergence detection
-sr-mkthreshold = 0.5
+sr-mkthreshold = 0.45
 
 # [opt]: number of refinements during the SR cycle
 sr-max-refinements = 1
 
 # [opt]: number of SR cycles to average the converged variational parameters
-sr-averaging-cycles = 100
+sr-averaging-cycles = 1000
+
+# [opt]: variational parameters that have a fixed minimum absolute value
+# BITFIELD!
+# t' += 1
+# t" += 2
+# Delta_onsite += 4
+# Delta += 8
+# Delta' += 16
+# Delta" += 32
+# mu += 64
+# Jastrow += 128
+vpar-minabs-select = 40
+
+# [opt]: fixed minimum absolute value for the selected parameters
+vpar-minabs-value = 0.001
 
 
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################

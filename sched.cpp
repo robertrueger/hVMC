@@ -243,6 +243,22 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     // update variational parameters
     vpar += sr_dt * dvpar;
 
+    // prevent the absolute value of selected vpars from becoming too small
+    for ( unsigned int i = 0; i < 7; ++i ) {
+      if ( ( opts["calc.vpar-minabs-select"].as<unsigned int>() >> i ) % 2 == 1 ) {
+        if ( vpar( i ) < +opts["calc.vpar-minabs-value"].as<double>()
+             && vpar( i ) > +0.0 ) {
+          vpar( i ) = +opts["calc.vpar-minabs-value"].as<double>();
+        }
+        if ( vpar( i ) > -opts["calc.vpar-minabs-value"].as<double>()
+             && vpar( i ) < -0.0 ) {
+          vpar( i ) = -opts["calc.vpar-minabs-value"].as<double>();
+        }
+      }
+      assert( std::abs( vpar( i ) )
+              >= +opts["calc.vpar-minabs-value"].as<double>() );
+    }
+
     // save the new variational parameters for future reference
     vpar_hist.push_back( vpar );
     // ... and add them to the Mann-Kendall-Test
@@ -256,7 +272,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     ++sr_cycles;
     ++sr_cycles_since_refinement;
     unsigned int sr_num_vpar_converged = 0;
-    if ( sr_cycles_since_refinement >= 20 ) {
+    if ( sr_cycles_since_refinement >= 100 ) {
       for ( unsigned int k = 0; k < vpar.size(); ++k ) {
         // remove old data from the Mann-Kendall test
         // (we want to be testing only the last half since the refinement)
@@ -296,7 +312,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       cout << "f = " << endl << f.transpose() << endl << endl;
       cout << "dvpar = " << endl << dvpar.transpose() << endl << endl;
       cout << "vpar' = " << endl << vpar.transpose() << endl << endl;
-      if ( sr_cycles_since_refinement >= 20 ) {
+      if ( sr_cycles_since_refinement >= 100 ) {
         cout << "mktest = " << endl;
         for ( auto it = sr_vpar_mk.begin(); it != sr_vpar_mk.end(); ++it ) {
           cout << it->test() << " ";
