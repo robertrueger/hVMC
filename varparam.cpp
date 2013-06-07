@@ -49,7 +49,7 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
   unsigned int num_vpars = get_num_vpars( opts );
 
   // prepare vector
-  Eigen::VectorXd init_vpar( num_vpars );
+  Eigen::VectorXd init_vpar = Eigen::VectorXd::Zero( num_vpars );
 
   if ( fs::exists( opts["phys.vpar-file"].as<fs::path>() ) ) {
 
@@ -58,12 +58,15 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
     ar::text_iarchive vpar_archive( vpar_file );
     Eigen::VectorXd vpar_fromfile;
     vpar_archive >> vpar_fromfile;
-    if ( vpar_fromfile.size() != num_vpars ) {
-      cerr << "ERROR: variational parameter file does not have the right number "
-           "of variational parameters!" << endl;
+    if ( vpar_fromfile.size() <= num_vpars ) {
+      // silently extend missing variational parameters with 0
+      init_vpar.head( vpar_fromfile.size() ) = vpar_fromfile;
+    } else {
+      // the vpars from disk are more then we need? this is just wrong ...
+      cerr << "ERROR: variational parameter file has "
+              "too many variational parameters!" << endl;
       exit( 1 );
     }
-    init_vpar = vpar_fromfile;
 
   } else {
 

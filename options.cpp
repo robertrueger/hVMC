@@ -47,7 +47,7 @@ Options read_options( int argc, char* argv[], bool is_master )
   clionly.add_options()
   ( "help,h", "print this help message and exit" )
   ( "version,V", "print hVMC's version and exit" )
-  ( "verbose,v", "makes hVMC write additional information to stdout" )
+  ( "verbose,v", "makes hVMC write additional information to stdout and disk" )
   ( "job-file,J", po::value<fs::path>(), "job file to execute" );
   po::positional_options_description p;
   p.add( "job-file", -1 );
