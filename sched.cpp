@@ -103,16 +103,18 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
   vector<Eigen::VectorXd> vpar_hist;
   vpar_hist.push_back( vpar );
 
-  // clear folder for the machine readable variational parameter snapshots
-  fs::remove_all(       opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
-  fs::create_directory( opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
-  // initial variational parameters -> first snapshot
-  {
-    ofstream vpar_init_file( (
-      opts["calc.working-dir"].as<fs::path>() / "vpar_hist" / "0.dat"
-    ).string() );
-    ar::text_oarchive vpar_init_archive( vpar_init_file );
-    vpar_init_archive << vpar;
+  if ( opts.count( "verbose" ) ) {
+    // clear folder for the machine readable variational parameter snapshots
+    fs::remove_all(       opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
+    fs::create_directory( opts["calc.working-dir"].as<fs::path>() / "vpar_hist" );
+    // initial variational parameters -> first snapshot
+    {
+      ofstream vpar_init_file( (
+        opts["calc.working-dir"].as<fs::path>() / "vpar_hist" / "0.dat"
+      ).string() );
+      ar::text_oarchive vpar_init_archive( vpar_init_file );
+      vpar_init_archive << vpar;
+    }
   }
 
   // open human readable output files for the energy and the variational parameters
@@ -244,8 +246,9 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     vpar += sr_dt * dvpar;
 
     // prevent the absolute value of selected vpars from becoming too small
-    for ( unsigned int i = 0; i < 7; ++i ) {
-      if ( ( opts["calc.vpar-minabs-select"].as<unsigned int>() >> i ) % 2 == 1 ) {
+    for ( unsigned int i = 0; i < 6; ++i ) {
+      if ( ( opts["calc.vpar-minabs-select"].as<unsigned int>() >> i ) % 2 == 1 &&
+           ( opts["calc.optimizers"].as<unsigned int>() >> i ) % 2 == 1 ) {
         if ( vpar( i ) < +opts["calc.vpar-minabs-value"].as<double>()
              && vpar( i ) > +0.0 ) {
           vpar( i ) = +opts["calc.vpar-minabs-value"].as<double>();
@@ -290,7 +293,7 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
     }
 
     // take the machine readable snapshot of the vpars
-    {
+    if ( opts.count( "verbose" ) ) {
       // determine the file name
       stringstream fname;
       fname << sr_cycles << ".dat";
