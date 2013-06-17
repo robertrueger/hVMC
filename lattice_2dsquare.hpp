@@ -64,6 +64,9 @@ class Lattice2DSquare final : public Lattice {
     std::vector<Eigen::VectorXd> get_qvectors() const;
 
     double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
+
+    bool is_bipartite() const override { return true; }
+    unsigned int get_index_sublattice( index i ) const override;
 };
 
 #endif // LATTICE_2DSQUARE_H_INCLUDED

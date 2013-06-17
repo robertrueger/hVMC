@@ -73,6 +73,9 @@ class Lattice2DSquare2Layer final : public Lattice {
 
     double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
 
+    bool is_bipartite() const override { return true; }
+    unsigned int get_index_sublattice( index i ) const override;
+
     Eigen::VectorXi get_random_spindex_occ(
       unsigned int Npu, unsigned int Npd, std::mt19937& rng ) const override;
 };

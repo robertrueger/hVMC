@@ -25,19 +25,19 @@ nn-hopping = 1.0
 2nd-nn-hopping = 0.0
 
 # 3rd nearest-neighbor hopping matrix element t''
-3rd-nn-hopping = 0.2
+3rd-nn-hopping = 0.0
 
 # on-site energy U
-onsite-energy = 0.5
+onsite-energy = 4.0
 
 # lattice type (1dchain, 2dsquare, 2dsquare2layer)
-lattice = 2dsquare2layer
+lattice = 2dsquare
 
 # number of lattice sites
-num-lattice-sites = 72
+num-lattice-sites = 36
 
 # total number of electrons
-num-electrons = 72
+num-electrons = 36
 
 # symmetry of the pairing term (swave, dwave, dwave_twisted)
 pairing-symmetry = dwave
@@ -49,10 +49,11 @@ pairing-symmetry = dwave
 # vpar-ovwrt-t2 =
 # vpar-ovwrt-t3 =
 # vpar-ovwrt-D0 =
-vpar-ovwrt-D1 = 0.001
+# vpar-ovwrt-D1 = 0.01
 # vpar-ovwrt-D2 =
-vpar-ovwrt-D3 = 0.001
-vpar-ovwrt-mu = 0.0
+# vpar-ovwrt-D3 =
+# vpar-ovwrt-mu = 0.0
+# vpar-ovwrt-mu-m = 0.01
 # vpar-ovwrt-J0 =
 
 
@@ -72,8 +73,8 @@ observable = E
 #observable = DkDkp
 #observable = DkE
 observable = dblocc
-#observable = nncorr
-#observable = sscorr
+observable = nncorr
+observable = sscorr
 observable = pconfs
 
 # [ana]: selected analysis modules
@@ -85,7 +86,7 @@ analysis = ssfac
 update-hop-maxdistance = 3
 
 # [opt+sim]: number of Monte Carlo steps for equilibration
-num-mcs-equil = 2000
+num-mcs-equil = 1000
 
 # [opt+sim]: number of measurement bins
 num-bins = 100
@@ -105,11 +106,12 @@ num-binmcs = 100
 # Delta' += 16
 # Delta" += 32
 # mu += 64
-# Jastrow += 128
-optimizers = 170
+# mu_m += 128
+# Jastrow += 256
+optimizers = 392
 
 # [opt]: controls the SR convergence: vpar += dt * dvpar
-sr-dt = 0.2
+sr-dt = 1.0
 
 # [opt]: factor to boost the convergence speed of the Jastrow
 sr-dt-Jboost = 5
@@ -118,10 +120,10 @@ sr-dt-Jboost = 5
 sr-mkthreshold = 0.45
 
 # [opt]: number of refinements during the SR cycle
-sr-max-refinements = 1
+sr-max-refinements = 0
 
 # [opt]: number of SR cycles to average the converged variational parameters
-sr-averaging-cycles = 1000
+sr-averaging-cycles = 50
 
 # [opt]: variational parameters that have a fixed minimum absolute value
 # BITFIELD!
@@ -132,7 +134,8 @@ sr-averaging-cycles = 1000
 # Delta' += 16
 # Delta" += 32
 # mu += 64
-vpar-minabs-select = 40
+# mu_m += 128
+vpar-minabs-select = 8
 
 # [opt]: fixed minimum absolute value for the selected parameters
 vpar-minabs-value = 0.001

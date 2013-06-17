@@ -240,13 +240,13 @@ void sched_master_opt( const Options& opts, const mpi::communicator& mpicomm )
       .fullPivLu().solve( f );
 
     // Jastrow convergence speed boost
-    dvpar.tail( dvpar.size() - 7 ) *= sr_Jboost;
+    dvpar.tail( dvpar.size() - 8 ) *= sr_Jboost;
 
     // update variational parameters
     vpar += sr_dt * dvpar;
 
     // prevent the absolute value of selected vpars from becoming too small
-    for ( unsigned int i = 0; i < 6; ++i ) {
+    for ( unsigned int i = 0; i < 8; ++i ) {
       if ( ( opts["calc.vpar-minabs-select"].as<unsigned int>() >> i ) % 2 == 1 &&
            ( opts["calc.optimizers"].as<unsigned int>() >> i ) % 2 == 1 ) {
         if ( vpar( i ) < +opts["calc.vpar-minabs-value"].as<double>()

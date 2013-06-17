@@ -143,3 +143,11 @@ double Lattice1DChain::pairsym_modifier(
   // s- or d-wave symmetry doesn't make a difference in 1D ...
   return 1.0;
 }
+
+
+
+unsigned int Lattice1DChain::get_index_sublattice( Lattice::index i ) const
+{
+  assert( i < L );
+  return i % 2;
+}

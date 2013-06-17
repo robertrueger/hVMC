@@ -122,6 +122,10 @@ Options read_options( int argc, char* argv[], bool is_master )
     po::value<double>(),
     "variational parameter overwrite: mu" )
 
+  ( "phys.vpar-ovwrt-mu-m",
+    po::value<double>(),
+    "variational parameter overwrite: mu_m" )
+
   ( "phys.vpar-ovwrt-J0",
     po::value<double>(),
     "variational parameter overwrite: J_00" );
@@ -167,7 +171,7 @@ Options read_options( int argc, char* argv[], bool is_master )
     "[opt+sim]: random number generator seed" )
 
   ( "calc.optimizers,Z",
-    po::value<unsigned int>()->default_value( 255 ),
+    po::value<unsigned int>()->default_value( 511 ),
     "[opt]: which variational parameters to optimize" )
 
   ( "calc.sr-dt,d",
@@ -424,18 +428,18 @@ Options read_options( int argc, char* argv[], bool is_master )
     }
 
     if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
-         vm["calc.optimizers"].as<unsigned int>() > 255 ) {
+         vm["calc.optimizers"].as<unsigned int>() > 511 ) {
       throw logic_error(
-        "hVMC only has 7+Jastrow variational parameters "
-        "-> calc.optimizers can not be larger than 255"
+        "hVMC only has 8+Jastrow variational parameters "
+        "-> calc.optimizers can not be larger than 511"
       );
     }
 
     if ( vm["calc.mode"].as<optmode_t>() == OPTION_MODE_OPTIMIZATION &&
-         vm["calc.vpar-minabs-select"].as<unsigned int>() > 127 ) {
+         vm["calc.vpar-minabs-select"].as<unsigned int>() > 255 ) {
       throw logic_error(
         "the minimum vpar threshold is only intended for the det. parameters "
-        "-> calc.vpar-minabs-select can not be larger than 127"
+        "-> calc.vpar-minabs-select can not be larger than 255"
       );
     }
 

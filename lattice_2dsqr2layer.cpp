@@ -333,6 +333,14 @@ vector<Eigen::VectorXd> Lattice2DSquare2Layer::get_qvectors() const
 
 
 
+unsigned int Lattice2DSquare2Layer::get_index_sublattice( index i ) const
+{
+  assert( i < L );
+  return ( x( i ) + y( i ) + z( i ) ) % 2;
+}
+
+
+
 double Lattice2DSquare2Layer::pairsym_modifier(
   optpairsym_t sym, Lattice::spindex i, Lattice::spindex j ) const
 {

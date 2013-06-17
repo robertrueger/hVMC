@@ -366,3 +366,10 @@ double Lattice2DSquare::pairsym_modifier(
   assert( false );
   return 0.0; // <-- should never be reached; only to suppress compiler warning
 }
+
+
+unsigned int Lattice2DSquare::get_index_sublattice( Lattice::index i ) const
+{
+  assert( i < L );
+  return ( x( i ) + y( i ) ) % 2;
+}

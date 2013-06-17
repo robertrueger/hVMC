@@ -39,7 +39,7 @@ namespace ar  = boost::archive;
 
 unsigned int get_num_vpars( const Options& opts )
 {
-  return 7 + prepare_lattice( opts )->get_all_irridxrels().size() - 1;
+  return 8 + prepare_lattice( opts )->get_all_irridxrels().size() - 1;
 }
 
 
@@ -123,8 +123,12 @@ Eigen::VectorXd get_initial_varparam( const Options& opts )
     init_vpar( 6 ) = opts["phys.vpar-ovwrt-mu"].as<double>();
   }
 
+  if ( opts.count( "phys.vpar-ovwrt-mu-m" ) ) {
+    init_vpar( 7 ) = opts["phys.vpar-ovwrt-mu-m"].as<double>();
+  }
+
   if ( opts.count( "phys.vpar-ovwrt-J0" ) ) {
-    init_vpar( 7 ) = opts["phys.vpar-ovwrt-J0"].as<double>();
+    init_vpar( 8 ) = opts["phys.vpar-ovwrt-J0"].as<double>();
   }
 
   return init_vpar;
