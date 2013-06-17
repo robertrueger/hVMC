@@ -72,6 +72,7 @@ class Lattice {
 
     // lattice geometry and relevant reciprocal lattice vectors
     virtual Eigen::VectorXd r( index i, index j ) const = 0;
+    virtual bool include_r_in_ssfac( index i, index j ) const;
     virtual std::vector<Eigen::VectorXd> get_qvectors() const = 0;
 
     // pairing symmetry modifying factor

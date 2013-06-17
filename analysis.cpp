@@ -71,7 +71,9 @@ void analysis_static_structure_factor( const Options& opts, const fs::path& dir 
     double sum = 0.0;
     for ( Lattice::index l = 0; l < lat->L; ++l ) {
       for ( Lattice::index k = l + 1; k < lat->L; ++k ) {
-        sum += cos( q->dot( lat->r( 0, k ) - lat->r( 0, l ) ) ) * nn( l, k);
+        if ( lat->include_r_in_ssfac( l, k ) ) {
+          sum += cos( q->dot( lat->r( 0, k ) - lat->r( 0, l ) ) ) * nn( l, k);
+        }
       }
     }
     const double Nq = 2.0 / static_cast<double>( lat->L ) * sum + Nq_onsite;
