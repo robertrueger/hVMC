@@ -304,13 +304,23 @@ Eigen::VectorXd Lattice2DSquare2Layer::r( Lattice::index i, Lattice::index j ) c
 
 
 
+bool Lattice2DSquare2Layer::include_r_in_ssfac( index i, index j ) const
+{
+  return z( i ) == z( j );
+}
+
+
+
 vector<Eigen::VectorXd> Lattice2DSquare2Layer::get_qvectors() const
 {
   vector<Eigen::VectorXd> allq;
   allq.reserve( S * S / 4 );
 
-  for ( unsigned int i = 1; i <= S / 2; ++i ) {
-    for ( unsigned int l = 1; l <= S / 2; ++l ) {
+  for ( unsigned int i = 0; i <= S / 2; ++i ) {
+    for ( unsigned int l = 0; l <= S / 2; ++l ) {
+      if ( i == 0 && l == 0 ) {
+        continue;
+      }
       Eigen::VectorXd q( 2 );
       q[0] = i * 2.0 * M_PI / static_cast<double>( S );
       q[1] = l * 2.0 * M_PI / static_cast<double>( S );

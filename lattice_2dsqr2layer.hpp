@@ -68,6 +68,7 @@ class Lattice2DSquare2Layer : public Lattice {
     irridxrel get_maxdist_irridxrel() const;
 
     Eigen::VectorXd r( index i, index j ) const;
+    bool include_r_in_ssfac( index i, index j ) const;
     std::vector<Eigen::VectorXd> get_qvectors() const;
 
     double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;

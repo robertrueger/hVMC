@@ -88,3 +88,9 @@ Eigen::VectorXi Lattice::get_random_spindex_occ(
 
   return spindex_occ;
 }
+
+
+bool Lattice::include_r_in_ssfac( index, index ) const
+{
+  return true;
+}
