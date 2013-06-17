@@ -80,6 +80,10 @@ class Lattice {
         optpairsym_t sym, spindex i, spindex j
     ) const = 0;
 
+    // bipartite lattices and lattice site types
+    virtual bool is_bipartite() const { return false; }
+    virtual unsigned int get_index_sublattice( index ) const { return 0; }
+
     // method to generate a random particle distribution
     // (this is part of the lattice class because there might be special
     // requirements for a random particle distribution, e.g.: the two layered

@@ -137,7 +137,7 @@ DeterminantalWavefunction build_detwf(
   const std::shared_ptr<Lattice>& lat, unsigned int Ne,
   const std::vector<double>& t,
   const std::vector<double>& Delta, optpairsym_t pairsym,
-  double mu )
+  double mu, double mu_m )
 {
   // check if we have the correct number of variational parameters
   assert( t.size() == 3 );
@@ -198,6 +198,15 @@ DeterminantalWavefunction build_detwf(
   spHam.add_vparterm( spHam_mask, mu );
   spHam_mask.setZero();
 
+  // site and spin dependent chemical potential to introduce magnetism
+  for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
+    spHam_mask( l, l ) =
+      lat->get_index_sublattice( lat->get_index_from_spindex( l ) ) == 0 ?
+      -0.5 :
+      0.5;
+  }
+  spHam.add_vparterm( spHam_mask, mu_m );
+  spHam_mask.setZero();
 
   // determine how many particles we have after the p.-h. transformation
   assert( Ne % 2 == 0 );

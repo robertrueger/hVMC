@@ -252,13 +252,13 @@ double HubbardModelVMC::E_l() const
 
 Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
 {
-  assert( optimizers > 0 && optimizers < 256 );
+  assert( optimizers > 0 && optimizers < 512 );
 
-  Eigen::VectorXd result = Eigen::VectorXd::Zero( 7 + v.get_num_vpar() );
+  Eigen::VectorXd result = Eigen::VectorXd::Zero( 8 + v.get_num_vpar() );
 
   // ----- first seven variational parameters are from the determinantal part
 
-  if ( optimizers != 128 ) {
+  if ( optimizers != 256 ) {
     // only do it if we are optimizing any determinantal parameter
 
     Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
@@ -267,16 +267,16 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
       G.row( k_pos ) = W.get().col( k );
     }
 
-    for ( unsigned int vpar = 0; vpar < 7; ++vpar ) {
+    for ( unsigned int vpar = 0; vpar < 8; ++vpar ) {
       if ( ( optimizers >> vpar ) % 2 == 1 ) {
         result( vpar ) = ( detwf.A()[vpar].array() * G ).sum();
       }
     }
   }
 
-  // ----- everything except the first 7 are Jastrow parameters
+  // ----- everything except the first 8 are Jastrow parameters
 
-  if ( optimizers >= 128 ) {
+  if ( optimizers >= 256 ) {
     // only do it if we are optimizing the Jastrow
 
     for ( Lattice::index i = 0; i < lat->L; ++i ) {
@@ -286,7 +286,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
         const double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
 
         if ( ij_iir != lat->get_maxdist_irridxrel() ) {
-          result( 7 + v.get_vparnum( ij_iir ) )
+          result( 8 + v.get_vparnum( ij_iir ) )
           += dblcount_correction *
              ( pconf.get_spindex_occ()( i ) - pconf.get_spindex_occ()( i + lat->L ) ) *
              ( pconf.get_spindex_occ()( j ) - pconf.get_spindex_occ()( j + lat->L ) );

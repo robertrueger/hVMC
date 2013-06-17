@@ -102,7 +102,7 @@ DeterminantalWavefunction build_detwf(
   const std::shared_ptr<Lattice>& lat, unsigned int Ne,
   const std::vector<double>& t,
   const std::vector<double>& Delta, optpairsym_t pairsym,
-  double mu
+  double mu, double mu_m
 );
 
 

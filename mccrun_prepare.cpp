@@ -47,12 +47,13 @@ HubbardModelVMC prepare_model(
     = { opts["phys.nn-hopping"].as<double>(), vpar[0], vpar[1] };
   const vector<double> Delta_vpar( vpar.data() + 2, vpar.data() + 6 );
   const double mu_vpar = vpar[6];
+  const double mu_m_vpar = vpar[7];
 
   const DeterminantalWavefunction detwf
     = build_detwf( lat, opts["phys.num-electrons"].as<unsigned int>(),
                    t_vpar,
                    Delta_vpar, opts["phys.pairing-symmetry"].as<optpairsym_t>(),
-                   mu_vpar );
+                   mu_vpar, mu_m_vpar );
 
   if ( mpicomm.rank() == 0 && detwf.is_openshell() ) {
     cout << endl;
@@ -60,7 +61,7 @@ HubbardModelVMC prepare_model(
     cout << endl;
   }
 
-  Jastrow v( lat, vpar.tail( vpar.size() - 7 ) );
+  Jastrow v( lat, vpar.tail( vpar.size() - 8 ) );
 
   vector<double> t(3);
   t[0] = opts["phys.nn-hopping"].as<double>();

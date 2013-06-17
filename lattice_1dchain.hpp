@@ -49,6 +49,9 @@ class Lattice1DChain : public Lattice {
     std::vector<Eigen::VectorXd> get_qvectors() const;
 
     double pairsym_modifier( optpairsym_t sym, spindex i, spindex j ) const;
+
+    bool is_bipartite() const { return true; }
+    unsigned int get_index_sublattice( index i ) const;
 };
 
 #endif // LATTICE_1DCHAIN_H_INCLUDED
