@@ -32,7 +32,7 @@
 #include "lattice.hpp"
 
 
-class SingleParticleHamiltonian final {
+class VariationalHamiltonian final {
 
   public:
 
@@ -41,15 +41,15 @@ class SingleParticleHamiltonian final {
 
   private:
 
-    // the single particle Hamiltonian under p.h. transformation
+    // the variational Hamiltonian under p.h. transformation
     Eigen::MatrixXfp int_H;
 
-    // masks the vpar operators
+    // masks for the vpar operators
     std::vector<Eigen::MatrixXfp> int_V;
 
   public:
 
-    SingleParticleHamiltonian( unsigned int L_init );
+    VariationalHamiltonian( unsigned int L_init );
 
     void add_anyterm(  const Eigen::MatrixXfp& term );
     void add_vparterm( const Eigen::MatrixXfp& mask, fptype vpar );
@@ -63,8 +63,8 @@ class DeterminantalWavefunction final {
 
   private:
 
-    // the single particle Hamiltonian
-    const SingleParticleHamiltonian int_spHam;
+    // the variational Hamiltonian
+    const VariationalHamiltonian int_varHam;
 
   public:
 
@@ -85,11 +85,11 @@ class DeterminantalWavefunction final {
   public:
 
     DeterminantalWavefunction(
-      const SingleParticleHamiltonian& spHam_init, unsigned int Np_init );
+      const VariationalHamiltonian& varHam_init, unsigned int Np_init );
 
     bool is_openshell() const;
 
-    const SingleParticleHamiltonian& spHam() const;
+    const VariationalHamiltonian& varHam() const;
 
     const Eigen::MatrixXfp& U() const;
     Eigen::Block<const Eigen::MatrixXfp> M() const;
