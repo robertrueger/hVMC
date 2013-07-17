@@ -33,7 +33,7 @@ ObservableParticleConfigurations::ObservableParticleConfigurations()
 
 
 void ObservableParticleConfigurations::measure(
-  const HubbardModelVMC& model, ObservableCache& )
+  const ModelManager& model, ObservableCache& )
 {
   if ( !thisbin_recorded ) {
     site_occs.push_back( model.particleconf() );

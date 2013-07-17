@@ -43,7 +43,7 @@ ObservableCorrelation::ObservableCorrelation(
 
 
 void ObservableCorrelation::measure(
-  const HubbardModelVMC& model, ObservableCache& cache )
+  const ModelManager& model, ObservableCache& cache )
 {
   const Eigen::MatrixXd& current = get_current( model, cache );
 

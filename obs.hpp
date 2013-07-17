@@ -26,7 +26,7 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "hmodvmc.hpp"
+#include "modman.hpp"
 #include "mccresults.hpp"
 
 
@@ -67,7 +67,7 @@ class Observable
     virtual ~Observable() { };
 
     virtual void measure(
-      const HubbardModelVMC& model,
+      const ModelManager& model,
       ObservableCache& cache
     ) = 0;
 

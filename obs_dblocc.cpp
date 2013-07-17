@@ -29,7 +29,7 @@ namespace mpi = boost::mpi;
 
 
 void ObservableDoubleOccupancy::measure(
-  const HubbardModelVMC& model, ObservableCache& cache )
+  const ModelManager& model, ObservableCache& cache )
 {
   if ( !cache.dblocc ) {
     cache.dblocc = model.dblocc_dens();

@@ -34,7 +34,7 @@ class ObservableEnergy final : public Observable
 
   public:
 
-    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const ModelManager& model, ObservableCache& cache );
 
     void completebin();
 

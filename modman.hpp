@@ -17,8 +17,8 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HUBBARD_MODEL_VMC_H_INCLUDED
-#define HUBBARD_MODEL_VMC_H_INCLUDED
+#ifndef MODELMANAGER_VMC_H_INCLUDED
+#define MODELMANAGER_VMC_H_INCLUDED
 
 #include <vector>
 #include <random>
@@ -39,7 +39,7 @@
 #include "tvector.hpp"
 
 
-class HubbardModelVMC final
+class ModelManager final
 {
   protected:
 
@@ -82,7 +82,7 @@ class HubbardModelVMC final
 
   public:
 
-    HubbardModelVMC(
+    ModelManager(
       const std::mt19937& rng_init,
       const std::shared_ptr<Lattice>& lat_init,
       const DeterminantalWavefunction& detwf_init,
@@ -122,4 +122,4 @@ class HubbardModelVMC final
 
 };
 
-#endif // HUBBARD_MODEL_VMC_H_INCLUDED
+#endif // MODELMANAGER_VMC_H_INCLUDED

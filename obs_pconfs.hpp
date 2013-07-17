@@ -39,7 +39,7 @@ class ObservableParticleConfigurations : public Observable
 
     ObservableParticleConfigurations();
 
-    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const ModelManager& model, ObservableCache& cache );
 
     void completebin();
 

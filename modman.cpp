@@ -17,7 +17,7 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hmodvmc.hpp"
+#include "modman.hpp"
 
 #if VERBOSE >= 1
 # include <iostream>
@@ -29,7 +29,7 @@ using namespace std;
 
 
 
-HubbardModelVMC::HubbardModelVMC(
+ModelManager::ModelManager(
   const mt19937& rng_init,
   const shared_ptr<Lattice>& lat_init,
   const DeterminantalWavefunction& detwf_init,
@@ -58,10 +58,10 @@ HubbardModelVMC::HubbardModelVMC(
     proposed_pconf_accepted = pconf_has_overlap;
 #if VERBOSE >= 1
     if ( proposed_pconf_accepted ) {
-      cout << "HubbardModelVMC::HubbardModelVMC() : "
+      cout << "ModelManager::ModelManager() : "
            << "proposed initial configuration accepted!" << endl;
     } else {
-      cout << "HubbardModelVMC::HubbardModelVMC() : "
+      cout << "ModelManager::ModelManager() : "
            << "proposed initial configuration rejected!" << endl;
     }
 #endif
@@ -70,7 +70,7 @@ HubbardModelVMC::HubbardModelVMC(
   while ( pconf_has_overlap == false ) {
 
 #if VERBOSE >= 1
-    cout << "HubbardModelVMC::HubbardModelVMC() : configuration does not have "
+    cout << "ModelManager::ModelManager() : configuration does not have "
          << "an overlap with the determinantal wavefunction -> "
          << "generating a new configuration" << endl;
 #endif
@@ -82,21 +82,21 @@ HubbardModelVMC::HubbardModelVMC(
   T.init();
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::HubbardModelVMC() : state has sufficient "
+  cout << "ModelManager::ModelManager() : state has sufficient "
        << "overlap! -> initial state selection completed!" << endl;
 #endif
 }
 
 
 
-bool HubbardModelVMC::check_proposed_pconf_accepted() const
+bool ModelManager::check_proposed_pconf_accepted() const
 {
   return proposed_pconf_accepted;
 }
 
 
 
-void HubbardModelVMC::finalize_equilibration()
+void ModelManager::finalize_equilibration()
 {
   verify( W.init_and_check() );
   T.init();
@@ -104,16 +104,16 @@ void HubbardModelVMC::finalize_equilibration()
 
 
 
-void HubbardModelVMC::mcs()
+void ModelManager::mcs()
 {
 #if VERBOSE >= 2
-  cout << "HubbardModelVMC::mcs() : starting new Monte Carlo step!" << endl;
+  cout << "ModelManager::mcs() : starting new Monte Carlo step!" << endl;
 #endif
 
   // perform a number of metropolis steps equal to the number of electrons
   for ( unsigned int s = 0; s < lat->L; ++s ) {
 #if VERBOSE >= 2
-    cout << "HubbardModelVMC::mcs() : Metropolis step = " << s << endl;
+    cout << "ModelManager::mcs() : Metropolis step = " << s << endl;
 #endif
     metstep();
   }
@@ -121,7 +121,7 @@ void HubbardModelVMC::mcs()
 
 
 
-bool HubbardModelVMC::metstep()
+bool ModelManager::metstep()
 {
   // let the electron configuration propose a random hop
   const ParticleHop& phop = pconf.propose_random_hop( update_hop_maxdist );
@@ -132,7 +132,7 @@ bool HubbardModelVMC::metstep()
 
     // hop is not possible, rejected!
 #if VERBOSE >= 2
-    cout << "HubbardModelVMC::metstep() : hop impossible!" << endl;
+    cout << "ModelManager::metstep() : hop impossible!" << endl;
 #endif
     return false;
 
@@ -152,7 +152,7 @@ bool HubbardModelVMC::metstep()
     const double accept_prob = R_j * R_j * R_s * R_s;
 
 #if VERBOSE >= 2
-    cout << "HubbardModelVMC::metstep() : hop possible -> "
+    cout << "ModelManager::metstep() : hop possible -> "
          << "R_j = " << R_j
          << ", sdwf_ratio = " << R_s
          << ", accept_prob = " << accept_prob << endl;
@@ -162,7 +162,7 @@ bool HubbardModelVMC::metstep()
          uniform_real_distribution<double>( 0.0, 1.0 )( rng ) < accept_prob ) {
 
 #if VERBOSE >= 2
-      cout << "HubbardModelVMC::metstep() : hop accepted!" << endl;
+      cout << "ModelManager::metstep() : hop accepted!" << endl;
 #endif
 
       pconf.do_hop( phop );
@@ -175,7 +175,7 @@ bool HubbardModelVMC::metstep()
     } else { // hop possible but rejected!
 
 #if VERBOSE >= 2
-      cout << "HubbardModelVMC::metstep() : hop rejected!" << endl;
+      cout << "ModelManager::metstep() : hop rejected!" << endl;
 #endif
 
       return false;
@@ -185,7 +185,7 @@ bool HubbardModelVMC::metstep()
 
 
 
-double HubbardModelVMC::E_l() const
+double ModelManager::E_l() const
 {
   // calculate expectation value of the T part of H
   double E_l_kin = 0.0;
@@ -242,7 +242,7 @@ double HubbardModelVMC::E_l() const
     static_cast<double>( lat->L );
 
 #if VERBOSE >= 2
-  cout << "HubbardModelVMC::E_l() = " << E_l_result << endl;
+  cout << "ModelManager::E_l() = " << E_l_result << endl;
 #endif
 
   return E_l_result;
@@ -250,7 +250,7 @@ double HubbardModelVMC::E_l() const
 
 
 
-Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
+Eigen::VectorXd ModelManager::Delta_k( unsigned int optimizers ) const
 {
   assert( optimizers > 0 && optimizers < 512 );
 
@@ -296,7 +296,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
   }
 
 #if VERBOSE >= 1
-  cout << "HubbardModelVMC::Delta_k() = " << endl << result.transpose() << endl;
+  cout << "ModelManager::Delta_k() = " << endl << result.transpose() << endl;
 #endif
 
   return result;
@@ -304,7 +304,7 @@ Eigen::VectorXd HubbardModelVMC::Delta_k( unsigned int optimizers ) const
 
 
 
-double HubbardModelVMC::dblocc_dens() const
+double ModelManager::dblocc_dens() const
 {
   return
     static_cast<double>(
@@ -317,7 +317,7 @@ double HubbardModelVMC::dblocc_dens() const
 
 
 
-Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
+Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> ModelManager::n() const
 {
   return (
     pconf.get_spindex_occ().head( lat->L ).array() +
@@ -327,7 +327,7 @@ Eigen::Matrix<unsigned int, Eigen::Dynamic, 1> HubbardModelVMC::n() const
 
 
 
-Eigen::VectorXi HubbardModelVMC::s() const
+Eigen::VectorXi ModelManager::s() const
 {
   return (
    pconf.get_spindex_occ().head( lat->L ).array() -
@@ -336,18 +336,18 @@ Eigen::VectorXi HubbardModelVMC::s() const
 }
 
 
-Eigen::VectorXi HubbardModelVMC::particleconf() const
+Eigen::VectorXi ModelManager::particleconf() const
 {
   return pconf.get_spindex_occ();
 }
 
 
 
-FPDevStat HubbardModelVMC::get_W_devstat() const
+FPDevStat ModelManager::get_W_devstat() const
 {
   return W.get_devstat();
 }
-FPDevStat HubbardModelVMC::get_T_devstat() const
+FPDevStat ModelManager::get_T_devstat() const
 {
   return T.get_devstat();
 }

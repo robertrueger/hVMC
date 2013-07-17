@@ -22,7 +22,7 @@
 using namespace std;
 
 Eigen::VectorXd ObservableSpinSpinCorrelation::get_current(
-  const HubbardModelVMC& model, ObservableCache& cache ) const
+  const ModelManager& model, ObservableCache& cache ) const
 {
   if ( !cache.s ) {
     cache.s = model.s();

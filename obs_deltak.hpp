@@ -44,7 +44,7 @@ class ObservableDeltaK final : public Observable
 
     ObservableDeltaK( unsigned int num_vpar, unsigned int optimizers_init );
 
-    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const ModelManager& model, ObservableCache& cache );
 
     void completebin();
 
