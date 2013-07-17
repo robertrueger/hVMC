@@ -26,7 +26,7 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "hmodvmc.hpp"
+#include "modman.hpp"
 #include "mccresults.hpp"
 
 
@@ -35,7 +35,7 @@ class ObservableSpinSpinCorrelation : public ObservableCorrelation
   protected:
 
     Eigen::VectorXd get_current(
-      const HubbardModelVMC& model, ObservableCache& cache
+      const ModelManager& model, ObservableCache& cache
     ) const;
 
     void save_to_results(

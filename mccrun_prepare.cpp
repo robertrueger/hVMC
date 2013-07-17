@@ -34,7 +34,7 @@ namespace mpi = boost::mpi;
 namespace chrono = boost::chrono;
 
 
-HubbardModelVMC prepare_model(
+ModelManager prepare_model(
   const Options& opts, const Eigen::VectorXd& vpar,
   const mpi::communicator& mpicomm,
   boost::optional<const Eigen::VectorXi&> spindex_occ_init )
@@ -68,7 +68,7 @@ HubbardModelVMC prepare_model(
   t[1] = opts["phys.2nd-nn-hopping"].as<double>();
   t[2] = opts["phys.3rd-nn-hopping"].as<double>();
 
-  return HubbardModelVMC(
+  return ModelManager(
     rng,
     lat,
     detwf,

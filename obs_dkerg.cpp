@@ -42,7 +42,7 @@ ObservableDeltaKEnergy::ObservableDeltaKEnergy(
 
 
 void ObservableDeltaKEnergy::measure(
-  const HubbardModelVMC& model, ObservableCache& cache )
+  const ModelManager& model, ObservableCache& cache )
 {
   if ( !cache.DeltaK ) {
     cache.DeltaK = model.Delta_k( optimizers );

@@ -27,7 +27,7 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "hmodvmc.hpp"
+#include "modman.hpp"
 #include "mccresults.hpp"
 
 class ObservableCorrelation : public Observable
@@ -42,7 +42,7 @@ class ObservableCorrelation : public Observable
 
     // methods that are specialized to the actual correlation being measured
     virtual Eigen::VectorXd get_current(
-      const HubbardModelVMC& model, ObservableCache& cache
+      const ModelManager& model, ObservableCache& cache
     ) const = 0;
     virtual void save_to_results(
       const Eigen::MatrixXd& corrresult, MCCResults& results
@@ -52,7 +52,7 @@ class ObservableCorrelation : public Observable
 
     ObservableCorrelation( unsigned int L );
 
-    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const ModelManager& model, ObservableCache& cache );
 
     void completebin();
 

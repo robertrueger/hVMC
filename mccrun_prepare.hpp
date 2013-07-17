@@ -30,14 +30,14 @@
 #define EIGEN_NO_AUTOMATIC_RESIZING
 #include <eigen3/Eigen/Core>
 
-#include "hmodvmc.hpp"
+#include "modman.hpp"
 #include "lattice.hpp"
 #include "options.hpp"
 #include "obs.hpp"
 #include "detwf.hpp"
 
 
-HubbardModelVMC prepare_model(
+ModelManager prepare_model(
   const Options& opts, const Eigen::VectorXd& vpar,
   const boost::mpi::communicator& mpicomm,
   boost::optional<const Eigen::VectorXi&> spindex_occ_init

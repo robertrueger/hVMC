@@ -25,17 +25,17 @@
 using namespace std;
 
 
-SingleParticleHamiltonian::SingleParticleHamiltonian( unsigned int L_init )
+VariationalHamiltonian::VariationalHamiltonian( unsigned int L_init )
   : L( L_init ), int_H( Eigen::MatrixXfp::Zero( 2 * L, 2 * L ) ) { }
 
 
-void SingleParticleHamiltonian::add_anyterm(  const Eigen::MatrixXfp& term )
+void VariationalHamiltonian::add_anyterm(  const Eigen::MatrixXfp& term )
 {
   int_H += term;
 }
 
 
-void SingleParticleHamiltonian::add_vparterm(
+void VariationalHamiltonian::add_vparterm(
   const Eigen::MatrixXfp& mask, fptype vpar )
 {
   int_H += vpar * mask;
@@ -43,28 +43,28 @@ void SingleParticleHamiltonian::add_vparterm(
 }
 
 
-const Eigen::MatrixXfp& SingleParticleHamiltonian::H() const
+const Eigen::MatrixXfp& VariationalHamiltonian::H() const
 {
   return int_H;
 }
 
 
-const vector<Eigen::MatrixXfp>& SingleParticleHamiltonian::V() const
+const vector<Eigen::MatrixXfp>& VariationalHamiltonian::V() const
 {
   return int_V;
 }
 
 
 DeterminantalWavefunction::DeterminantalWavefunction(
-  const SingleParticleHamiltonian& spHam_init, unsigned int Np_init )
-  : int_spHam( spHam_init ), Np( Np_init ),
-    int_U( 2 * int_spHam.L, 2 * int_spHam.L ),
-    int_epsilon( 2 * int_spHam.L )
+  const VariationalHamiltonian& varHam_init, unsigned int Np_init )
+  : int_varHam( varHam_init ), Np( Np_init ),
+    int_U( 2 * int_varHam.L, 2 * int_varHam.L ),
+    int_epsilon( 2 * int_varHam.L )
 {
-  // diagonalize single particle Hamiltonian
+  // diagonalize variational Hamiltonian
   {
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(
-      int_spHam.H().cast<double>()
+      int_varHam.H().cast<double>()
     );
     assert( solver.info() == Eigen::Success );
     int_U = solver.eigenvectors().cast<fptype>();
@@ -73,9 +73,9 @@ DeterminantalWavefunction::DeterminantalWavefunction(
 
   // define perturbation theory mask
   Eigen::ArrayXfp ptmask
-    = Eigen::ArrayXfp::Zero( 2 * int_spHam.L,  2 * int_spHam.L );
-  for ( Lattice::index eta = 0; eta < 2 * int_spHam.L; ++eta ) {
-    for ( Lattice::index nu = 0; nu < 2 * int_spHam.L; ++nu ) {
+    = Eigen::ArrayXfp::Zero( 2 * int_varHam.L,  2 * int_varHam.L );
+  for ( Lattice::index eta = 0; eta < 2 * int_varHam.L; ++eta ) {
+    for ( Lattice::index nu = 0; nu < 2 * int_varHam.L; ++nu ) {
       if ( eta >= Np && nu < Np ) {
         ptmask( eta, nu ) = 1.f / ( int_epsilon( nu ) - int_epsilon( eta ) );
       } else {
@@ -85,7 +85,7 @@ DeterminantalWavefunction::DeterminantalWavefunction(
   }
 
   // calculate the A matrices of the variational parameters
-  for ( auto it = int_spHam.V().begin(); it != int_spHam.V().end(); ++it ) {
+  for ( auto it = int_varHam.V().begin(); it != int_varHam.V().end(); ++it ) {
     int_A.push_back(
       int_U *
       ( ( int_U.adjoint() * *it * int_U  ).array() * ptmask ).matrix()
@@ -101,9 +101,9 @@ bool DeterminantalWavefunction::is_openshell() const
 }
 
 
-const SingleParticleHamiltonian& DeterminantalWavefunction::spHam() const
+const VariationalHamiltonian& DeterminantalWavefunction::varHam() const
 {
-  return int_spHam;
+  return int_varHam;
 }
 
 
@@ -144,75 +144,75 @@ DeterminantalWavefunction build_detwf(
   assert( Delta.size() == 4 );
 
 
-  SingleParticleHamiltonian spHam( lat->L );
-  Eigen::MatrixXfp spHam_mask = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
+  VariationalHamiltonian varHam( lat->L );
+  Eigen::MatrixXfp varHam_mask = Eigen::MatrixXfp::Zero( 2 * lat->L, 2 * lat->L );
 
   // nearest neighbour hopping
   // (NOT a variational parameters, as it determines the energy scale!)
   for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
     vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, 1 );
     for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-      spHam_mask( l, *it ) =
+      varHam_mask( l, *it ) =
         ( lat->get_spindex_type( l ) == Lattice::spindex_type::up ) ? -1.f : 1.f;
     }
   }
-  spHam.add_anyterm( t[0] * spHam_mask );
-  spHam_mask.setZero();
+  varHam.add_anyterm( t[0] * varHam_mask );
+  varHam_mask.setZero();
 
   // 2nd and 3rd nearest neighbor hopping
   for ( unsigned int X = 2; X <= 3; ++X ) {
     for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
       vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-        spHam_mask( l, *it ) =
+        varHam_mask( l, *it ) =
           ( lat->get_spindex_type( l ) == Lattice::spindex_type::up ) ? -1.f : 1.f;
       }
     }
-    spHam.add_vparterm( spHam_mask, t[X - 1] );
-    spHam_mask.setZero();
+    varHam.add_vparterm( varHam_mask, t[X - 1] );
+    varHam_mask.setZero();
   }
 
   // onsite BCS pairing
   for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
-    spHam_mask( l, lat->get_linked_spindex( l ) ) = +1.f;
+    varHam_mask( l, lat->get_linked_spindex( l ) ) = +1.f;
   }
-  spHam.add_vparterm( spHam_mask, Delta[0] );
-  spHam_mask.setZero();
+  varHam.add_vparterm( varHam_mask, Delta[0] );
+  varHam_mask.setZero();
 
   // 1st, 2nd and 3rd nearest neighbor BCS pairing
   for ( unsigned int X = 1; X <= 3; ++X ) {
     for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
       vector<Lattice::spindex> l_Xnn = lat->get_Xnn( l, X );
       for ( auto it = l_Xnn.begin(); it != l_Xnn.end(); ++it ) {
-        spHam_mask( l, lat->get_linked_spindex( *it ) )
+        varHam_mask( l, lat->get_linked_spindex( *it ) )
           = +1.f * lat->pairsym_modifier( pairsym, l, *it );
       }
     }
-    spHam.add_vparterm( spHam_mask, Delta[X] );
-    spHam_mask.setZero();
+    varHam.add_vparterm( varHam_mask, Delta[X] );
+    varHam_mask.setZero();
   }
 
   // chemical potential
-  spHam_mask.diagonal().head( lat->L ).array() -= 1.f;
-  spHam_mask.diagonal().tail( lat->L ).array() += 1.f;
-  spHam.add_vparterm( spHam_mask, mu );
-  spHam_mask.setZero();
+  varHam_mask.diagonal().head( lat->L ).array() -= 1.f;
+  varHam_mask.diagonal().tail( lat->L ).array() += 1.f;
+  varHam.add_vparterm( varHam_mask, mu );
+  varHam_mask.setZero();
 
   // site and spin dependent chemical potential to introduce magnetism
   for ( Lattice::spindex l = 0; l < 2 * lat->L; ++l ) {
-    spHam_mask( l, l ) =
+    varHam_mask( l, l ) =
       lat->get_index_sublattice( lat->get_index_from_spindex( l ) ) == 0 ?
       -0.5 :
       0.5;
   }
-  spHam.add_vparterm( spHam_mask, mu_m );
-  spHam_mask.setZero();
+  varHam.add_vparterm( varHam_mask, mu_m );
+  varHam_mask.setZero();
 
   // determine how many particles we have after the p.-h. transformation
   assert( Ne % 2 == 0 );
   const unsigned int Np = Ne / 2 + ( lat->L - Ne / 2 );
 
-  return DeterminantalWavefunction( spHam, Np );
+  return DeterminantalWavefunction( varHam, Np );
 }
 
 

@@ -28,7 +28,7 @@
 #include <boost/mpi/collectives.hpp>
 
 #include "mccrun_prepare.hpp"
-#include "hmodvmc.hpp"
+#include "modman.hpp"
 #include "obs_all.hpp"
 #include "msgtags.hpp"
 
@@ -45,7 +45,7 @@ MCCResults mccrun_master(
   cout << "========== NEW MONTE CARLO CYCLE ==========" << endl;
   cout << ":: Preparing the simulation" << endl;
 
-  HubbardModelVMC model = prepare_model( opts, vpar, mpicomm, pconf_init );
+  ModelManager model = prepare_model( opts, vpar, mpicomm, pconf_init );
 
   if ( pconf_init && opts.count("verbose") ) {
     if ( model.check_proposed_pconf_accepted() ) {
@@ -248,7 +248,7 @@ void mccrun_slave(
 {
   // prepare the simulation
 
-  HubbardModelVMC model = prepare_model( opts, vpar, mpicomm, pconf_init );
+  ModelManager model = prepare_model( opts, vpar, mpicomm, pconf_init );
   vector< unique_ptr<Observable> > obscalc = prepare_obscalcs( obs, opts );
   ObservableCache obscache;
 

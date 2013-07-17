@@ -41,7 +41,7 @@ class ObservableDeltaKEnergy : public Observable
       unsigned int num_vpar, unsigned int optimizers_init
     );
 
-    void measure( const HubbardModelVMC& model, ObservableCache& cache );
+    void measure( const ModelManager& model, ObservableCache& cache );
 
     void completebin();
 
