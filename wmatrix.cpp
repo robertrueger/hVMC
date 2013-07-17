@@ -41,18 +41,18 @@ using namespace std;
 
 
 WMatrix::WMatrix(
-  const Lattice* lat_init,
+  unsigned int L,
   const DeterminantalWavefunction& detwf_init,
   const ParticleConfiguration& pconf_init,
   double deviation_target,
   unsigned int updates_until_recalc_init )
-  : lat( lat_init ), detwf( detwf_init ), pconf( pconf_init ),
-    W_1( 2 * lat->L, pconf.Np ),
-    W_2( 2 * lat->L, pconf.Np ),
+  : detwf( detwf_init ), pconf( pconf_init ),
+    W_1( 2 * L, pconf.Np ),
+    W_2( 2 * L, pconf.Np ),
     W_active(   &W_1 ),
     W_inactive( &W_2 ),
 #ifdef USE_CBLAS
-    tempWcol( 2 * lat->L ),
+    tempWcol( 2 * L ),
 #endif
     tempWrow( pconf.Np ),
     updates_until_recalc( updates_until_recalc_init ),

@@ -34,7 +34,6 @@ class WMatrix final
 {
   protected:
 
-    const Lattice* const lat;
     const DeterminantalWavefunction& detwf;
     const ParticleConfiguration& pconf;
 
@@ -62,7 +61,7 @@ class WMatrix final
   public:
 
     WMatrix(
-      const Lattice* lat_init,
+      unsigned int L,
       const DeterminantalWavefunction& detwf_init,
       const ParticleConfiguration& pconf_init,
       double deviation_target,

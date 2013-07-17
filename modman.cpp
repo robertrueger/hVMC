@@ -49,7 +49,7 @@ ModelManager::ModelManager(
     t( t_init ), U( U_init ),
     pconf( lat, Ne_init, rng, spindex_occ_init ),
     proposed_pconf_accepted( false ),
-    W( lat.get(), detwf, pconf, W_deviation_target, updates_until_W_recalc ),
+    W( lat->L, detwf, pconf, W_deviation_target, updates_until_W_recalc ),
     T( lat.get(), v, pconf, T_deviation_target, updates_until_T_recalc )
 {
   bool pconf_has_overlap = W.init_and_check();
