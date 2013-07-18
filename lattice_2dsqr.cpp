@@ -17,7 +17,7 @@
  * along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lattice_2dsquare.hpp"
+#include "lattice_2dsqr.hpp"
 
 #include <algorithm>
 

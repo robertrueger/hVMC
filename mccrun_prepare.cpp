@@ -23,7 +23,7 @@
 #include <chrono>
 
 #include "lattice_1dchain.hpp"
-#include "lattice_2dsquare.hpp"
+#include "lattice_2dsqr.hpp"
 #include "lattice_2dsqr2layer.hpp"
 #include "varparam.hpp"
 #include "obs_all.hpp"
