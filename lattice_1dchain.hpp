@@ -41,9 +41,9 @@ class Lattice1DChain final : public Lattice {
       spindex l, unsigned int X, std::vector<spindex>* outbuf
     ) const;
 
-    irrspidxrel reduce_spidxrel( spindex i, spindex j ) const;
-    std::set<irrspidxrel> get_all_irrspidxrels() const;
-    irrspidxrel get_maxdist_irrspidxrel() const;
+    irridxrel reduce_idxrel( spindex i, spindex j ) const;
+    std::set<irridxrel> get_all_irridxrels() const;
+    irridxrel get_maxdist_irridxrel() const;
 
     Eigen::VectorXd r( index i, index j ) const;
     std::vector<Eigen::VectorXd> get_qvectors() const;
