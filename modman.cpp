@@ -282,10 +282,10 @@ Eigen::VectorXd ModelManager::Delta_k( unsigned int optimizers ) const
     for ( Lattice::index i = 0; i < lat->L; ++i ) {
       for ( Lattice::index j = i; j < lat->L; ++j ) {
 
-        const Lattice::irridxrel ij_iir = lat->reduce_idxrel( i, j );
+        const Lattice::irrspidxrel ij_iir = lat->reduce_spidxrel( i, j );
         const double dblcount_correction = ( j == i ) ? 0.5 : 1.0;
 
-        if ( ij_iir != lat->get_maxdist_irridxrel() ) {
+        if ( ij_iir != lat->get_maxdist_irrspidxrel() ) {
           result( 8 + v.get_vparnum( ij_iir ) )
           += dblcount_correction *
              ( pconf.get_spindex_occ()( i ) - pconf.get_spindex_occ()( i + lat->L ) ) *

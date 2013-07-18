@@ -33,60 +33,60 @@ Jastrow::Jastrow(
   const shared_ptr<Lattice>& lat_init, const Eigen::VectorXd& v_init )
   : lat( lat_init )
 {
-  std::set<Lattice::irridxrel> iirs = lat->get_all_irridxrels();
-  assert( !iirs.empty() );
+  std::set<Lattice::irrspidxrel> isrs = lat->get_all_irrspidxrels();
+  assert( !isrs.empty() );
 
   // find maximum j in v_0j
-  const unsigned int max_j_v = *( max_element( iirs.begin(), iirs.end() ) );
+  const unsigned int max_j_v = *( max_element( isrs.begin(), isrs.end() ) );
   // resize internal vector so that it can hold all needed Jastrows
-  iir_v.resize( max_j_v + 1 );
+  isr_v.resize( max_j_v + 1 );
 
-  // delete irreducible index relation corresponding to the largest distance
-  iirs.erase( lat->get_maxdist_irridxrel() );
+  // delete irreducible spindex relation corresponding to the largest distance
+  isrs.erase( lat->get_maxdist_irrspidxrel() );
 
   // find maximum j in v_0j if the largest distance v is missing
-  const unsigned int max_j_vparnum = *( max_element( iirs.begin(), iirs.end() ) );
-  // resize vector that maps irreducible irridxrel -> variational parameter number
-  iir_vparnum.resize( max_j_vparnum + 1 );
+  const unsigned int max_j_vparnum = *( max_element( isrs.begin(), isrs.end() ) );
+  // resize vector that maps irreducible irrspidxrel -> variational parameter number
+  isr_vparnum.resize( max_j_vparnum + 1 );
   // save the total number of variational parameters
-  num_vpar = iirs.size();
+  num_vpar = isrs.size();
 
   // write the variational parameters from v_init to the right elements of
-  // iir_v (make sure the total number is correct first)
-  assert( static_cast<unsigned int>( v_init.size() ) == iirs.size() );
+  // isr_v (make sure the total number is correct first)
+  assert( static_cast<unsigned int>( v_init.size() ) == isrs.size() );
   unsigned int reader = 0;
-  for ( auto iirs_it = iirs.begin(); iirs_it != iirs.end(); ++iirs_it ) {
-    iir_v.at(       *iirs_it ) = v_init( reader );
-    iir_vparnum.at( *iirs_it ) = reader;
+  for ( auto isrs_it = isrs.begin(); isrs_it != isrs.end(); ++isrs_it ) {
+    isr_v.at(       *isrs_it ) = v_init( reader );
+    isr_vparnum.at( *isrs_it ) = reader;
     ++reader;
   }
   assert( reader == v_init.size() );
 
   // set the parameter corresponding to the largest distance to 0
-  iir_v.at( lat->get_maxdist_irridxrel() ) = 0.0;
+  isr_v.at( lat->get_maxdist_irrspidxrel() ) = 0.0;
 }
 
 
 
 double Jastrow::operator()( Lattice::spindex i, Lattice::spindex j ) const
 {
-  assert( iir_v.size() > lat->reduce_idxrel( i, j ) );
-  return iir_v[ lat->reduce_idxrel( i, j ) ];
+  assert( isr_v.size() > lat->reduce_spidxrel( i, j ) );
+  return isr_v[ lat->reduce_spidxrel( i, j ) ];
 }
 
 
 
 double Jastrow::onsite() const
 {
-  assert( iir_v.size() > 0 );
-  return iir_v[0];
+  assert( isr_v.size() > 0 );
+  return isr_v[0];
 }
 
 
 
 void Jastrow::set( Lattice::spindex i, Lattice::spindex j, double v_new )
 {
-  iir_v.at( lat->reduce_idxrel( i, j ) ) = v_new;
+  isr_v.at( lat->reduce_spidxrel( i, j ) ) = v_new;
 }
 
 
@@ -98,8 +98,8 @@ unsigned int Jastrow::get_num_vpar() const
 
 
 
-unsigned int Jastrow::get_vparnum( unsigned int iir ) const
+unsigned int Jastrow::get_vparnum( unsigned int isr ) const
 {
-  assert( iir_vparnum.size() > iir );
-  return iir_vparnum[ iir ];
+  assert( isr_vparnum.size() > isr );
+  return isr_vparnum[ isr ];
 }
