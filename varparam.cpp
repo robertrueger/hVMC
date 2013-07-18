@@ -39,7 +39,7 @@ namespace ar  = boost::archive;
 
 unsigned int get_num_vpars( const Options& opts )
 {
-  return 8 + prepare_lattice( opts )->get_all_irridxrels().size() - 1;
+  return 8 + prepare_lattice( opts )->get_all_irrspidxrels().size() - 1;
 }
 
 

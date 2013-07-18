@@ -245,7 +245,7 @@ void Lattice2DSquare::get_3nn(
 
 
 
-Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
+Lattice::irrspidxrel Lattice2DSquare::reduce_spidxrel(
   Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( i < 2 * L );
@@ -266,16 +266,16 @@ Lattice::irridxrel Lattice2DSquare::reduce_idxrel(
 
 
 
-set<Lattice::irridxrel> Lattice2DSquare::get_all_irridxrels() const
+set<Lattice::irrspidxrel> Lattice2DSquare::get_all_irrspidxrels() const
 {
-  set<Lattice::irridxrel> allrels;
+  set<Lattice::irrspidxrel> allrels;
   for ( Lattice::index i = 0; i < L; ++i ) {
-    allrels.insert( reduce_idxrel( 0, i ) );
+    allrels.insert( reduce_spidxrel( 0, i ) );
   }
 
 #if VERBOSE >= 1
-  cout << "Lattice2DSquare::irreducible_idxrel_list() : "
-       << "list of irreducible index relations =" << endl;
+  cout << "Lattice2DSquare::irreducible_spidxrel_list() : "
+       << "list of irreducible spindex relations =" << endl;
   for ( auto it = allrels.begin(); it != allrels.end(); ++it ) {
     cout << *it << endl;
   }
@@ -286,7 +286,7 @@ set<Lattice::irridxrel> Lattice2DSquare::get_all_irridxrels() const
 
 
 
-Lattice::irridxrel Lattice2DSquare::get_maxdist_irridxrel() const
+Lattice::irrspidxrel Lattice2DSquare::get_maxdist_irrspidxrel() const
 {
   if ( S % 2 == 0 ) {
     return L / 2 + S / 2;

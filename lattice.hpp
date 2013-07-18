@@ -52,7 +52,7 @@ class Lattice {
     typedef unsigned int index;
     typedef unsigned int spindex;
     enum class spindex_type { up, down };
-    typedef unsigned int irridxrel;
+    typedef unsigned int irrspidxrel;
 
     // convenience functions for the indices
     index get_index_from_spindex( spindex l ) const;
@@ -65,10 +65,10 @@ class Lattice {
       spindex l, unsigned int X, std::vector<spindex>* outbuf
     ) const = 0;
 
-    // everything related to reduced index relations
-    virtual irridxrel reduce_idxrel( spindex i, spindex j ) const = 0;
-    virtual std::set<irridxrel> get_all_irridxrels() const = 0;
-    virtual irridxrel get_maxdist_irridxrel() const = 0;
+    // everything related to reduced spindex relations
+    virtual irrspidxrel reduce_spidxrel( spindex i, spindex j ) const = 0;
+    virtual std::set<irrspidxrel> get_all_irrspidxrels() const = 0;
+    virtual irrspidxrel get_maxdist_irrspidxrel() const = 0;
 
     // lattice geometry and relevant reciprocal lattice vectors
     virtual Eigen::VectorXd r( index i, index j ) const = 0;

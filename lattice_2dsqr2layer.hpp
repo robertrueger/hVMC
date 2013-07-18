@@ -63,9 +63,9 @@ class Lattice2DSquare2Layer final : public Lattice {
       spindex l, unsigned int X, std::vector<spindex>* outbuf
     ) const;
 
-    irridxrel reduce_idxrel( spindex i, spindex j ) const;
-    std::set<irridxrel> get_all_irridxrels() const;
-    irridxrel get_maxdist_irridxrel() const;
+    irrspidxrel reduce_spidxrel( spindex i, spindex j ) const;
+    std::set<irrspidxrel> get_all_irrspidxrels() const;
+    irrspidxrel get_maxdist_irrspidxrel() const;
 
     Eigen::VectorXd r( index i, index j ) const;
     bool include_r_in_ssfac( index i, index j ) const override;
