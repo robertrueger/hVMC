@@ -230,7 +230,7 @@ void Lattice2DSquare2Layer::get_opn(
 
 
 
-Lattice::irrspidxrel Lattice2DSquare2Layer::reduce_spidxrel(
+Lattice::irridxrel Lattice2DSquare2Layer::reduce_idxrel(
   Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( i < 2 * L );
@@ -246,11 +246,11 @@ Lattice::irrspidxrel Lattice2DSquare2Layer::reduce_spidxrel(
     swap( dx, dy );
   }
 
-  // calculate the irreducible spindex relation if i and j were in the same plane
-  Lattice::irrspidxrel iir = dx + S * dy;
+  // calculate the irreducible index relation if i and j were in the same plane
+  Lattice::irridxrel iir = dx + S * dy;
 
   // if they are in different planes, we obviously need a different
-  // irreducible spindex relation as if they were in the same plane
+  // irreducible index relation as if they were in the same plane
   if ( z( i ) != z( j ) ) {
     iir += L_layer;
   }
@@ -260,16 +260,16 @@ Lattice::irrspidxrel Lattice2DSquare2Layer::reduce_spidxrel(
 
 
 
-set<Lattice::irrspidxrel> Lattice2DSquare2Layer::get_all_irrspidxrels() const
+set<Lattice::irridxrel> Lattice2DSquare2Layer::get_all_irridxrels() const
 {
-  set<Lattice::irrspidxrel> allrels;
+  set<Lattice::irridxrel> allrels;
   for ( Lattice::index i = 0; i < L; ++i ) {
-    allrels.insert( reduce_spidxrel( 0, i ) );
+    allrels.insert( reduce_idxrel( 0, i ) );
   }
 
 #if VERBOSE >= 1
-  cout << "Lattice2DSquare2Layer::irreducible_spidxrel_list() : "
-       << "list of irreducible spindex relations =" << endl;
+  cout << "Lattice2DSquare2Layer::irreducible_idxrel_list() : "
+       << "list of irreducible index relations =" << endl;
   for ( auto it = allrels.begin(); it != allrels.end(); ++it ) {
     cout << *it << endl;
   }
@@ -280,7 +280,7 @@ set<Lattice::irrspidxrel> Lattice2DSquare2Layer::get_all_irrspidxrels() const
 
 
 
-Lattice::irrspidxrel Lattice2DSquare2Layer::get_maxdist_irrspidxrel() const
+Lattice::irridxrel Lattice2DSquare2Layer::get_maxdist_irridxrel() const
 {
   if ( S % 2 == 0 ) {
     return L_layer / 2 + S / 2 /*+ L_layer*/;

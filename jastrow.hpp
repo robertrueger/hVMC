@@ -38,10 +38,10 @@ class Jastrow
 
     const std::shared_ptr<Lattice> lat;
 
-    std::vector<double> isr_v;
+    std::vector<double> iir_v;
 
     unsigned int num_vpar;
-    std::vector<unsigned int> isr_vparnum;
+    std::vector<unsigned int> iir_vparnum;
 
   public:
 
@@ -55,7 +55,7 @@ class Jastrow
     void set( Lattice::spindex i, Lattice::spindex j, double v_new  );
 
     unsigned int get_num_vpar() const;
-    unsigned int get_vparnum( Lattice::irrspidxrel isr ) const;
+    unsigned int get_vparnum( Lattice::irridxrel iir ) const;
 };
 
 #endif // JASTROW_H_INCLUDED

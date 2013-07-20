@@ -59,7 +59,7 @@ void Lattice1DChain::get_Xnn(
 
 
 
-Lattice::irrspidxrel Lattice1DChain::reduce_spidxrel(
+Lattice::irridxrel Lattice1DChain::reduce_idxrel(
   Lattice::spindex i, Lattice::spindex j ) const
 {
   assert( i < 2 * L );
@@ -67,31 +67,31 @@ Lattice::irrspidxrel Lattice1DChain::reduce_spidxrel(
   assert( get_spindex_type( i ) == get_spindex_type( j ) );
 
   const unsigned int d = j > i ? j - i : i - j;
-  const Lattice::irrspidxrel result = min( d, L - d );
+  const Lattice::irridxrel result = min( d, L - d );
 
 #if VERBOSE >= 2
-  cout << "Lattice1DChain::reduce_spidxrel() : reduction "
+  cout << "Lattice1DChain::reduce_idxrel() : reduction "
        << "(" << i << "," << j << ") -> " << result << endl;
 #endif
 
-  assert( get_all_irrspidxrels().count( result ) == 1 );
+  assert( get_all_irridxrels().count( result ) == 1 );
 
   return result;
 }
 
 
 
-set<Lattice::irrspidxrel> Lattice1DChain::get_all_irrspidxrels() const
+set<Lattice::irridxrel> Lattice1DChain::get_all_irridxrels() const
 {
-  set<Lattice::irrspidxrel> allrels;
+  set<Lattice::irridxrel> allrels;
   for ( unsigned int d = 0; d <= L - d; ++d ) {
     assert( d < L );
     allrels.insert( d );
   }
 
 #if VERBOSE >= 2
-  cout << "Lattice1DChain::irreducible_spidxrel_list() : "
-       << "list of irreducible spindex relations =" << endl;
+  cout << "Lattice1DChain::irreducible_idxrel_list() : "
+       << "list of irreducible index relations =" << endl;
   for ( auto it = allrels.begin(); it != allrels.end(); ++it ) {
     cout << *it << endl;
   }
@@ -102,7 +102,7 @@ set<Lattice::irrspidxrel> Lattice1DChain::get_all_irrspidxrels() const
 
 
 
-Lattice::irrspidxrel Lattice1DChain::get_maxdist_irrspidxrel() const
+Lattice::irridxrel Lattice1DChain::get_maxdist_irridxrel() const
 {
   return L / 2;
 }
