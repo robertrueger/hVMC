@@ -78,8 +78,6 @@ DeterminantalWavefunction::DeterminantalWavefunction(
     for ( Lattice::spindex nu = 0; nu < 2 * int_varHam.L; ++nu ) {
       if ( eta >= Np && nu < Np ) {
         ptmask( eta, nu ) = 1.f / ( int_epsilon( nu ) - int_epsilon( eta ) );
-      } else {
-        ptmask( eta, nu ) = 0.f;
       }
     }
   }
