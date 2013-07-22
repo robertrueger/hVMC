@@ -1,0 +1,156 @@
+# Copyright (c) 2013, Robert Rueger <rueger@itp.uni-frankfurt.de>
+#
+# This file is part of hVMC.
+#
+# hVMC is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# hVMC is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
+
+
+[phys] ##################### PHYSICAL PARAMETERS ###############################
+
+# nearest-neighbor hopping matrix element t
+nn-hopping = 1.0
+
+# 2nd nearest-neighbor hopping matrix element t'
+2nd-nn-hopping = 0.0
+
+# 3rd nearest-neighbor hopping matrix element t''
+3rd-nn-hopping = 0.0
+
+# on-site energy U
+onsite-energy = 8.0
+
+# lattice type (1dchain, 2dsquare, 2dsquare2layer)
+lattice = 2dsquare
+
+# number of lattice sites
+num-lattice-sites = 100
+
+# total number of electrons
+num-electrons = 100
+
+# symmetry of the pairing term (swave, dwave, dwave_twisted)
+pairing-symmetry = dwave
+
+# file to load the variational parameters from
+# vpar-file =
+
+# variational parameter overwrite
+# vpar-ovwrt-t2 =
+# vpar-ovwrt-t3 =
+# vpar-ovwrt-D0 =
+vpar-ovwrt-D1 = 0.01
+# vpar-ovwrt-D2 =
+# vpar-ovwrt-D3 =
+vpar-ovwrt-mu = 0.0
+# vpar-ovwrt-mu-m =
+# vpar-ovwrt-J0 =
+
+
+[calc] ###################### CALCULATION SETTINGS #############################
+
+# simulation mode (optimization, simulation, analysis)
+# mode =
+
+# [opt+sim+ana]: input/output directory
+working-dir = .
+
+# [sim]: measured observables
+# available observables: E, Dk, DkDkp, DkE, dblocc, nncorr
+# (uncomment to activate)
+observable = E
+# observable = Dk
+# observable = DkDkp
+# observable = DkE
+observable = dblocc
+observable = nncorr
+observable = sscorr
+# observable = pconfs
+
+# [ana]: selected analysis modules
+# available modules: ssfac
+# (uncomment to activate)
+analysis = ssfac
+
+# [opt+sim]: maximum hopping distance for electronic configuration updates
+update-hop-maxdistance = 3
+
+# [opt+sim]: number of Monte Carlo steps for equilibration
+num-mcs-equil = 1000
+
+# [opt+sim]: number of measurement bins
+# num-bins =
+
+# [opt+sim]: number of Monte Carlo steps per bin
+num-binmcs = 100
+
+# [opt+sim]: random number generator seed
+#rng-seed = 1337133789
+
+# [opt]: which variational parameters to optimize
+# BITFIELD!
+# t' += 1
+# t" += 2
+# Delta_onsite += 4
+# Delta += 8
+# Delta' += 16
+# Delta" += 32
+# mu += 64
+# mu_m += 128
+# Jastrow += 256
+optimizers = 264
+
+# [opt]: controls the SR convergence: vpar += dt * dvpar
+sr-dt = 2.0
+
+# [opt]: factor to boost the convergence speed of the Jastrow
+sr-dt-Jboost = 2.0
+
+# [opt]: Mann-Kendall threshold for convergence detection
+sr-mkthreshold = 0.45
+
+# [opt]: number of refinements during the SR cycle
+sr-max-refinements = 0
+
+# [opt]: number of SR cycles to average the converged variational parameters
+sr-averaging-cycles = 50
+
+# [opt]: variational parameters that have a fixed minimum absolute value
+# BITFIELD!
+# t' += 1
+# t" += 2
+# Delta_onsite += 4
+# Delta += 8
+# Delta' += 16
+# Delta" += 32
+# mu += 64
+# mu_m += 128
+vpar-minabs-select = 8
+
+# [opt]: fixed minimum absolute value for the selected parameters
+vpar-minabs-value = 0.001
+
+
+[fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################
+
+# deviation target for the matrix W
+# W-deviation-target = 0.001
+
+# number of quick updates until recalculation of the matrix W
+# W-updates-until-recalc = 500
+
+# deviation target for the vector T
+# T-deviation-target = 0.001
+
+# number of quick updates until recalculation of the vector T
+# T-updates-until-recalc = 500000
