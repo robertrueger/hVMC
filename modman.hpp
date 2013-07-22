@@ -98,7 +98,7 @@ class ModelManager
         = boost::optional<const Eigen::VectorXi&>()
     );
 
-    // method that returns whether the proposes configuration was accepted
+    // method that returns whether the proposed configuration was accepted
     // (if so, we assume that we won't have to equilibrate that long ...)
     bool check_proposed_pconf_accepted() const;
 
