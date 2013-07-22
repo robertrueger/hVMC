@@ -290,9 +290,9 @@ Options read_options( int argc, char* argv[], bool is_master )
       cout << endl;
 
 #ifdef USE_FP_DBLPREC
-      cout << "floating point precision: double" << endl;
+      cout << "WMatrix implementation: double prec." << endl;
 #else
-      cout << "floating point precision: single" << endl;
+      cout << "WMatrix implementation: single prec." << endl;
 #endif
 #ifdef USE_CBLAS
       cout << "external CBLAS: enabled" << endl;
