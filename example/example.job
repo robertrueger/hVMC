@@ -28,7 +28,7 @@ nn-hopping = 1.0
 3rd-nn-hopping = 0.0
 
 # on-site energy U
-onsite-energy = 8.0
+onsite-energy = 4.0
 
 # lattice type (1dchain, 2dsquare, 2dsquare2layer)
 lattice = 2dsquare
@@ -49,7 +49,7 @@ pairing-symmetry = dwave
 # vpar-ovwrt-t2 =
 # vpar-ovwrt-t3 =
 # vpar-ovwrt-D0 =
-vpar-ovwrt-D1 = 0.01
+# vpar-ovwrt-D1 =
 # vpar-ovwrt-D2 =
 # vpar-ovwrt-D3 =
 vpar-ovwrt-mu = 0.0
@@ -63,7 +63,7 @@ vpar-ovwrt-mu = 0.0
 # mode =
 
 # [opt+sim+ana]: input/output directory
-working-dir = .
+# working-dir =
 
 # [sim]: measured observables
 # available observables: E, Dk, DkDkp, DkE, dblocc, nncorr
@@ -95,7 +95,7 @@ num-mcs-equil = 1000
 num-binmcs = 100
 
 # [opt+sim]: random number generator seed
-#rng-seed = 1337133789
+# rng-seed =
 
 # [opt]: which variational parameters to optimize
 # BITFIELD!
@@ -144,13 +144,13 @@ vpar-minabs-value = 0.001
 [fpctrl] #################  FLOATING POINT PRECISION CONTROL ###################
 
 # deviation target for the matrix W
-# W-deviation-target = 0.001
+# W-deviation-target =
 
 # number of quick updates until recalculation of the matrix W
-# W-updates-until-recalc = 500
+# W-updates-until-recalc =
 
 # deviation target for the vector T
-# T-deviation-target = 0.001
+# T-deviation-target =
 
 # number of quick updates until recalculation of the vector T
-# T-updates-until-recalc = 500000
+# T-updates-until-recalc =

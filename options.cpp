@@ -359,6 +359,9 @@ Options read_options( int argc, char* argv[], bool is_master )
   // manual modifications of the options
 
   // set phys.vpar-file to working dir / opt_vpar_final.dat
+  // (can't be a default value because the working dir is not known
+  // before the command line is parsed)
+  // (insert will do nothing if vpar-file is already set ...)
   vm.insert(
     make_pair(
       "phys.vpar-file",

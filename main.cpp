@@ -59,5 +59,11 @@ int main( int argc, char* argv[] )
     sched_slave( opts, mpicomm );
   }
 
+  if ( mpicomm.rank() == 0 ) { // only master prints exit message
+    cout << endl;
+    cout << ":: All done, exiting!" << endl;
+    cout << endl;
+  }
+
   return 0;
 }
