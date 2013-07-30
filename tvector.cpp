@@ -157,7 +157,7 @@ Eigen::VectorXd TVector::calc_qupdated( const ParticleHop& hop ) const
 
   for ( Lattice::index i = 0; i < lat->L; ++i ) {
     T_diff( i ) = v( i, lat->get_index_from_spindex( hop.l ) )
-                  - v( i, lat->get_index_from_spindex( hop.k_pos ) );
+                  - v( i, lat->get_index_from_spindex( hop.k ) );
   }
 
   return T + ( hop.l < lat->L ? 1.0 : -1.0 ) * T_diff;
