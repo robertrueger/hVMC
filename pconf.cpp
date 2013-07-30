@@ -108,28 +108,28 @@ void ParticleConfiguration::distribute_random()
 ParticleHop ParticleConfiguration::propose_random_hop(
   unsigned int update_hop_maxdist ) const
 {
-  // hop the kth particle
-  const unsigned int k
+  // hop the betath particle
+  const unsigned int beta
     = uniform_int_distribution<unsigned int>( 0, Np - 1 )( rng );
 
-  // find the position of the kth particle
-  const Lattice::spindex k_pos = particlenum_pos[k];
+  // find the position of the betath particle
+  const Lattice::spindex k = particlenum_pos[beta];
 
 #if VERBOSE >= 2
   cout << spindex_occ.head( lat->L ).transpose() << endl
        << spindex_occ.tail( lat->L ).transpose() << endl;
   cout << "ParticleConfiguration::propose_random_hop() : proposing to hop "
-       << "particle " << k << " from " << k_pos << " to ";
+       << "particle " << beta << " from " << k << " to ";
 #endif
 
-  assert( spindex_occ[ k_pos ] == PARTICLE_OCCUPATION_FULL );
+  assert( spindex_occ[ k ] == PARTICLE_OCCUPATION_FULL );
 
-  // get nearest neighbors of site k_pos
-  lat->get_Xnn( k_pos, 1, &k_1nb );
+  // get nearest neighbors of site k
+  lat->get_Xnn( k, 1, &k_1nb );
   if ( update_hop_maxdist >= 2 ) {
-    lat->get_Xnn( k_pos, 2, &k_2nb );
+    lat->get_Xnn( k, 2, &k_2nb );
     if ( update_hop_maxdist == 3 ) {
-      lat->get_Xnn( k_pos, 3, &k_3nb );
+      lat->get_Xnn( k, 3, &k_3nb );
     } else {
       assert( k_3nb.size() == 0 );
     }
@@ -173,11 +173,11 @@ ParticleHop ParticleConfiguration::propose_random_hop(
        << "possible" << ")" << endl;
 #endif
 
-  assert( lat->get_spindex_type( k_pos ) == lat->get_spindex_type( l ) );
+  assert( lat->get_spindex_type( k ) == lat->get_spindex_type( l ) );
   assert( spindex_occ[ l ] == PARTICLE_OCCUPATION_FULL ||
           spindex_occ[ l ] == PARTICLE_OCCUPATION_EMPTY  );
 
-  return ParticleHop( k, l, k_pos, spindex_occ[ l ] == PARTICLE_OCCUPATION_EMPTY );
+  return ParticleHop( beta, l, k, spindex_occ[ l ] == PARTICLE_OCCUPATION_EMPTY );
 }
 
 
@@ -185,18 +185,18 @@ ParticleHop ParticleConfiguration::propose_random_hop(
 void ParticleConfiguration::do_hop( const ParticleHop& hop )
 {
   assert( hop.possible );
-  assert( spindex_occ[ hop.k_pos ] == PARTICLE_OCCUPATION_FULL );
-  assert( spindex_occ[ hop.l ]     == PARTICLE_OCCUPATION_EMPTY );
-  assert( lat->get_spindex_type( hop.k_pos ) == lat->get_spindex_type( hop.l ) );
+  assert( spindex_occ[ hop.k ] == PARTICLE_OCCUPATION_FULL );
+  assert( spindex_occ[ hop.l ] == PARTICLE_OCCUPATION_EMPTY );
+  assert( lat->get_spindex_type( hop.k ) == lat->get_spindex_type( hop.l ) );
 
-  spindex_occ[ hop.k_pos ] = PARTICLE_OCCUPATION_EMPTY;
+  spindex_occ[ hop.k ] = PARTICLE_OCCUPATION_EMPTY;
   spindex_occ[ hop.l ] = PARTICLE_OCCUPATION_FULL;
 
-  particlenum_pos[ hop.k ] = hop.l;
+  particlenum_pos[ hop.beta ] = hop.l;
 
 #if VERBOSE >= 2
   cout << "ParticleConfiguration::do_hop() : hopping particle #"
-       << hop.k << " from " << hop.k_pos << " to " << hop.l << endl;
+       << hop.beta << " from " << hop.k << " to " << hop.l << endl;
   cout << spindex_occ.head( lat->L ).transpose() << endl
        << spindex_occ.tail( lat->L ).transpose() << endl;
   cout << "ParticleConfiguration::do_hop() : particle positions are"

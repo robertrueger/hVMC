@@ -42,21 +42,20 @@ enum ParticleOccupation_t {
 struct ParticleHop {
 
   // id of the hopping particle
-  const unsigned int k;
+  const unsigned int beta;
+
+  // position of particle beta before the hop
+  const Lattice::spindex k;
 
   // site that it hops to
   const Lattice::spindex l;
 
-  // position of particle k before the hop
-  const Lattice::spindex k_pos;
-
   // hop possible = site l unoccupied?
   const bool possible;
 
-  ParticleHop( Lattice::spindex k_init, Lattice::spindex l_init,
-               Lattice::spindex k_pos_init, bool possible_init )
-    : k( k_init ), l( l_init ),
-      k_pos( k_pos_init ), possible( possible_init ) { }
+  ParticleHop( unsigned int beta_init, Lattice::spindex l_init,
+               Lattice::spindex k_init, bool possible_init )
+    : beta( beta_init ), k( k_init ), l( l_init ), possible( possible_init ) { }
 };
 
 

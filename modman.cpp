@@ -143,11 +143,11 @@ bool ModelManager::metstep()
           ( phop.l < lat->L ? 1.0 : -1.0 ) *
           (
             T.get()( lat->get_index_from_spindex( phop.l ) )
-            - T.get()( lat->get_index_from_spindex( phop.k_pos ) )
-          ) + v.onsite() - v( phop.l, phop.k_pos )
+            - T.get()( lat->get_index_from_spindex( phop.k ) )
+          ) + v.onsite() - v( phop.l, phop.k )
         );
 
-    const double R_s = W.get()( phop.l, phop.k );
+    const double R_s = W.get()( phop.l, phop.beta );
 
     const double accept_prob = R_j * R_j * R_s * R_s;
 
@@ -191,10 +191,10 @@ double ModelManager::E_l() const
   double E_l_kin = 0.0;
 
   // loop over different elektrons k
-  for ( unsigned int k = 0; k < pconf.Np; ++k ) {
+  for ( unsigned int beta = 0; beta < pconf.Np; ++beta ) {
 
-    const Lattice::spindex k_pos = pconf.get_particlenum_pos()[ k ];
-    assert( pconf.get_spindex_occ()( k_pos ) == PARTICLE_OCCUPATION_FULL );
+    const Lattice::spindex k = pconf.get_particlenum_pos()[ beta ];
+    assert( pconf.get_spindex_occ()( k ) == PARTICLE_OCCUPATION_FULL );
 
     // loop over different neighbor orders X
     for ( unsigned int X = 1; X <= t.size(); ++X ) {
@@ -203,32 +203,32 @@ double ModelManager::E_l() const
       }
 
       double sum_Xnn = 0.0;
-      lat->get_Xnn( k_pos, X, &k_pos_Xnn );
-      assert( k_pos_Xnn.size() != 0 );
+      lat->get_Xnn( k, X, &k_Xnn );
+      assert( k_Xnn.size() != 0 );
 
       // loop over different neighbours l of order X
-      for ( auto l_it = k_pos_Xnn.begin(); l_it != k_pos_Xnn.end(); ++l_it ) {
+      for ( auto l_it = k_Xnn.begin(); l_it != k_Xnn.end(); ++l_it ) {
         if ( pconf.get_spindex_occ()( *l_it ) == PARTICLE_OCCUPATION_EMPTY ) {
 
           const double R_j
             = std::exp(
                 (
-                  ( lat->get_spindex_type( k_pos ) == Lattice::spindex_type::up )
+                  ( lat->get_spindex_type( k ) == Lattice::spindex_type::up )
                   ? 1.0 : -1.0
                 ) *
                 (
                   T.get()( lat->get_index_from_spindex( *l_it ) )
-                  - T.get()( lat->get_index_from_spindex( k_pos ) )
-                ) + v.onsite() - v( *l_it, k_pos )
+                  - T.get()( lat->get_index_from_spindex( k ) )
+                ) + v.onsite() - v( *l_it, k )
               );
 
-          sum_Xnn += R_j * W.get()( *l_it, k );
+          sum_Xnn += R_j * W.get()( *l_it, beta );
 
         }
       }
       // reverse sign of spin down part due to particle-hole-transformation
       E_l_kin +=
-        ( lat->get_spindex_type( k_pos ) == Lattice::spindex_type::up ? -1.0 : 1.0 )
+        ( lat->get_spindex_type( k ) == Lattice::spindex_type::up ? -1.0 : 1.0 )
         * t[X - 1] * sum_Xnn;
 
     }
@@ -262,9 +262,9 @@ Eigen::VectorXd ModelManager::Delta_k( unsigned int optimizers ) const
     // only do it if we are optimizing any determinantal parameter
 
     Eigen::ArrayXfp G = Eigen::ArrayXfp::Zero( 2 * lat->L, 2 * lat->L );
-    for ( unsigned int k = 0; k < pconf.Np; ++k ) {
-      const Lattice::spindex k_pos = pconf.get_particlenum_pos()[ k ];
-      G.row( k_pos ) = W.get().col( k );
+    for ( unsigned int beta = 0; beta < pconf.Np; ++beta ) {
+      const Lattice::spindex k = pconf.get_particlenum_pos()[ beta ];
+      G.row( k ) = W.get().col( beta );
     }
 
     for ( unsigned int vpar = 0; vpar < 8; ++vpar ) {

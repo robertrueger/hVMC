@@ -71,7 +71,7 @@ class ModelManager
 
     // buffer vector for X nearest neighbors
     // (in order to avoid allocating new ones all the time)
-    mutable std::vector<unsigned int> k_pos_Xnn;
+    mutable std::vector<unsigned int> k_Xnn;
 
 
     // ----- internal helper functions -----
