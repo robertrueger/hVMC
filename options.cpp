@@ -399,6 +399,13 @@ Options read_options( int argc, char* argv[], bool is_master )
             );
     }
 
+    if ( vm["phys.lattice"].as<Lattice::type>() == Lattice::type::square2d2layer &&
+         vm["phys.3rd-nn-hopping"].as<double>() == 0.0 ) {
+      throw logic_error(
+              "running the square lattice bilayer model with no interplane hopping does not make sense, use the monolayer instead"
+            );
+    }
+
     // TODO: minimum lattice size checks (Robert Rueger, 2012-11-17 22:57)
 
   } catch ( const logic_error& e ) {
