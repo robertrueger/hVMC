@@ -1,3 +1,44 @@
-hVMC is a free Variational Monte Carlo code for the Hubbard model which I am
-writing as a part of my master's thesis in physics. There is no documentation
-yet, but I promise to write one once the code is more or less finished ;-) ...
+#hVMC
+
+hVMC is a free Variational Monte Carlo code for the Hubbard model.
+
+I wrote hVMC as a part of my master's thesis in physics. It is written in C++11
+and I have tried to keep the amount of code not immediately related to the
+actual calculation (e.g. IO, communication, command line parsing) to a minimum.
+To this purpose hVMC makes heavy use of template libraries like the STL, Boost
+and Eigen3. I spent a lot of time profiling and optimizing hVMC to make sure it
+runs as fast as possible. A particularly nice feature is that hVMC performs some
+(the most expensive) calculations in single precision and keeps track of
+resulting floating point errors at runtime in order to ensure the validity of
+the results. hVMC is parallelized using MPI and should run efficiently on any
+distributed memory machine, even one where not all processors are equally fast.
+For large enough calculations I have seen practically linear scaling up to
+hundreds of processors.
+
+The documentation of hVMC is a bit lacking as I had very little time between the
+submission of my master's thesis and the start of my PhD studies. The closest
+thing to a hVMC documentation is actually my master's thesis itself, which not
+only includes all the theoretical background and a discription of the hVMC
+internals, but also has an appendix that descibes how to build and use hVMC.
+My thesis is part of the hVMC repository and can be found in docs/thesis.pdf.
+
+I hope that hVMC is useful! Feel free to contact me with any questions or bugs
+that come up!
+
+
+##License
+
+Copyright (c) 2013, Robert Rüger (rueger@itp.uni-frankfurt.de)
+
+hVMC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+hVMC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with hVMC.  If not, see <http://www.gnu.org/licenses/>.
